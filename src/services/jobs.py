@@ -11,7 +11,7 @@ from src.services.lipsync import MockLipSyncProvider
 from src.services.prompt_compiler import compile_plan
 from src.services.qa import check_final, check_segment
 from src.services.segment_scheduler import split_timeline
-from src.services.storage import get_asset_path, job_dir
+from src.services.store import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
 from src.services.tts import MockTTSProvider
 from src.services.voice import build_voice_pack
