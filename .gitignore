@@ -6,6 +6,6 @@ storage/
 .venv/
 venv/
 
-# Local AI model weights
-src/models/**/*.pth
-src/models/**/*.onnx
+# AI model folders
+src/models/piper/
+src/models/wav2lip/
