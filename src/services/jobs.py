@@ -3,18 +3,16 @@ from uuid import uuid4
 
 from src.config import settings
 from src.models.schemas import JobCreate, JobRecord, JobState, utcnow
-from src.services.animation import MockAnimationProvider
+from src.services.animation_wav2lip import RealWav2LipProvider
 from src.services.assembler import assemble
 from src.services.consent import verify_consent
-from src.services.identity import build_identity_pack
-from src.services.lipsync import MockLipSyncProvider
+from src.services.identity_real import RealIdentityBuilder
 from src.services.prompt_compiler import compile_plan
 from src.services.qa import check_final, check_segment
 from src.services.segment_scheduler import split_timeline
-from src.services.store import get_asset_path, job_dir
+from src.services.storage import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
-from src.services.tts import MockTTSProvider
-from src.services.voice import build_voice_pack
+from src.services.tts_piper import PiperTTSProvider
 
 JOBS: dict[str, JobRecord] = {}
 
@@ -60,7 +58,6 @@ def create_job(request: JobCreate) -> JobRecord:
     )
 
     JOBS[job_id] = job
-
     return job
 
 
@@ -70,7 +67,6 @@ def get_job(job_id: str) -> JobRecord | None:
 
 def run_job(job_id: str) -> None:
     job = JOBS.get(job_id)
-
     if job is None:
         return
 
@@ -82,78 +78,64 @@ def run_job(job_id: str) -> None:
     job_path = job_dir(job_id)
 
     try:
+        # 1. Identity Pack
         job.state = JobState.PREPARING_IDENTITY
         job.updated_at = utcnow()
+        id_builder = RealIdentityBuilder()
+        job.identity_pack = id_builder.build_identity_pack(Path(job.photo_path), job_path)
 
-        job.identity_pack = build_identity_pack(Path(job.photo_path), job_path)
-        job.voice_pack = build_voice_pack(Path(job.voice_path), job_path)
+        # 2. Voice Pack (Metadata only for Piper)
+        job.voice_pack = {"path": job.voice_path}
 
+        # 3. TTS Synthesis
         job.state = JobState.SYNTHESIZING_AUDIO
         job.updated_at = utcnow()
-
-        tts_provider = MockTTSProvider()
+        tts_provider = PiperTTSProvider()
         tts_map = {}
-
         for event in job.timeline.events:
             tts_map[event.event_id] = tts_provider.synthesize_event(
                 event=event,
                 plan=job.plan,
                 job_path=job_path,
+                voice_sample_path=job.voice_path
             )
 
+        # 4. Segment Scheduling
         job.state = JobState.SCHEDULING_SEGMENTS
         job.updated_at = utcnow()
-
         segments = split_timeline(
             timeline=job.timeline,
             max_segment_seconds=settings.max_segment_seconds,
         )
 
+        # 5. Animation Generation
         job.state = JobState.GENERATING_SEGMENTS
         job.updated_at = utcnow()
-
-        animation_provider = MockAnimationProvider()
-        lipsync_provider = MockLipSyncProvider()
+        anim_provider = RealWav2LipProvider()
 
         for segment in segments:
-            video_path = animation_provider.generate_segment(
+            print(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
+            video_path = anim_provider.generate_segment(
                 segment=segment,
                 plan=job.plan,
                 job_path=job_path,
                 identity_pack=job.identity_pack,
-                voice_pack=job.voice_pack,
+                voice_pack=job.voice_pack
             )
-
             segment.video_path = str(video_path)
-
-            refined_path = lipsync_provider.refine_segment(
-                segment=segment,
-                plan=job.plan,
-                job_path=job_path,
-                identity_pack=job.identity_pack,
-                voice_pack=job.voice_pack,
-            )
-
-            segment.video_path = str(refined_path)
 
             qa_result = check_segment(
                 video_path=segment.video_path,
                 expected_duration=segment.duration_s,
             )
-
             if not qa_result.get("passed"):
-                raise RuntimeError(
-                    f"Segment QA failed for {segment.segment_id}: {qa_result}"
-                )
+                raise RuntimeError(f"Segment QA failed for {segment.segment_id}: {qa_result}")
 
         job.segments = segments
 
-        job.state = JobState.QA_CHECKING
-        job.updated_at = utcnow()
-
+        # 6. Assembly
         job.state = JobState.ASSEMBLING
         job.updated_at = utcnow()
-
         output_path, subtitle_path = assemble(
             job_path=job_path,
             plan=job.plan,
@@ -166,7 +148,6 @@ def run_job(job_id: str) -> None:
             video_path=output_path,
             expected_duration=job.plan.target_duration_seconds,
         )
-
         if not final_qa.get("passed"):
             raise RuntimeError(f"Final QA failed: {final_qa}")
 
@@ -175,12 +156,13 @@ def run_job(job_id: str) -> None:
         job.state = JobState.COMPLETED
 
     except Exception as exc:
+        import traceback
+        traceback.print_exc()
         job.state = JobState.FAILED
         job.error = f"{type(exc).__name__}: {exc}"
 
     finally:
         job.updated_at = utcnow()
-
         try:
             manifest_path = job_path / "manifest.json"
             manifest_path.write_text(
