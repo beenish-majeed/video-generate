@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Model Configs
     piper_model_path: str = "./models/piper/en_US-lessac-medium.onnx"
     piper_config_path: str = "./models/piper/en_US-lessac-medium.onnx.json"
-    wav2lip_ckpt_path: str = "./models/wav2lip/checkpoint_v2.pt"
+    wav2lip_ckpt_path: str = "src/models/wav2lip/wav2lip.pth"
     wav2lip_repo_path: str = "./external/wav2lip"
 
 

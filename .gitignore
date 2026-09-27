@@ -9,3 +9,6 @@ venv/
 # AI model folders
 src/models/piper/
 src/models/wav2lip/
+
+# External repositories
+external/wav2lip/
