@@ -5,3 +5,7 @@ storage/
 .pytest_cache/
 .venv/
 venv/
+
+# Local AI model weights
+src/models/**/*.pth
+src/models/**/*.onnx
