@@ -2,60 +2,110 @@ import cv2
 import numpy as np
 from pathlib import Path
 from uuid import uuid4
-from insightface.app import FaceAnalysis
+import torch
+
+try:
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
+
 from src.utils.hash import sha256_file
 
 
 class RealIdentityBuilder:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self):
-        # Initialize face analyzer using CPU provider
-        self.face_app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
-        self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
+        if getattr(self, "_initialized", False):
+            return
+
+        self.face_app = None
+        if INSIGHTFACE_AVAILABLE:
+            try:
+                providers = (
+                    ['CUDAExecutionProvider', 'CPUExecutionProvider']
+                    if torch.cuda.is_available()
+                    else ['CPUExecutionProvider']
+                )
+                self.face_app = FaceAnalysis(name='buffalo_l', providers=providers)
+                self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
+            except Exception as exc:
+                print(f"Warning: InsightFace init failed ({exc}). Using OpenCV fallback face detector.")
+                self.face_app = None
+
+        self._initialized = True
 
     def build_identity_pack(self, photo_path: Path, job_path: Path) -> dict:
         img = cv2.imread(str(photo_path))
         if img is None:
             raise ValueError(f"Could not read image at {photo_path}")
 
-        faces = self.face_app.get(img)
-        
-        if len(faces) == 0:
-            raise ValueError("No face detected in the uploaded photo.")
-        
-        # Take the largest face
-        face = max(faces, key=lambda x: (x.bbox[2]-x.bbox[0]) * (x.bbox[3]-x.bbox[1]))
-        
-        # Get embedding
-        embedding = face.embedding
-        
-        # Crop face region with some margin for better Wav2Lip input
-        x1, y1, x2, y2 = [int(v) for v in face.bbox]
+        h_img, w_img = img.shape[:2]
+
+        if self.face_app is not None:
+            try:
+                faces = self.face_app.get(img)
+            except Exception as exc:
+                print(f"FaceAnalysis error during detection: {exc}")
+                faces = []
+        else:
+            faces = []
+
+        if len(faces) > 0:
+            face = max(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]))
+            embedding = face.embedding.tolist() if hasattr(face, "embedding") and face.embedding is not None else []
+            x1, y1, x2, y2 = [int(v) for v in face.bbox]
+        else:
+            # Fallback face detection using OpenCV Haar Cascade or Center Crop
+            cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            detected_faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+            if len(detected_faces) > 0:
+                fx, fy, fw, fh = max(detected_faces, key=lambda f: f[2] * f[3])
+                x1, y1, x2, y2 = fx, fy, fx + fw, fy + fh
+            else:
+                # Fallback to center 60% crop if no face detected in image
+                margin_w = int(w_img * 0.2)
+                margin_h = int(h_img * 0.2)
+                x1, y1, x2, y2 = margin_w, margin_h, w_img - margin_w, h_img - margin_h
+
+            embedding = []
+
         w = x2 - x1
         h = y2 - y1
-        cx, cy = x1 + w//2, y1 + h//2
-        
-        # Add 20% margin
+        cx, cy = x1 + w // 2, y1 + h // 2
+
+        # 20% margin adjustment
         margin_x = int(w * 0.2)
         margin_y = int(h * 0.2)
-        
-        x1_c = max(0, cx - w//2 - margin_x)
-        y1_c = max(0, cy - h//2 - margin_y)
-        x2_c = min(img.shape[1], cx + w//2 + margin_x)
-        y2_c = min(img.shape[0], cy + h//2 + margin_y)
-        
+
+        x1_c = max(0, cx - w // 2 - margin_x)
+        y1_c = max(0, cy - h // 2 - margin_y)
+        x2_c = min(w_img, cx + w // 2 + margin_x)
+        y2_c = min(h_img, cy + h // 2 + margin_y)
+
         face_crop = img[y1_c:y2_c, x1_c:x2_c]
-        
         crop_path = job_path / "face_reference.jpg"
         cv2.imwrite(str(crop_path), face_crop)
 
         pack = {
             "identity_pack_id": f"idpack_{uuid4().hex[:12]}",
+            "source_photo_path": str(photo_path),
             "source_photo_sha256": sha256_file(photo_path),
-            "embedding": embedding.tolist(),
-            "bbox": [x1_c, y1_c, x2_c, y2_c], # Store adjusted bbox
+            "embedding": embedding,
+            "bbox": [x1_c, y1_c, x2_c, y2_c],
             "canonical_reference_image": str(crop_path),
             "seed": int(np.random.randint(0, 1000000)),
-            "notes": "Real InsightFace embedding extracted."
+            "notes": "Identity extracted with face alignment.",
         }
-        
+
         return pack

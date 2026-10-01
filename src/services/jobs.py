@@ -1,5 +1,8 @@
+import json
+import sqlite3
 from pathlib import Path
 from uuid import uuid4
+from typing import Dict, List, Optional
 
 from src.config import settings
 from src.models.schemas import JobCreate, JobRecord, JobState, utcnow
@@ -13,8 +16,85 @@ from src.services.segment_scheduler import split_timeline
 from src.services.store import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
 from src.services.tts_piper import PiperTTSProvider
+from src.services.voice import build_voice_pack
 
-JOBS: dict[str, JobRecord] = {}
+DB_PATH = settings.storage_dir / "jobs.db"
+
+
+def _init_db() -> None:
+    settings.storage_dir.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS jobs (
+                job_id TEXT PRIMARY KEY,
+                state TEXT NOTIGNOR,
+                data TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+
+
+_init_db()
+JOBS: Dict[str, JobRecord] = {}
+
+
+def save_job_record(job: JobRecord) -> None:
+    job.updated_at = utcnow()
+    JOBS[job.job_id] = job
+    try:
+        data_json = job.model_dump_json()
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(
+                """
+                INSERT INTO jobs (job_id, state, data, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(job_id) DO UPDATE SET
+                    state=excluded.state,
+                    data=excluded.data,
+                    updated_at=excluded.updated_at
+                """,
+                (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
+            )
+            conn.commit()
+    except Exception as exc:
+        print(f"Error saving job to DB: {exc}")
+
+
+def load_job_record(job_id: str) -> Optional[JobRecord]:
+    if job_id in JOBS:
+        return JOBS[job_id]
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute("SELECT data FROM jobs WHERE job_id = ?", (job_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                job = JobRecord.model_validate_json(row[0])
+                JOBS[job_id] = job
+                return job
+    except Exception as exc:
+        print(f"Error loading job from DB: {exc}")
+
+    return None
+
+
+def list_all_jobs() -> List[JobRecord]:
+    records: List[JobRecord] = []
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
+            for row in cursor.fetchall():
+                if row and row[0]:
+                    rec = JobRecord.model_validate_json(row[0])
+                    records.append(rec)
+                    JOBS[rec.job_id] = rec
+    except Exception as exc:
+        print(f"Error listing jobs from DB: {exc}")
+
+    return records or list(JOBS.values())
 
 
 def create_job(request: JobCreate) -> JobRecord:
@@ -57,22 +137,23 @@ def create_job(request: JobCreate) -> JobRecord:
         timeline=timeline,
     )
 
-    JOBS[job_id] = job
+    save_job_record(job)
     return job
 
 
 def get_job(job_id: str) -> JobRecord | None:
-    return JOBS.get(job_id)
+    return load_job_record(job_id)
 
 
 def run_job(job_id: str) -> None:
-    job = JOBS.get(job_id)
+    job = load_job_record(job_id)
     if job is None:
         return
 
     if job.plan is None or job.timeline is None:
         job.state = JobState.FAILED
         job.error = "Job plan or timeline is missing."
+        save_job_record(job)
         return
 
     job_path = job_dir(job_id)
@@ -80,16 +161,19 @@ def run_job(job_id: str) -> None:
     try:
         # 1. Identity Pack
         job.state = JobState.PREPARING_IDENTITY
-        job.updated_at = utcnow()
+        save_job_record(job)
+
         id_builder = RealIdentityBuilder()
         job.identity_pack = id_builder.build_identity_pack(Path(job.photo_path), job_path)
 
-        # 2. Voice Pack (Metadata only for Piper)
-        job.voice_pack = {"path": job.voice_path}
+        # 2. Voice Pack
+        voice_pack = build_voice_pack(Path(job.voice_path), job_path)
+        job.voice_pack = voice_pack
 
         # 3. TTS Synthesis
         job.state = JobState.SYNTHESIZING_AUDIO
-        job.updated_at = utcnow()
+        save_job_record(job)
+
         tts_provider = PiperTTSProvider()
         tts_map = {}
         for event in job.timeline.events:
@@ -97,12 +181,13 @@ def run_job(job_id: str) -> None:
                 event=event,
                 plan=job.plan,
                 job_path=job_path,
-                voice_sample_path=job.voice_path
+                voice_sample_path=job.voice_path,
             )
 
         # 4. Segment Scheduling
         job.state = JobState.SCHEDULING_SEGMENTS
-        job.updated_at = utcnow()
+        save_job_record(job)
+
         segments = split_timeline(
             timeline=job.timeline,
             max_segment_seconds=settings.max_segment_seconds,
@@ -110,7 +195,8 @@ def run_job(job_id: str) -> None:
 
         # 5. Animation Generation
         job.state = JobState.GENERATING_SEGMENTS
-        job.updated_at = utcnow()
+        save_job_record(job)
+
         anim_provider = RealWav2LipProvider()
 
         for segment in segments:
@@ -120,7 +206,7 @@ def run_job(job_id: str) -> None:
                 plan=job.plan,
                 job_path=job_path,
                 identity_pack=job.identity_pack,
-                voice_pack=job.voice_pack
+                voice_pack=job.voice_pack,
             )
             segment.video_path = str(video_path)
 
@@ -135,7 +221,8 @@ def run_job(job_id: str) -> None:
 
         # 6. Assembly
         job.state = JobState.ASSEMBLING
-        job.updated_at = utcnow()
+        save_job_record(job)
+
         output_path, subtitle_path = assemble(
             job_path=job_path,
             plan=job.plan,
@@ -162,7 +249,7 @@ def run_job(job_id: str) -> None:
         job.error = f"{type(exc).__name__}: {exc}"
 
     finally:
-        job.updated_at = utcnow()
+        save_job_record(job)
         try:
             manifest_path = job_path / "manifest.json"
             manifest_path.write_text(

@@ -254,6 +254,9 @@ def finalize_video(
             .as_posix()
             .replace("\\", "/")
             .replace(":", "\\:")
+            .replace("'", "'\\''")
+            .replace("[", "\\[")
+            .replace("]", "\\]")
         )
         filter_parts.append(f"{current_video}subtitles='{escaped}'[vsubtitled]")
         current_video = "[vsubtitled]"

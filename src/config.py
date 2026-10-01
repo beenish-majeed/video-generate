@@ -17,10 +17,12 @@ class Settings(BaseSettings):
     default_resolution: str = "720x720"
     max_segment_seconds: float = 5.0
     sample_rate: int = 22050
+    allow_burn_subtitles: bool = True
+    api_key: str | None = None
 
     # Model Configs
-    piper_model_path: str = "./models/piper/en_US-lessac-medium.onnx"
-    piper_config_path: str = "./models/piper/en_US-lessac-medium.onnx.json"
+    piper_model_path: str = "src/models/piper/en_US-lessac-medium.onnx"
+    piper_config_path: str = "src/models/piper/en_US-lessac-medium.onnx.json"
     wav2lip_ckpt_path: str = "src/models/wav2lip/wav2lip.pth"
     wav2lip_repo_path: str = "./external/wav2lip"
 
