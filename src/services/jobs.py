@@ -174,7 +174,12 @@ def run_job(job_id: str) -> None:
         job.state = JobState.SYNTHESIZING_AUDIO
         save_job_record(job)
 
-        tts_provider = PiperTTSProvider()
+        if settings.tts_provider.lower() == "cosyvoice":
+            from src.services.tts_cosyvoice import CosyVoiceTTSProvider
+            tts_provider = CosyVoiceTTSProvider()
+        else:
+            tts_provider = PiperTTSProvider()
+
         tts_map = {}
         for event in job.timeline.events:
             tts_map[event.event_id] = tts_provider.synthesize_event(

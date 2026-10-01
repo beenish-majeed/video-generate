@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     allow_burn_subtitles: bool = True
     api_key: str | None = None
 
+    tts_provider: str = "cosyvoice"
+    cosyvoice_model_path: str = "models/cosyvoice/CosyVoice2-0.5B"
+
     # Model Configs
     piper_model_path: str = "src/models/piper/en_US-lessac-medium.onnx"
     piper_config_path: str = "src/models/piper/en_US-lessac-medium.onnx.json"
