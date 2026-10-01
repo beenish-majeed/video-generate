@@ -8,8 +8,9 @@ from src.utils.hash import sha256_file
 
 def build_voice_pack(voice_path: Path, job_path: Path) -> dict:
     """
-    Build real voice pack from uploaded voice sample asset.
-    Performs audio validation, duration probing, and metadata extraction.
+    Build voice pack from uploaded voice sample asset.
+    Preserves uploaded voice sample reference while explicitly documenting
+    engine voice cloning capabilities.
     """
     voice_pack_id = f"voicepack_{uuid4().hex[:12]}"
     voice_hash = sha256_file(voice_path)
@@ -31,7 +32,13 @@ def build_voice_pack(voice_path: Path, job_path: Path) -> dict:
         "duration_seconds": duration,
         "reference_clip": str(voice_path),
         "seed": seed,
-        "notes": "Voice pack extracted with audio metadata.",
+        "voice_cloning_supported": False,
+        "voice_cloning_status": "UNSUPPORTED_BY_CURRENT_TTS_ENGINE",
+        "voice_cloning_note": (
+            "Uploaded voice sample stored as reference clip. "
+            "Current Piper TTS engine uses single-speaker ONNX checkpoint (en_US-lessac-medium). "
+            "Zero-shot voice cloning requires an external cloned TTS engine (e.g. XTTS-v2/OpenVoice)."
+        ),
     }
 
     out_path = job_path / "voice_pack.json"

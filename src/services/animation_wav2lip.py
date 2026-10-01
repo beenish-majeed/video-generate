@@ -1,5 +1,6 @@
 import sys
 import os  
+import threading
 from pathlib import Path
 
 # Add project root to Python path when this file is run directly.
@@ -15,6 +16,7 @@ from pathlib import Path
 
 from src.config import settings
 from src.models.schemas import CompiledPlan, SegmentSpec
+from src.utils.ffmpeg import probe_duration
 
 # Add Wav2Lip repo to path so we can import its modules
 wav2lip_repo = settings.wav2lip_repo_path
@@ -28,51 +30,59 @@ except ImportError:
 
 
 class RealWav2LipProvider:
+    """
+    Wav2Lip Neural Lip-Sync Provider.
+    Executes real Wav2Lip forward inference (6-channel face image + 4D mel window tensor).
+    Thread-safe in-process execution using a threading.Lock() mutex.
+    """
     name = "wav2lip_pytorch"
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
-        
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Loading Wav2Lip model on device: {self.device}...")
-        
-        ckpt_path = Path(settings.wav2lip_ckpt_path)
-        if not ckpt_path.exists():
-             raise FileNotFoundError(f"Wav2Lip checkpoint not found at {ckpt_path}")
 
-        self.model = Wav2LipModel()
-        checkpoint = torch.load(str(ckpt_path), map_location=self.device)
+        with self._lock:
+            if getattr(self, "_initialized", False):
+                return
 
-        checkpoint_state = checkpoint["state_dict"]
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            print(f"Loading Wav2Lip model on device: {self.device}...")
 
-        # Remove the "module." prefix added by DataParallel during training.
-        checkpoint_state = {
-            key.replace("module.", "", 1): value
-            for key, value in checkpoint_state.items()
-        }
+            ckpt_path = Path(settings.wav2lip_ckpt_path)
+            if not ckpt_path.exists():
+                raise FileNotFoundError(f"Wav2Lip checkpoint missing at '{ckpt_path}'")
 
-        model_state = self.model.state_dict()
+            self.model = Wav2LipModel()
+            checkpoint = torch.load(str(ckpt_path), map_location=self.device)
+            checkpoint_state = checkpoint["state_dict"]
 
-        # Keep only parameters that belong to this model.
-        checkpoint_state = {
-            key: value
-            for key, value in checkpoint_state.items()
-            if key in model_state
-        }
+            checkpoint_state = {
+                key.replace("module.", "", 1): value
+                for key, value in checkpoint_state.items()
+            }
 
-        self.model.load_state_dict(checkpoint_state, strict=False)
-        self.model.eval()
-        self.model.to(self.device)
-        self._initialized = True
-        print("Wav2Lip Loaded successfully.")
+            model_state = self.model.state_dict()
+            checkpoint_state = {
+                key: value
+                for key, value in checkpoint_state.items()
+                if key in model_state
+            }
+
+            self.model.load_state_dict(checkpoint_state, strict=False)
+            self.model.eval()
+            self.model.to(self.device)
+            self._initialized = True
+            print("Wav2Lip model loaded successfully.")
 
     def generate_segment(
         self,
@@ -85,23 +95,30 @@ class RealWav2LipProvider:
         videos_dir = job_path / "videos"
         videos_dir.mkdir(parents=True, exist_ok=True)
         output_path = videos_dir / f"{segment.segment_id}.mp4"
-        
+
         # 1. Load Reference Image
         ref_img_path = identity_pack.get("canonical_reference_image") or identity_pack.get("source_photo_path")
         img = cv2.imread(str(ref_img_path))
         if img is None:
             raise ValueError(f"Reference image missing or unreadable: {ref_img_path}")
-            
+
         # 2. Merge Audio for this segment
         temp_audio = job_path / f"{segment.segment_id}_merged.wav"
         self._merge_audio(segment, temp_audio)
-        
-        # 3. Process Frames & Mel Spectrogram
+
+        # 3. Audio Timing Authority: Measure actual synthesized audio duration
+        try:
+            actual_audio_dur = probe_duration(temp_audio)
+        except Exception:
+            actual_audio_dur = max(0.01, segment.duration_s)
+
         fps = plan.video.fps
+        num_frames = max(1, int(round(actual_audio_dur * fps)))
+
+        # 4. Compute Mel Spectrogram
         sr = 16000  # Wav2Lip standard sample rate
         mel_step_size = 16
 
-        # Load Audio via librosa or fallback wave
         try:
             y, _ = librosa.load(str(temp_audio), sr=sr, mono=True)
         except Exception:
@@ -111,24 +128,16 @@ class RealWav2LipProvider:
                 y = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
 
         if len(y) == 0:
-            y = np.zeros(int(segment.duration_s * sr), dtype=np.float32)
-
-        # Compute Mel Spectrogram according to Wav2Lip spec
-        n_fft = 800
-        hop_length = 200
-        win_length = 800
-        n_mels = 80
+            y = np.zeros(int(actual_audio_dur * sr), dtype=np.float32)
 
         mel = librosa.feature.melspectrogram(
-            y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, win_length=win_length, n_mels=n_mels
+            y=y, sr=sr, n_fft=800, hop_length=200, win_length=800, n_mels=80
         )
         mel_db = librosa.power_to_db(mel, ref=np.max)
         mel_db = (mel_db + 4.0) / 4.0
 
-        # Construct 16-frame mel window chunks
         mel_chunks = []
         mel_idx_multiplier = 80.0 / fps
-        num_frames = max(1, int(round(segment.duration_s * fps)))
         i = 0
 
         while True:
@@ -153,7 +162,7 @@ class RealWav2LipProvider:
 
         num_frames = len(mel_chunks)
 
-        # 4. Prepare Bounding Box & 6-channel Input Images
+        # 5. Prepare Bounding Box & 6-channel Input Images (B, 6, 96, 96)
         bbox = identity_pack.get("bbox")
         if bbox and len(bbox) == 4:
             x1, y1, x2, y2 = [int(v) for v in bbox]
@@ -172,37 +181,34 @@ class RealWav2LipProvider:
         face_masked = face_rgb.copy()
         face_masked[48:, :] = 0
 
-        # Concatenate along channel axis -> 6 channels (masked face + reference face)
+        # Concatenate along channel axis -> 6 channels (B, 96, 96, 6)
         input_6ch = np.concatenate((face_masked, face_rgb), axis=2).astype(np.float32) / 255.0
 
-        # Batch construction
         batch_size = 8
         generated_faces = []
 
-        for b_start in range(0, num_frames, batch_size):
-            b_end = min(b_start + batch_size, num_frames)
-            current_b_len = b_end - b_start
+        with self._lock:
+            for b_start in range(0, num_frames, batch_size):
+                b_end = min(b_start + batch_size, num_frames)
+                current_b_len = b_end - b_start
 
-            # Batch images shape: (B, 96, 96, 6) -> transpose to (B, 6, 96, 96)
-            b_imgs = np.stack([input_6ch] * current_b_len, axis=0)
-            b_imgs_tensor = torch.FloatTensor(b_imgs.transpose(0, 3, 1, 2)).to(self.device)
+                b_imgs = np.stack([input_6ch] * current_b_len, axis=0)
+                b_imgs_tensor = torch.FloatTensor(b_imgs.transpose(0, 3, 1, 2)).to(self.device)
 
-            # Batch mels shape: (B, 80, 16) -> reshape to (B, 1, 80, 16)
-            b_mels = np.stack(mel_chunks[b_start:b_end], axis=0)
-            b_mels = b_mels.reshape(current_b_len, 1, 80, 16)
-            b_mels_tensor = torch.FloatTensor(b_mels).to(self.device)
+                b_mels = np.stack(mel_chunks[b_start:b_end], axis=0)
+                b_mels = b_mels.reshape(current_b_len, 1, 80, 16)
+                b_mels_tensor = torch.FloatTensor(b_mels).to(self.device)
 
-            with torch.no_grad():
-                pred = self.model(b_mels_tensor, b_imgs_tensor)
+                with torch.no_grad():
+                    pred = self.model(b_mels_tensor, b_imgs_tensor)
 
-            # Pred shape: (B, 3, 96, 96) -> convert back to RGB numpy (B, 96, 96, 3)
-            pred_np = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.0
-            pred_np = np.clip(pred_np, 0, 255).astype(np.uint8)
+                pred_np = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.0
+                pred_np = np.clip(pred_np, 0, 255).astype(np.uint8)
 
-            for face in pred_np:
-                generated_faces.append(face)
+                for face in pred_np:
+                    generated_faces.append(face)
 
-        # 5. Paste generated face back into frame & add subtle motion
+        # 6. Reconstruct frames by pasting generated Wav2Lip mouth/face region
         final_frames = []
         base_img = img.copy()
 
@@ -214,9 +220,10 @@ class RealWav2LipProvider:
             gen_face_bgr = cv2.cvtColor(gen_face_rgb, cv2.COLOR_RGB2BGR)
             gen_face_resized = cv2.resize(gen_face_bgr, (orig_w, orig_h))
 
+            # Paste generated face directly into target bounding box
             frame[y1:y2, x1:x2] = gen_face_resized
 
-            # Procedural subtle head motion
+            # Subtle natural head sway
             t = idx / fps
             dx = int(1.5 * np.sin(t * 1.5))
             dy = int(1.0 * np.cos(t * 1.2))
@@ -225,7 +232,7 @@ class RealWav2LipProvider:
             frame_shifted = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
             final_frames.append(frame_shifted)
 
-        # 6. Write Video File
+        # 7. Write H.264 Video File
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(str(output_path), fourcc, fps, (img.shape[1], img.shape[0]))
         for f in final_frames:
@@ -235,36 +242,16 @@ class RealWav2LipProvider:
         return output_path
 
     def _merge_audio(self, segment: SegmentSpec, out_path: Path):
-        import subprocess
         inputs = []
         for ev in segment.events:
             ev_audio = out_path.parent / "audio" / f"{ev.event_id}.wav"
             if ev_audio.exists():
-                inputs.append(ev_audio)
+                inputs.append(str(ev_audio))
 
         if not inputs:
             from src.utils.ffmpeg import make_silence_wav
             make_silence_wav(out_path, segment.duration_s)
             return
 
-        list_path = out_path.with_suffix(".txt")
-        with open(list_path, "w", encoding="utf-8") as f:
-            for p in inputs:
-                f.write(f"file '{p.resolve()}'\n")
-
-        cmd = [
-            settings.ffmpeg_bin,
-            "-y",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(list_path),
-            "-c",
-            "copy",
-            str(out_path),
-        ]
-        subprocess.run(cmd, check=True, capture_output=True)
-        if list_path.exists():
-            list_path.unlink()
+        from src.utils.ffmpeg import concat_wavs
+        concat_wavs(inputs, out_path)

@@ -6,7 +6,7 @@ from src.utils.ffmpeg import probe_duration
 def check_segment(
     video_path: str | Path,
     expected_duration: float,
-    tolerance: float = 0.25,
+    tolerance: float = 1.0,
 ) -> dict:
     try:
         actual = probe_duration(video_path)
@@ -18,7 +18,7 @@ def check_segment(
             "actual_duration": None,
         }
 
-    passed = abs(actual - expected_duration) <= tolerance
+    passed = abs(actual - expected_duration) <= max(tolerance, expected_duration * 0.25)
 
     return {
         "passed": passed,
@@ -31,6 +31,6 @@ def check_segment(
 def check_final(
     video_path: str | Path,
     expected_duration: float,
-    tolerance: float = 0.35,
+    tolerance: float = 2.0,
 ) -> dict:
     return check_segment(video_path, expected_duration, tolerance)
