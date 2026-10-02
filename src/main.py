@@ -59,6 +59,22 @@ def health():
     }
 
 
+@app.get("/v1/durations")
+def get_duration_options():
+    return {
+        "min_duration_seconds": settings.min_duration_seconds,
+        "max_duration_policy_seconds": settings.max_duration_policy_seconds,
+        "allowed_presets": [
+            {"label": "5 seconds", "value": "5s", "seconds": 5.0},
+            {"label": "30 seconds", "value": "30s", "seconds": 30.0},
+            {"label": "2 minutes", "value": "2m", "seconds": 120.0},
+            {"label": "5 minutes", "value": "5m", "seconds": 300.0},
+            {"label": "10 minutes", "value": "10m", "seconds": 600.0},
+        ],
+    }
+
+
+
 @app.post("/v1/assets/upload", dependencies=[Depends(verify_api_key)])
 async def upload_asset(
     kind: str = Form(...),

@@ -128,6 +128,7 @@ def compile_plan(
     job_id: str,
     script: str,
     prompt: str,
+    explicit_duration_seconds: float | None = None,
     overrides: dict | None = None,
     max_duration_policy_seconds: float | None = None,
 ) -> CompiledPlan:
@@ -137,17 +138,21 @@ def compile_plan(
     p = prompt.lower()
     warnings: list[str] = []
 
-    duration = parse_duration_seconds(prompt)
-
-    if duration is None:
-        duration = estimate_speech_seconds(script, speed=1.0)
-        duration = max(settings.min_duration_seconds, duration)
-        source = "script_estimate"
-        warnings.append(
-            "No explicit duration found in prompt. Duration estimated from script."
-        )
+    if explicit_duration_seconds is not None:
+        duration = float(explicit_duration_seconds)
+        source = "user_override"
     else:
-        source = "prompt"
+        duration = parse_duration_seconds(prompt)
+        if duration is None:
+            duration = estimate_speech_seconds(script, speed=1.0)
+            duration = max(settings.min_duration_seconds, duration)
+            source = "script_estimate"
+            warnings.append(
+                "No explicit duration found in prompt. Duration estimated from script."
+            )
+        else:
+            source = "prompt"
+
 
     voice = VoiceParams()
 

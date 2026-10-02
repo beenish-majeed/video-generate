@@ -116,13 +116,17 @@ def create_job(request: JobCreate) -> JobRecord:
         job_id=job_id,
     )
 
+    explicit_dur = request.resolve_target_duration_seconds()
+
     plan = compile_plan(
         job_id=job_id,
         script=request.script,
         prompt=request.prompt,
+        explicit_duration_seconds=explicit_dur,
         overrides=request.overrides,
         max_duration_policy_seconds=settings.max_duration_policy_seconds,
     )
+
 
     timeline = build_timeline(request.script, plan)
 

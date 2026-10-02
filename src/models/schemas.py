@@ -197,13 +197,60 @@ class SegmentSpec(BaseModel):
     video_path: Optional[str] = None
 
 
+from src.config import settings
+from pydantic import BaseModel, Field, field_validator
+
+
 class JobCreate(BaseModel):
     photo_asset_id: str
     voice_asset_id: str
     script: str
     prompt: str
     consent: ConsentRequest
+    target_duration_seconds: Optional[float] = None
+    duration_preset: Optional[str] = None
     overrides: dict = Field(default_factory=dict)
+
+    @field_validator("duration_preset")
+    @classmethod
+    def validate_preset(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip().lower()
+        presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
+        if v_clean not in presets:
+            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(presets.keys())}")
+        seconds = presets[v_clean]
+        if seconds < settings.min_duration_seconds or seconds > settings.max_duration_policy_seconds:
+            raise ValueError(
+                f"duration_preset '{v}' ({seconds}s) is outside policy limits "
+                f"({settings.min_duration_seconds}s - {settings.max_duration_policy_seconds}s)."
+            )
+        return v_clean
+
+    @field_validator("target_duration_seconds")
+    @classmethod
+    def validate_duration_seconds(cls, v: Optional[float]) -> Optional[float]:
+        if v is None:
+            return v
+        if v < settings.min_duration_seconds:
+            raise ValueError(
+                f"target_duration_seconds ({v}s) is below minimum allowed ({settings.min_duration_seconds}s)."
+            )
+        if v > settings.max_duration_policy_seconds:
+            raise ValueError(
+                f"target_duration_seconds ({v}s) exceeds maximum policy limit ({settings.max_duration_policy_seconds}s)."
+            )
+        return v
+
+    def resolve_target_duration_seconds(self) -> Optional[float]:
+        if self.target_duration_seconds is not None:
+            return self.target_duration_seconds
+        if self.duration_preset is not None:
+            presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
+            return presets.get(self.duration_preset.strip().lower())
+        return None
+
 
 
 class JobRecord(BaseModel):
