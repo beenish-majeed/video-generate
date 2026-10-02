@@ -75,6 +75,42 @@ def validate_upload(file: UploadFile, kind: str) -> None:
         if size == 0:
             raise HTTPException(status_code=400, detail="Uploaded voice file is empty.")
 
+        # Verify real audio content structure and header
+        try:
+            import wave
+            audio_verified = False
+
+            if ext in {".wav", ".wave"}:
+                try:
+                    with wave.open(file.file, "rb") as wf:
+                        if wf.getnchannels() > 0 and wf.getframerate() > 0 and wf.getnframes() > 0:
+                            audio_verified = True
+                except Exception:
+                    audio_verified = False
+                finally:
+                    file.file.seek(0)
+
+            if not audio_verified:
+                try:
+                    import soundfile as sf
+                    info = sf.info(file.file)
+                    if info.duration > 0 and info.channels > 0:
+                        audio_verified = True
+                except Exception:
+                    audio_verified = False
+                finally:
+                    file.file.seek(0)
+
+            if not audio_verified:
+                raise ValueError("Could not decode audio header or file contains corrupt audio data.")
+        except Exception as exc:
+            file.file.seek(0)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid audio file format or corrupt audio: {exc}",
+            ) from exc
+
+
 
 def save_upload(file: UploadFile, kind: str) -> dict:
     validate_upload(file, kind)
