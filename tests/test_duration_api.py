@@ -31,10 +31,11 @@ def test_valid_preset():
         face_rights_attested=True,
         voice_rights_attested=True,
     )
+    long_script = " ".join(["word"] * 250)
     req = JobCreate(
         photo_asset_id="photo_123",
         voice_asset_id="voice_123",
-        script="Test script for preset validation",
+        script=long_script,
         prompt="Random prompt",
         consent=consent,
         duration_preset="2m",
@@ -49,15 +50,17 @@ def test_valid_explicit_seconds():
         face_rights_attested=True,
         voice_rights_attested=True,
     )
+    long_script = " ".join(["word"] * 100)
     req = JobCreate(
         photo_asset_id="photo_123",
         voice_asset_id="voice_123",
-        script="Test script",
+        script=long_script,
         prompt="Random prompt",
         consent=consent,
         target_duration_seconds=45.0,
     )
     assert req.resolve_target_duration_seconds() == 45.0
+
 
 
 def test_invalid_preset_rejected():

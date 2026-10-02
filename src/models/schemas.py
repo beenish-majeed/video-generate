@@ -197,8 +197,9 @@ class SegmentSpec(BaseModel):
     video_path: Optional[str] = None
 
 
+import math
 from src.config import settings
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class JobCreate(BaseModel):
@@ -250,6 +251,26 @@ class JobCreate(BaseModel):
             presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
             return presets.get(self.duration_preset.strip().lower())
         return None
+
+    @model_validator(mode="after")
+    def validate_script_length_against_duration(self) -> "JobCreate":
+        target_seconds = self.resolve_target_duration_seconds()
+        if target_seconds is None:
+            return self
+
+        words = len(self.script.split())
+        wpm = settings.words_per_minute
+        est_duration = (words / wpm) * 60.0 if words > 0 else 0.0
+        min_required_duration = target_seconds * 0.8
+
+        if est_duration < min_required_duration:
+            min_required_words = int(math.ceil((min_required_duration / 60.0) * wpm))
+            raise ValueError(
+                f"Script has {words} words (~{est_duration:.1f}s speech), but requested duration "
+                f"({target_seconds:.1f}s) requires at least {min_required_words} words."
+            )
+        return self
+
 
 
 

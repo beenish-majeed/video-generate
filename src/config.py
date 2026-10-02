@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     max_segment_seconds: float = 5.0
     sample_rate: int = 22050
     allow_burn_subtitles: bool = True
+    words_per_minute: float = 150.0
     api_key: str | None = None
+
 
     tts_provider: str = "cosyvoice"
     cosyvoice_model_path: str = "models/cosyvoice/CosyVoice2-0.5B"
