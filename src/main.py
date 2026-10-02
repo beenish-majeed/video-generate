@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -20,13 +21,28 @@ from fastapi.security import APIKeyHeader, APIKeyQuery
 
 from src.config import settings
 from src.models.schemas import JobCreate, JobState
-from src.services.jobs import create_job, get_job, list_all_jobs, run_job
+from src.services.jobs import create_job, get_job, list_all_jobs, recover_interrupted_jobs, run_job
 from src.services.store import save_upload
 
-app = FastAPI(title="Avatar Pipeline Backend", version="0.1.0")
+from contextlib import asynccontextmanager
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    count = recover_interrupted_jobs()
+    if count > 0:
+        logger.info(f"Startup recovery: marked {count} interrupted jobs as FAILED.")
+    yield
+
+
+app = FastAPI(title="Avatar Pipeline Backend", version="0.1.0", lifespan=lifespan)
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
+
+
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 api_key_query = APIKeyQuery(name="api_key", auto_error=False)

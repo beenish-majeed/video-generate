@@ -1,4 +1,6 @@
 import json
+import logging
+import shutil
 import sqlite3
 from pathlib import Path
 from uuid import uuid4
@@ -18,6 +20,7 @@ from src.services.timeline_planner import build_timeline
 from src.services.tts_piper import PiperTTSProvider
 from src.services.voice import build_voice_pack
 
+logger = logging.getLogger(__name__)
 DB_PATH = settings.storage_dir / "jobs.db"
 
 
@@ -38,7 +41,6 @@ def _init_db() -> None:
 
 
 from collections import OrderedDict
-from typing import Dict, List, Optional
 
 
 class BoundedJobCache(OrderedDict):
@@ -60,7 +62,6 @@ _init_db()
 JOBS: BoundedJobCache = BoundedJobCache(maxsize=100)
 
 
-
 def save_job_record(job: JobRecord) -> None:
     job.updated_at = utcnow()
     JOBS[job.job_id] = job
@@ -80,7 +81,7 @@ def save_job_record(job: JobRecord) -> None:
             )
             conn.commit()
     except Exception as exc:
-        print(f"Error saving job to DB: {exc}")
+        logger.error(f"Error saving job to DB: {exc}")
 
 
 def load_job_record(job_id: str) -> Optional[JobRecord]:
@@ -96,7 +97,7 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
                 JOBS[job_id] = job
                 return job
     except Exception as exc:
-        print(f"Error loading job from DB: {exc}")
+        logger.error(f"Error loading job from DB: {exc}")
 
     return None
 
@@ -112,9 +113,65 @@ def list_all_jobs() -> List[JobRecord]:
                     records.append(rec)
                     JOBS[rec.job_id] = rec
     except Exception as exc:
-        print(f"Error listing jobs from DB: {exc}")
+        logger.error(f"Error listing jobs from DB: {exc}")
 
     return records or list(JOBS.values())
+
+
+IN_PROGRESS_STATES = {
+    JobState.PREPARING_IDENTITY,
+    JobState.SYNTHESIZING_AUDIO,
+    JobState.SCHEDULING_SEGMENTS,
+    JobState.GENERATING_SEGMENTS,
+    JobState.QA_CHECKING,
+    JobState.ASSEMBLING,
+    JobState.CONSENT_PENDING,
+    JobState.COMPILING_PROMPT,
+    JobState.PLANNING_TIMELINE,
+    JobState.RECEIVED,
+}
+
+
+def recover_interrupted_jobs() -> int:
+    interrupted_count = 0
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute(
+                "SELECT data FROM jobs WHERE state NOT IN (?, ?)",
+                (JobState.COMPLETED.value, JobState.FAILED.value),
+            )
+            rows = cursor.fetchall()
+            for row in rows:
+                if row and row[0]:
+                    job = JobRecord.model_validate_json(row[0])
+                    if job.state in IN_PROGRESS_STATES:
+                        job.state = JobState.FAILED
+                        job.error = "Job was interrupted by a server restart."
+                        save_job_record(job)
+                        interrupted_count += 1
+    except Exception as exc:
+        logger.error(f"Error during startup job recovery: {exc}")
+    return interrupted_count
+
+
+def _cleanup_intermediate_job_files(job_path: Path) -> None:
+    if not job_path.exists():
+        return
+
+    keep_files = {"final_video.mp4", "subtitles.vtt", "manifest.json", "ai_label.png"}
+
+    try:
+        for item in job_path.iterdir():
+            if item.is_dir():
+                shutil.rmtree(item, ignore_errors=True)
+            elif item.is_file() and item.name not in keep_files:
+                try:
+                    item.unlink()
+                except Exception:
+                    pass
+    except Exception as exc:
+        logger.warning(f"Error during intermediate file cleanup for {job_path}: {exc}")
+
 
 
 def create_job(request: JobCreate) -> JobRecord:
@@ -229,7 +286,7 @@ def run_job(job_id: str) -> None:
         anim_provider = RealWav2LipProvider()
 
         for segment in segments:
-            print(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
+            logger.info(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
             video_path = anim_provider.generate_segment(
                 segment=segment,
                 plan=job.plan,
@@ -272,8 +329,7 @@ def run_job(job_id: str) -> None:
         job.state = JobState.COMPLETED
 
     except Exception as exc:
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Job execution failed for {job_id}: {exc}")
         job.state = JobState.FAILED
         job.error = f"{type(exc).__name__}: {exc}"
 
@@ -287,3 +343,4 @@ def run_job(job_id: str) -> None:
             )
         except Exception:
             pass
+        _cleanup_intermediate_job_files(job_path)

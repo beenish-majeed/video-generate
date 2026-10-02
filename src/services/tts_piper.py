@@ -1,3 +1,4 @@
+import logging
 import subprocess
 import wave
 from abc import ABC, abstractmethod
@@ -6,6 +7,9 @@ from typing import Optional
 
 from src.config import settings
 from src.models.schemas import CompiledPlan, TimelineEvent, TTSSegment
+
+logger = logging.getLogger(__name__)
+
 
 
 class BaseTTSProvider(ABC):
@@ -99,9 +103,10 @@ class PiperTTSProvider(BaseTTSProvider):
                     piper_success = True
                 else:
                     err_msg = err.decode("utf-8", errors="ignore")
-                    print(f"Piper execution warning (code {process.returncode}): {err_msg}")
+                    logger.warning(f"Piper execution warning (code {process.returncode}): {err_msg}")
             except Exception as exc:
-                print(f"Piper binary execution warning ({exc}). Generating clean acoustic audio.")
+                logger.warning(f"Piper binary execution warning ({exc}). Generating clean acoustic audio.")
+
 
             if not piper_success:
                 from src.utils.ffmpeg import make_tone_wav

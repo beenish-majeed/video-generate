@@ -1,9 +1,12 @@
+import logging
 import cv2
 import numpy as np
 import threading
 from pathlib import Path
 from uuid import uuid4
 import torch
+
+logger = logging.getLogger(__name__)
 
 try:
     from insightface.app import FaceAnalysis
@@ -50,7 +53,7 @@ class RealIdentityBuilder:
                     self.face_app = FaceAnalysis(name='buffalo_l', root=str(Path.home() / ".insightface"), providers=providers)
                     self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
                 except Exception as exc:
-                    print(f"InsightFace init warning ({exc}). Using local OpenCV face detector.")
+                    logger.warning(f"InsightFace init warning ({exc}). Using local OpenCV face detector.")
                     self.face_app = None
 
             # Check if local OpenCV cascade xml file exists
@@ -75,8 +78,9 @@ class RealIdentityBuilder:
                 try:
                     faces = self.face_app.get(img)
                 except Exception as exc:
-                    print(f"FaceAnalysis error during detection: {exc}")
+                    logger.warning(f"FaceAnalysis error during detection: {exc}")
                     faces = []
+
 
         if len(faces) > 0:
             face = max(faces, key=lambda x: (x.bbox[2] - x.bbox[0]) * (x.bbox[3] - x.bbox[1]))

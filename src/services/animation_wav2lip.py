@@ -1,7 +1,10 @@
+import logging
 import sys
 import os  
 import threading
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Add project root to Python path when this file is run directly.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -56,7 +59,7 @@ class RealWav2LipProvider:
                 return
 
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            print(f"Loading Wav2Lip model on device: {self.device}...")
+            logger.info(f"Loading Wav2Lip model on device: {self.device}...")
 
             ckpt_path = Path(settings.wav2lip_ckpt_path)
             if not ckpt_path.exists():
@@ -82,7 +85,8 @@ class RealWav2LipProvider:
             self.model.eval()
             self.model.to(self.device)
             self._initialized = True
-            print("Wav2Lip model loaded successfully.")
+            logger.info("Wav2Lip model loaded successfully.")
+
 
     def generate_segment(
         self,
