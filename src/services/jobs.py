@@ -37,8 +37,28 @@ def _init_db() -> None:
         conn.commit()
 
 
+from collections import OrderedDict
+from typing import Dict, List, Optional
+
+
+class BoundedJobCache(OrderedDict):
+    """
+    LRU cache for recent JobRecords with max size to prevent memory leaks.
+    """
+    def __init__(self, maxsize: int = 100):
+        super().__init__()
+        self.maxsize = maxsize
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.move_to_end(key)
+        if len(self) > self.maxsize:
+            self.popitem(last=False)
+
+
 _init_db()
-JOBS: Dict[str, JobRecord] = {}
+JOBS: BoundedJobCache = BoundedJobCache(maxsize=100)
+
 
 
 def save_job_record(job: JobRecord) -> None:

@@ -208,8 +208,9 @@ class RealWav2LipProvider:
                 for face in pred_np:
                     generated_faces.append(face)
 
-        # 6. Reconstruct frames by pasting generated Wav2Lip mouth/face region
-        final_frames = []
+        # 6. Reconstruct frames and stream directly to H.264 VideoWriter
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(str(output_path), fourcc, fps, (img.shape[1], img.shape[0]))
         base_img = img.copy()
 
         for idx, gen_face_rgb in enumerate(generated_faces):
@@ -230,16 +231,11 @@ class RealWav2LipProvider:
 
             M = np.float32([[1, 0, dx], [0, 1, dy]])
             frame_shifted = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
-            final_frames.append(frame_shifted)
+            writer.write(frame_shifted)
 
-        # 7. Write H.264 Video File
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(str(output_path), fourcc, fps, (img.shape[1], img.shape[0]))
-        for f in final_frames:
-            writer.write(f)
         writer.release()
-
         return output_path
+
 
     def _merge_audio(self, segment: SegmentSpec, out_path: Path):
         inputs = []
