@@ -12,3 +12,6 @@ src/models/wav2lip/
 
 # External repositories
 external/wav2lip/
+
+# Temporary scratch files
+scratch/

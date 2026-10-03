@@ -4,6 +4,7 @@ import struct
 import subprocess
 import wave
 import cv2
+import numpy as np
 from pathlib import Path
 
 from src.config import settings
@@ -391,11 +392,15 @@ def finalize_video(
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(str(output_path), fourcc, fps, (w, h))
 
-    while True:
+    max_frames = max(1, int(round(duration * fps)))
+    frame_count = 0
+
+    while frame_count < max_frames:
         ret, frame = cap.read()
         if not ret or frame is None:
             break
         writer.write(frame)
+        frame_count += 1
 
     cap.release()
     writer.release()

@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.api_key and not settings.allow_insecure_dev:
+        raise RuntimeError(
+            "CRITICAL SECURITY RISK: API_KEY is not configured and ALLOW_INSECURE_DEV is False. "
+            "Application refused to start. Set API_KEY or set ALLOW_INSECURE_DEV=true for local dev."
+        )
+
     count = recover_interrupted_jobs()
     if count > 0:
         logger.info(f"Startup recovery: marked {count} interrupted jobs as FAILED.")
@@ -43,7 +49,6 @@ settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
 
 
-
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 api_key_query = APIKeyQuery(name="api_key", auto_error=False)
 
@@ -53,7 +58,12 @@ def verify_api_key(
     query_key: Optional[str] = Security(api_key_query),
 ) -> Optional[str]:
     if not settings.api_key:
-        return None
+        if settings.allow_insecure_dev:
+            return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed: API key is not configured on the server.",
+        )
 
     token = header_key or query_key
     if token != settings.api_key:
@@ -62,6 +72,7 @@ def verify_api_key(
             detail="Invalid or missing API key.",
         )
     return token
+
 
 
 @app.get("/health")

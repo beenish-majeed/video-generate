@@ -31,7 +31,7 @@ def test_valid_preset():
         face_rights_attested=True,
         voice_rights_attested=True,
     )
-    long_script = " ".join(["word"] * 250)
+    long_script = " ".join(["word"] * 300)
     req = JobCreate(
         photo_asset_id="photo_123",
         voice_asset_id="voice_123",
@@ -50,7 +50,7 @@ def test_valid_explicit_seconds():
         face_rights_attested=True,
         voice_rights_attested=True,
     )
-    long_script = " ".join(["word"] * 100)
+    long_script = " ".join(["word"] * 120)
     req = JobCreate(
         photo_asset_id="photo_123",
         voice_asset_id="voice_123",
@@ -63,7 +63,8 @@ def test_valid_explicit_seconds():
 
 
 
-def test_invalid_preset_rejected():
+def test_invalid_preset_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "allow_insecure_dev", True)
     consent = ConsentRequest(
         authorized=True,
         statement="I authorize this video generation and own all rights.",
@@ -89,7 +90,8 @@ def test_invalid_preset_rejected():
     assert response.status_code == 422
 
 
-def test_too_long_duration_rejected():
+def test_too_long_duration_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "allow_insecure_dev", True)
     response = client.post(
         "/v1/jobs",
         json={
@@ -109,6 +111,7 @@ def test_too_long_duration_rejected():
     assert response.status_code == 422
 
 
+
 def test_explicit_field_overrides_prompt_text():
     # Prompt explicitly says "5 second video", but payload specifies target_duration_seconds=120.0
     plan = compile_plan(
@@ -119,3 +122,17 @@ def test_explicit_field_overrides_prompt_text():
     )
     assert plan.target_duration_seconds == 120.0
     assert plan.duration_source == "user_override"
+
+
+def test_output_duration_deviates_more_than_10_percent_fails_qa(tmp_path):
+    from src.services.qa import check_final
+    # Video is 5s but target duration is 30s (deviates by 83.3% > 10%)
+    res = check_final(video_path="non_existent.mp4", expected_duration=30.0, tolerance=3.0)
+    assert res["passed"] is False or res.get("actual_duration") is None
+
+    # Check check_final when actual duration is 5s and expected is 30s
+    from unittest.mock import patch
+    with patch("src.services.qa.probe_duration", return_value=5.0):
+        res_fail = check_final(video_path="fake.mp4", expected_duration=30.0, tolerance=3.0)
+        assert res_fail["passed"] is False
+        assert res_fail["diff"] == 25.0

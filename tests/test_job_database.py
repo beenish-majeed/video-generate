@@ -62,3 +62,60 @@ def test_sqlite_job_persistence(tmp_path, monkeypatch):
 
     all_jobs = list_all_jobs()
     assert any(j.job_id == "job_persist_123" for j in all_jobs)
+
+
+def test_evicted_running_job_status_update_works(tmp_path, monkeypatch):
+    test_db = tmp_path / "jobs_evict_test.db"
+    monkeypatch.setattr("src.services.jobs.DB_PATH", test_db)
+    
+    import sqlite3
+    with sqlite3.connect(test_db) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS jobs (
+                job_id TEXT PRIMARY KEY,
+                state TEXT NOT NULL,
+                data TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+    consent = ConsentRequest(
+        authorized=True,
+        statement="I authorize this video generation and own all rights.",
+        face_rights_attested=True,
+        voice_rights_attested=True,
+    )
+    request = JobCreate(
+        photo_asset_id="photo_999",
+        voice_asset_id="voice_999",
+        script="Test script for eviction test",
+        prompt="Test prompt",
+        consent=consent,
+    )
+
+    job = JobRecord(
+        job_id="job_evict_999",
+        state=JobState.PREPARING_IDENTITY,
+        request=request,
+        photo_path="storage/assets/photo_999.jpg",
+        voice_path="storage/assets/voice_999.wav",
+    )
+    save_job_record(job)
+
+    # Force eviction from in-memory cache
+    from src.services.jobs import JOBS
+    JOBS.clear()
+    assert "job_evict_999" not in JOBS
+
+    # Simulate next pipeline status update on evicted job
+    job.state = JobState.SYNTHESIZING_AUDIO
+    save_job_record(job)
+
+    # Evict again to ensure update went to SQLite
+    JOBS.clear()
+    loaded = load_job_record("job_evict_999")
+    assert loaded is not None
+    assert loaded.state == JobState.SYNTHESIZING_AUDIO
+

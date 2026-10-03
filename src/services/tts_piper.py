@@ -74,6 +74,29 @@ class PiperTTSProvider(BaseTTSProvider):
 
         duration = max(0.01, event.end_s - event.start_s)
 
+        if settings.mock_mode:
+            if event.type == "speech" and event.text:
+                from src.utils.ffmpeg import make_tone_wav
+                import zlib
+                freq = 180 + (zlib.crc32(event.event_id.encode("utf-8")) % 80)
+                make_tone_wav(
+                    path=output_path,
+                    seconds=duration,
+                    freq=freq,
+                    sample_rate=settings.sample_rate,
+                    volume=0.03,
+                )
+            else:
+                self._create_silence(str(output_path), duration)
+
+            actual_dur = self._get_duration(str(output_path))
+            return TTSSegment(
+                event_id=event.event_id,
+                audio_path=str(output_path),
+                duration_seconds=actual_dur,
+                word_timestamps=[],
+            )
+
         if event.type == "speech" and event.text:
             length_scale = 1.0 / max(0.1, plan.voice.speed)
 

@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     storage_dir: Path = Path("./storage")
-    max_duration_policy_seconds: float = 3600.0
+    max_duration_policy_seconds: float = 900.0
+
     min_duration_seconds: float = 1.0
     mock_mode: bool = False  # Changed default to False
 
@@ -19,7 +20,11 @@ class Settings(BaseSettings):
     sample_rate: int = 22050
     allow_burn_subtitles: bool = True
     words_per_minute: float = 150.0
+    failed_job_retention_hours: float = 24.0
+    allow_insecure_dev: bool = False
     api_key: str | None = None
+
+
 
 
     tts_provider: str = "cosyvoice"

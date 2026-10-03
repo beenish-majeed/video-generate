@@ -19,6 +19,8 @@ from src.services.store import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
 from src.services.tts_piper import PiperTTSProvider
 from src.services.voice import build_voice_pack
+from src.utils.ffmpeg import probe_duration
+
 
 logger = logging.getLogger(__name__)
 DB_PATH = settings.storage_dir / "jobs.db"
@@ -118,17 +120,18 @@ def list_all_jobs() -> List[JobRecord]:
     return records or list(JOBS.values())
 
 
-IN_PROGRESS_STATES = {
+NON_TERMINAL_STATES = {
+    JobState.RECEIVED,
+    JobState.CONSENT_PENDING,
+    JobState.CONSENT_VERIFIED,
+    JobState.COMPILING_PROMPT,
+    JobState.PLANNING_TIMELINE,
     JobState.PREPARING_IDENTITY,
     JobState.SYNTHESIZING_AUDIO,
     JobState.SCHEDULING_SEGMENTS,
     JobState.GENERATING_SEGMENTS,
     JobState.QA_CHECKING,
     JobState.ASSEMBLING,
-    JobState.CONSENT_PENDING,
-    JobState.COMPILING_PROMPT,
-    JobState.PLANNING_TIMELINE,
-    JobState.RECEIVED,
 }
 
 
@@ -144,7 +147,7 @@ def recover_interrupted_jobs() -> int:
             for row in rows:
                 if row and row[0]:
                     job = JobRecord.model_validate_json(row[0])
-                    if job.state in IN_PROGRESS_STATES:
+                    if job.state in NON_TERMINAL_STATES:
                         job.state = JobState.FAILED
                         job.error = "Job was interrupted by a server restart."
                         save_job_record(job)
@@ -154,9 +157,25 @@ def recover_interrupted_jobs() -> int:
     return interrupted_count
 
 
-def _cleanup_intermediate_job_files(job_path: Path) -> None:
+
+from datetime import datetime, timezone
+
+
+def _cleanup_intermediate_job_files(
+    job_path: Path,
+    is_failed: bool = False,
+    updated_at: Optional[datetime] = None,
+) -> None:
     if not job_path.exists():
         return
+
+    if is_failed:
+        if updated_at is not None:
+            age_seconds = (utcnow() - updated_at).total_seconds()
+            retention_seconds = settings.failed_job_retention_hours * 3600.0
+            if age_seconds < retention_seconds:
+                # Keep intermediate files for debugging failed job within retention period
+                return
 
     keep_files = {"final_video.mp4", "subtitles.vtt", "manifest.json", "ai_label.png"}
 
@@ -171,6 +190,7 @@ def _cleanup_intermediate_job_files(job_path: Path) -> None:
                     pass
     except Exception as exc:
         logger.warning(f"Error during intermediate file cleanup for {job_path}: {exc}")
+
 
 
 
@@ -270,6 +290,28 @@ def run_job(job_id: str) -> None:
                 voice_sample_path=job.voice_path,
             )
 
+        # Validate synthesized speech audio duration right after TTS completes
+        from src.utils.ffmpeg import concat_wavs
+        audio_paths = []
+        for event in job.timeline.events:
+            tts_seg = tts_map.get(event.event_id)
+            if tts_seg and Path(tts_seg.audio_path).exists():
+                audio_paths.append(tts_seg.audio_path)
+
+        temp_audio = job_path / "tts_raw_speech.wav"
+        concat_wavs(audio_paths, temp_audio)
+
+        raw_tts_dur = probe_duration(temp_audio) if temp_audio.exists() else 0.0
+        target_dur = float(job.plan.target_duration_seconds)
+        min_allowed = target_dur * 0.90
+        max_allowed = target_dur * 1.10
+
+        if raw_tts_dur < min_allowed or raw_tts_dur > max_allowed:
+            raise RuntimeError(
+                f"TTS speech audio duration ({raw_tts_dur:.2f}s) is outside 10% tolerance "
+                f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+            )
+
         # 4. Segment Scheduling
         job.state = JobState.SCHEDULING_SEGMENTS
         save_job_record(job)
@@ -296,12 +338,16 @@ def run_job(job_id: str) -> None:
             )
             segment.video_path = str(video_path)
 
+            segment_audio = job_path / f"{segment.segment_id}_merged.wav"
+            expected_seg_dur = probe_duration(segment_audio) if segment_audio.exists() else segment.duration_s
+
             qa_result = check_segment(
                 video_path=segment.video_path,
-                expected_duration=segment.duration_s,
+                expected_duration=expected_seg_dur,
             )
             if not qa_result.get("passed"):
                 raise RuntimeError(f"Segment QA failed for {segment.segment_id}: {qa_result}")
+
 
         job.segments = segments
 
@@ -317,10 +363,15 @@ def run_job(job_id: str) -> None:
             tts_segments_by_event_id=tts_map,
         )
 
+        expected_final_dur = float(job.plan.target_duration_seconds)
+        tolerance = expected_final_dur * 0.10
+
         final_qa = check_final(
             video_path=output_path,
-            expected_duration=job.plan.target_duration_seconds,
+            expected_duration=expected_final_dur,
+            tolerance=tolerance,
         )
+
         if not final_qa.get("passed"):
             raise RuntimeError(f"Final QA failed: {final_qa}")
 
@@ -343,4 +394,8 @@ def run_job(job_id: str) -> None:
             )
         except Exception:
             pass
-        _cleanup_intermediate_job_files(job_path)
+        _cleanup_intermediate_job_files(
+            job_path,
+            is_failed=(job.state == JobState.FAILED),
+            updated_at=job.updated_at,
+        )

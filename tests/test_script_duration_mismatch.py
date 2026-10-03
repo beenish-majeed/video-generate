@@ -8,9 +8,11 @@ from src.services.qa import check_final
 client = TestClient(app)
 
 
-def test_script_too_short_for_requested_duration_rejected():
+def test_script_too_short_for_requested_duration_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "allow_insecure_dev", True)
     # 20 words script ~ 8.0s speech duration @ 150 WPM
     short_script = " ".join(["word"] * 20)
+
     
     response = client.post(
         "/v1/jobs",
@@ -31,12 +33,12 @@ def test_script_too_short_for_requested_duration_rejected():
     assert response.status_code == 422
     detail = response.json()["detail"]
     assert "Script has 20 words" in str(detail)
-    assert "requires at least 120 words" in str(detail)
+    assert "requires at least 135 words" in str(detail)
 
 
 def test_script_just_long_enough_accepted():
-    # 120 words script = exactly 48.0s speech duration (80% of 60s) @ 150 WPM
-    enough_script = " ".join(["word"] * 120)
+    # 135 words script = exactly 54.0s speech duration (90% of 60s) @ 150 WPM
+    enough_script = " ".join(["word"] * 135)
     
     consent = ConsentRequest(
         authorized=True,

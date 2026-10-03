@@ -87,7 +87,8 @@ def test_5sec_and_60sec_duration_planning():
     assert plan_5m.target_duration_seconds == 300.0
 
 
-def test_real_pipeline_execution(tmp_path):
+def test_real_pipeline_execution(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "tts_provider", "piper")
     # Prepare synthetic input assets
     photo_file = ASSETS_DIR / "photo_test_eval.jpg"
     img = np.full((360, 360, 3), 200, dtype=np.uint8)
@@ -117,7 +118,7 @@ def test_real_pipeline_execution(tmp_path):
     req = JobCreate(
         photo_asset_id="photo_test_eval",
         voice_asset_id="voice_test_eval",
-        script="Hello world, testing video generation.",
+        script="Hello world, welcome to our interactive AI avatar video generation pipeline demonstration today.",
         prompt="5 second video",
         consent=consent,
     )

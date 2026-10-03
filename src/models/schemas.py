@@ -261,7 +261,7 @@ class JobCreate(BaseModel):
         words = len(self.script.split())
         wpm = settings.words_per_minute
         est_duration = (words / wpm) * 60.0 if words > 0 else 0.0
-        min_required_duration = target_seconds * 0.8
+        min_required_duration = target_seconds * 0.90
 
         if est_duration < min_required_duration:
             min_required_words = int(math.ceil((min_required_duration / 60.0) * wpm))

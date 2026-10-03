@@ -6,6 +6,7 @@ from src.utils.ffmpeg import (
     concat_videos,
     concat_wavs,
     finalize_video,
+    normalize_audio_duration,
     probe_duration,
 )
 from src.utils.images import create_ai_label_png
@@ -28,11 +29,25 @@ def assemble(
     final_audio = job_path / "final_audio.wav"
     concat_wavs(audio_paths, final_audio)
 
-    # Measure actual synthesized audio duration (Audio timing authority)
+    # Measure actual synthesized audio duration
     try:
         audio_dur = probe_duration(final_audio)
     except Exception:
         audio_dur = plan.target_duration_seconds
+
+    # Validate that speech audio duration matches requested target duration within 10%
+    target_dur = float(plan.target_duration_seconds)
+    min_allowed = target_dur * 0.90
+    max_allowed = target_dur * 1.10
+
+    if audio_dur < min_allowed or audio_dur > max_allowed:
+        raise RuntimeError(
+            f"TTS speech audio duration ({audio_dur:.2f}s) is outside 10% tolerance "
+            f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+        )
+
+    # Pad or clip final_audio.wav so it matches the requested target_duration_seconds precisely
+    normalize_audio_duration(final_audio, final_audio, target_seconds=target_dur)
 
     video_paths = [s.video_path for s in segments if s.video_path and Path(s.video_path).exists()]
 
@@ -57,15 +72,12 @@ def assemble(
 
     output_path = job_path / "final_video.mp4"
 
-    # Use actual audio duration so video frames match audio perfectly without clipping or silent padding
-    final_duration = max(0.1, audio_dur)
-
     finalize_video(
         video_path=joined_video,
         audio_path=final_audio,
         watermark_path=label_path,
         output_path=output_path,
-        duration=final_duration,
+        duration=target_dur,
         subtitle_path=subtitle_path,
         burn_subtitles=plan.subtitles.burn_in,
     )
