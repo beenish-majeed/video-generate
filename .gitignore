@@ -15,3 +15,7 @@ external/wav2lip/
 
 # Temporary scratch files
 scratch/
+
+node_modules/
+dist/
+*.local

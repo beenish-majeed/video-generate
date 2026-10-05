@@ -1,0 +1,154 @@
+/* Design Tokens & Global Styles for Memory Studio Sketchbook UI */
+
+:root {
+  /* Color Palette */
+  --bg-canvas: #1c1e20;            /* Deep dark charcoal background canvas */
+  --paper-cream: #faf6ee;          /* Warm cream paper sheet */
+  --paper-cream-alt: #f3ecd9;      /* Slightly darker cream for cards & inset boxes */
+  --paper-cream-dark: #e8ded0;     /* Paper shadow / folded page edge tone */
+  --paper-border: #dcd0be;         /* Soft graphite pencil outline */
+  
+  --grid-line: rgba(185, 170, 145, 0.22); /* Graph paper grid pattern */
+  
+  --ink-primary: #2c2825;          /* Hand-inked charcoal text */
+  --ink-muted: #6e655c;            /* Pencil note muted text */
+  --ink-terracotta: #c85a32;       /* Warm terracotta / coral ink accent */
+  --ink-terracotta-hover: #ad4923;
+  --ink-sage: #3e6d4c;             /* Muted sage green accent */
+  --ink-blue: #365b79;             /* Muted dusty blue accent */
+  --ink-amber: #c27d19;            /* Soft warm amber */
+
+  /* Typography */
+  --font-hand: 'Caveat', 'Patrick Hand', cursive;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  /* Shadows */
+  --shadow-notebook: 0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-paper-float: 0 8px 20px rgba(44, 40, 37, 0.12);
+  --shadow-card: 2px 4px 12px rgba(44, 40, 37, 0.08);
+  --shadow-tape: 1px 2px 4px rgba(0, 0, 0, 0.15);
+
+  /* Spacing & Radii */
+  --radius-paper: 12px;
+  --radius-card: 8px;
+  --radius-pill: 9999px;
+}
+
+/* Reset & Base Setup */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-canvas);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Graph Paper Pattern Background */
+.graph-paper-bg {
+  background-color: var(--paper-cream);
+  background-image: 
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Handwritten Note Style */
+.handwritten {
+  font-family: var(--font-hand);
+  font-weight: 500;
+  color: var(--ink-terracotta);
+  line-height: 1.2;
+}
+
+/* Editorial Serif Title Style */
+.editorial-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+}
+
+/* Notebook Container & Page Fold Effects */
+.notebook-container {
+  width: 100%;
+  max-width: 900px;
+  min-height: 680px;
+  margin: 0 auto;
+  border-radius: var(--radius-paper);
+  box-shadow: var(--shadow-notebook);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--paper-border);
+}
+
+/* Interactive Handwritten Buttons */
+.btn-terracotta {
+  background-color: var(--ink-terracotta);
+  color: #fff;
+  border: none;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(200, 90, 50, 0.3);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-terracotta:hover {
+  background-color: var(--ink-terracotta-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(200, 90, 50, 0.4);
+}
+
+.btn-secondary {
+  background-color: var(--paper-cream-alt);
+  color: var(--ink-primary);
+  border: 1.5px dashed var(--ink-muted);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-secondary:hover {
+  background-color: var(--paper-cream-dark);
+  border-color: var(--ink-primary);
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar for Notebook Inner Sections */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--paper-cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--paper-border);
+  border-radius: 3px;
+}

@@ -13,6 +13,7 @@ def test_get_durations_endpoint():
     response = client.get("/v1/durations")
     assert response.status_code == 200
     data = response.json()
+    assert "words_per_minute" in data
     assert "min_duration_seconds" in data
     assert "max_duration_policy_seconds" in data
     assert "allowed_presets" in data

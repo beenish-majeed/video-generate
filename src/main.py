@@ -89,6 +89,7 @@ def health():
 @app.get("/v1/durations")
 def get_duration_options():
     return {
+        "words_per_minute": settings.words_per_minute,
         "min_duration_seconds": settings.min_duration_seconds,
         "max_duration_policy_seconds": settings.max_duration_policy_seconds,
         "allowed_presets": [
