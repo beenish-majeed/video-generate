@@ -1,7 +1,7 @@
 import React from 'react';
-import { DoodlePerson, DoodleStar, DoodleSparkle, DoodlePlant } from '../Doodles';
-import Sticker from '../Sticker';
+import HeroScene from '../HeroScene';
 import Tape from '../Tape';
+import Sticker from '../Sticker';
 import { ArrowRight } from 'lucide-react';
 
 interface HeroStepProps {
@@ -10,72 +10,54 @@ interface HeroStepProps {
 
 export const HeroStep: React.FC<HeroStepProps> = ({ onNext }) => {
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      style={{
+        padding: '32px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        position: 'relative',
+        maxWidth: '780px',
+        margin: '0 auto',
+      }}
+    >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
-      <Sticker label="MEMORY STUDIO #01" rotation="3deg" variant="terracotta" className="absolute top-4 right-6" />
+      <Sticker label="MEMORY STUDIO" rotation="3deg" variant="terracotta" />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-        <p className="handwritten" style={{ fontSize: '24px' }}>
-          Hello friend, welcome to your creative corner...
+      {/* Warm Short Header Line */}
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+        <p className="handwritten" style={{ fontSize: '24px', color: 'var(--ink-terracotta)' }}>
+          Welcome, traveler of memories...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: '36px', lineHeight: 1.15 }}>
-          Breathe gentle life into a treasured photo and voice.
+        <h1 className="editorial-title" style={{ fontSize: '34px', lineHeight: 1.2 }}>
+          Turn your photo and voice into a quiet, living video memory.
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '16px', maxWidth: '560px', lineHeight: 1.6 }}>
-          Every photograph holds a quiet story waiting to be told. Together, we’ll combine your photo, a voice,
-          and a narrative into a handcrafted cinematic memory.
+        <p style={{ color: 'var(--ink-muted)', fontSize: '16px', lineHeight: 1.5 }}>
+          Combine a single portrait with a short voice sample to craft a personal animated film.
         </p>
-      </div>
+      </header>
 
-      {/* Dreamy Hero Card */}
-      <div
-        style={{
-          position: 'relative',
-          padding: '24px',
-          borderRadius: '12px',
-          backgroundColor: 'var(--paper-cream-alt)',
-          border: '1px solid var(--paper-border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          minHeight: '180px',
-          boxShadow: 'var(--shadow-card)',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2, maxWidth: '360px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DoodleSparkle size={20} />
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink-terracotta)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Handcrafted Video Pipeline
-            </span>
-          </div>
-          <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', color: 'var(--ink-primary)' }}>
-            Turn photos into living motion pictures
-          </h3>
-          <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            No complex settings—just your story, crafted frame by frame.
-          </p>
-        </div>
+      {/* Calm Illustrated Scene (Lone figure on soft green hill under warm sky) */}
+      <main style={{ margin: '8px 0' }}>
+        <HeroScene />
+      </main>
 
-        {/* Nostalgic Figure Doodle */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', zIndex: 2 }}>
-          <DoodlePlant size={56} />
-          <DoodlePerson width={100} height={120} color="var(--ink-primary)" />
-          <DoodleStar size={28} className="animate-pulse" />
-        </div>
-      </div>
-
-      {/* Footer Call to Action */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+      {/* Single Clear "Begin" Button with Keyboard Focus Support */}
+      <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
         <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-muted)' }}>
-          Takes less than two minutes to sketch your idea →
+          Ready to sketch your first scene? →
         </p>
-        <button onClick={onNext} className="btn-terracotta">
-          <span>Open Sketchbook</span>
-          <ArrowRight size={18} />
+        <button
+          type="button"
+          onClick={onNext}
+          className="btn-terracotta"
+          aria-label="Begin creating your video memory"
+          style={{ fontSize: '17px', padding: '14px 32px' }}
+        >
+          <span>Begin</span>
+          <ArrowRight size={18} aria-hidden="true" />
         </button>
-      </div>
+      </footer>
     </div>
   );
 };
