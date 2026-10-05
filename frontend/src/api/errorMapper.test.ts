@@ -55,8 +55,16 @@ describe('mapAPIError', () => {
     const error = new Error('HTTP Error 400: Bad Request - invalid file format');
     const result = mapAPIError(error);
     expect(result.kind).toBe('validation');
-    expect(result.title).toBe('Photo Format Not Recognized');
-    expect(result.message).toContain('PNG, JPG, or WEBP');
+    expect(result.title).toBe('Format Not Recognized');
+  });
+
+  it('maps 422 Unprocessable Entity duration mismatch error', () => {
+    // @ts-ignore
+    globalThis.navigator = { onLine: true };
+    const error = new Error('HTTP Error 422: Script duration mismatch');
+    const result = mapAPIError(error);
+    expect(result.kind).toBe('validation');
+    expect(result.title).toBe('Script Pacing Mismatch');
   });
 
   it('maps 500 Internal Server Error', () => {

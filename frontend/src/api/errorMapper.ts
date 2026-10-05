@@ -1,5 +1,5 @@
 /**
- * Maps raw API/Network errors into kind, empathetic human messages.
+ * Maps raw API/Network/HTTP errors into kind, empathetic human messages.
  */
 
 export interface MappedAPIError {
@@ -39,7 +39,7 @@ export function mapAPIError(error: unknown): MappedAPIError {
   if (lower.includes('413') || lower.includes('too large') || lower.includes('payload too large')) {
     return {
       title: 'File is a Bit Too Large',
-      message: 'This photo exceeds our 20MB limit. Please select a slightly smaller image file.',
+      message: 'This file exceeds our 20MB limit. Please select a slightly smaller file.',
       kind: 'too_large',
     };
   }
@@ -53,11 +53,27 @@ export function mapAPIError(error: unknown): MappedAPIError {
     };
   }
 
+  // 422 Unprocessable Entity (e.g. Script length mismatch or validation failure)
+  if (
+    lower.includes('422') ||
+    lower.includes('unprocessable') ||
+    lower.includes('mismatch') ||
+    lower.includes('duration')
+  ) {
+    return {
+      title: 'Script Pacing Mismatch',
+      message: errStr.includes('HTTP Error 422')
+        ? 'The narrative script duration does not match the chosen video duration. Please adjust your script length.'
+        : errStr,
+      kind: 'validation',
+    };
+  }
+
   // 400 Bad Request / Validation
   if (lower.includes('400') || lower.includes('bad request') || lower.includes('invalid file') || lower.includes('mime')) {
     return {
-      title: 'Photo Format Not Recognized',
-      message: 'We could not read this image file. Please upload a standard PNG, JPG, or WEBP portrait.',
+      title: 'Format Not Recognized',
+      message: 'We could not process this input. Please verify your selected assets and text.',
       kind: 'validation',
     };
   }
@@ -71,14 +87,14 @@ export function mapAPIError(error: unknown): MappedAPIError {
   ) {
     return {
       title: 'Studio Server Pause',
-      message: 'The studio easel ran into a brief hiccup while saving your photo. Please try uploading once more.',
+      message: 'The studio easel ran into a brief hiccup while processing. Please try submitting once more.',
       kind: 'server',
     };
   }
 
   return {
-    title: 'Upload Note',
-    message: errStr || 'An unexpected note occurred while uploading your photo.',
+    title: 'Studio Note',
+    message: errStr || 'An unexpected note occurred.',
     kind: 'unknown',
   };
 }
