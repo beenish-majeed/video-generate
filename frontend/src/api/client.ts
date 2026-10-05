@@ -44,7 +44,7 @@ class MemoryStudioAPIClient {
           errorMessage = errorData.message;
         }
       } catch {
-        // Fallback to generic message if json parse fails
+        // Fallback to generic HTTP status message
       }
       throw new Error(errorMessage);
     }
@@ -62,16 +62,61 @@ class MemoryStudioAPIClient {
 
   /**
    * POST /v1/assets/upload
-   * Uploads photo or voice asset via multipart/form-data.
+   * Uploads photo or voice asset via multipart/form-data with optional progress reporting.
    */
-  async uploadAsset(kind: AssetKind, file: File): Promise<AssetUploadResponse> {
-    const formData = new FormData();
-    formData.append('kind', kind);
-    formData.append('file', file);
+  async uploadAsset(
+    kind: AssetKind,
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<AssetUploadResponse> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const url = `${this.baseUrl}/v1/assets/upload`;
 
-    return this.request<AssetUploadResponse>('/v1/assets/upload', {
-      method: 'POST',
-      body: formData,
+      xhr.open('POST', url);
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const res = JSON.parse(xhr.responseText) as AssetUploadResponse;
+            resolve(res);
+          } catch {
+            reject(new Error('Failed to parse upload response from server'));
+          }
+        } else {
+          let msg = `HTTP Error ${xhr.status}: ${xhr.statusText}`;
+          try {
+            const json = JSON.parse(xhr.responseText);
+            if (typeof json.detail === 'string') {
+              msg = json.detail;
+            } else if (Array.isArray(json.detail)) {
+              msg = json.detail.map((d: any) => d.msg).join(', ');
+            }
+          } catch {
+            // Keep generic HTTP status message
+          }
+          reject(new Error(msg));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error: Failed to fetch asset upload endpoint'));
+      };
+
+      const formData = new FormData();
+      formData.append('kind', kind);
+      formData.append('file', file);
+
+      xhr.send(formData);
     });
   }
 
