@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface StickerProps {
   label: string;
@@ -13,6 +14,8 @@ export const Sticker: React.FC<StickerProps> = ({
   variant = 'terracotta',
   className = '',
 }) => {
+  const shouldReduceMotion = useReducedMotion();
+
   const variantStyles = {
     terracotta: {
       bg: '#faece6',
@@ -39,7 +42,9 @@ export const Sticker: React.FC<StickerProps> = ({
   const style = variantStyles[variant];
 
   return (
-    <div
+    <motion.div
+      whileHover={shouldReduceMotion ? {} : { scale: 1.06, rotate: [0, -3, 3, -1, 0] }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className={`sticker-badge ${className}`}
       style={{
         display: 'inline-flex',
@@ -57,11 +62,12 @@ export const Sticker: React.FC<StickerProps> = ({
         transform: `rotate(${rotation})`,
         boxShadow: 'var(--shadow-card)',
         userSelect: 'none',
+        cursor: 'pointer',
       }}
     >
       <span>✦</span>
       <span>{label}</span>
-    </div>
+    </motion.div>
   );
 };
 

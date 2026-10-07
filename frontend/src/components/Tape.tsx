@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface TapeProps {
   rotation?: string;
@@ -17,8 +18,12 @@ export const Tape: React.FC<TapeProps> = ({
   color = 'rgba(235, 222, 195, 0.72)',
   style = {},
 }) => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <div
+    <motion.div
+      whileHover={shouldReduceMotion ? {} : { y: -1, scale: 1.02 }}
+      transition={{ duration: 0.2 }}
       className={`tape-strip ${className}`}
       style={{
         width,
@@ -33,6 +38,7 @@ export const Tape: React.FC<TapeProps> = ({
         borderBottom: '1px solid rgba(200, 180, 150, 0.3)',
         borderRadius: '2px',
         zIndex: 10,
+        pointerEvents: 'none',
         ...style,
       }}
     />

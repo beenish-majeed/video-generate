@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import type { JourneyStepId } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
@@ -18,6 +18,7 @@ import FailedStep from './components/steps/FailedStep';
 
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
+  const shouldReduceMotion = useReducedMotion();
 
   // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
@@ -84,10 +85,31 @@ export const App: React.FC = () => {
     }
   };
 
+  // Snappy paper-slide page transitions respecting prefers-reduced-motion
   const pageVariants = {
-    initial: { opacity: 0, x: 20, rotate: 0.5 },
-    animate: { opacity: 1, x: 0, rotate: 0, transition: { duration: 0.25, ease: 'easeOut' } },
-    exit: { opacity: 0, x: -20, rotate: -0.5, transition: { duration: 0.2, ease: 'easeIn' } },
+    initial: {
+      opacity: 0,
+      x: shouldReduceMotion ? 0 : 24,
+      rotate: shouldReduceMotion ? 0 : 0.6,
+    },
+    animate: {
+      opacity: 1,
+      x: 0,
+      rotate: 0,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.25,
+        ease: 'easeOut',
+      },
+    },
+    exit: {
+      opacity: 0,
+      x: shouldReduceMotion ? 0 : -24,
+      rotate: shouldReduceMotion ? 0 : -0.6,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.18,
+        ease: 'easeIn',
+      },
+    },
   };
 
   return (
@@ -190,7 +212,6 @@ export const App: React.FC = () => {
               job={failedJob}
               errorMessage={errorMessage}
               onRetry={(recommendedStep) => {
-                // Clears job instance but RETAINS photo, voice, script, and prompt state!
                 setActiveJobId(null);
                 setFailedJob(null);
                 setErrorMessage(null);
