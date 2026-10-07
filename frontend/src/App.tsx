@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import type { JourneyStepId } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
 import apiClient from './api/client';
+import { mapAPIError } from './api/errorMapper';
 
 import HeroStep from './components/steps/HeroStep';
 import PhotoStep from './components/steps/PhotoStep';
@@ -18,12 +19,12 @@ import FailedStep from './components/steps/FailedStep';
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
 
-  // Journey State Machine Data
+  // Journey State Machine Data (Retained across error retries)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
   const [durationPreset, setDurationPreset] = useState<DurationPreset>('30s');
   const [targetSeconds, setTargetSeconds] = useState<number>(30);
-  const [script, setScript] = useState<string>('A peaceful sunny morning in a lush green valley with whispering pines.');
+  const [script, setScript] = useState<string>('A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.');
   const [prompt, setPrompt] = useState<string>('Warm cinematic light, soft watercolor texture');
 
   // Active Job State
@@ -33,7 +34,22 @@ export const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // Restore active job id from localStorage if returning to open session
+  useEffect(() => {
+    try {
+      const savedJobId = localStorage.getItem('memory_studio_active_job_id');
+      if (savedJobId && !activeJobId) {
+        setActiveJobId(savedJobId);
+      }
+    } catch {
+      // Ignore if localStorage unavailable
+    }
+  }, []);
+
   const handleCreateJob = async (consent: ConsentPayload) => {
+    // Prevent double submission
+    if (submitting) return;
+
     setSubmitting(true);
     setErrorMessage(null);
 
@@ -48,10 +64,20 @@ export const App: React.FC = () => {
         consent,
       });
 
+      // Save created job_id in localStorage as required by Part 8
+      try {
+        localStorage.setItem('memory_studio_active_job_id', res.job_id);
+      } catch {
+        // Ignore if localStorage blocked
+      }
+
       setActiveJobId(res.job_id);
       setCurrentStep('waiting');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to submit creation request.');
+    } catch (err: unknown) {
+      // Map API, 401, 422, 5xx, or network error into kind human words
+      const mapped = mapAPIError(err);
+      setErrorMessage(mapped.message);
+      setFailedJob(null);
       setCurrentStep('failed');
     } finally {
       setSubmitting(false);
@@ -151,6 +177,9 @@ export const App: React.FC = () => {
               onRestart={() => {
                 setActiveJobId(null);
                 setCompletedJob(null);
+                try {
+                  localStorage.removeItem('memory_studio_active_job_id');
+                } catch {}
                 setCurrentStep('hero');
               }}
             />
@@ -161,6 +190,7 @@ export const App: React.FC = () => {
               job={failedJob}
               errorMessage={errorMessage}
               onRetry={() => {
+                // Returns to consent step while keeping all user input intact
                 setCurrentStep('consent');
               }}
             />

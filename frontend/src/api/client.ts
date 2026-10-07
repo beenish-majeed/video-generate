@@ -20,11 +20,26 @@ class MemoryStudioAPIClient {
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
-    const headers = new Headers(options.headers || {});
+    
+    // Safely parse headers across browser & node test runners
+    const headers: Record<string, string> = {};
+    if (options.headers) {
+      if (typeof Headers !== 'undefined' && options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          headers[key] = value;
+        });
+      } else {
+        Object.assign(headers, options.headers);
+      }
+    }
 
-    // Note: No X-API-Key set here! The Vite Proxy / Production reverse proxy injects X-API-Key.
-    if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
-      headers.set('Content-Type', 'application/json');
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    if (!headers['Content-Type'] && !isFormData) {
+      headers['Content-Type'] = 'application/json';
     }
 
     const response = await fetch(url, {
