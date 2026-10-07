@@ -1,29 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import type { JobRecord, JobState } from '../../types/api';
+import type { JobRecord } from '../../types/api';
 import apiClient from '../../api/client';
-import { DoodlePerson, DoodleStar, DoodleSparkle } from '../Doodles';
+import { mapJobStateToStory } from '../../utils/jobStateMapper';
+import { getPollingInterval, isTerminalState } from '../../utils/pollingStrategy';
+import {
+  DoodlePerson,
+  DoodleStar,
+  DoodleSparkle,
+  DoodlePlant,
+  DoodleCamera,
+  DoodleMic,
+  DoodleSpiral,
+} from '../Doodles';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
-import { Loader2, Film } from 'lucide-react';
+import { Loader2, Film, Clock } from 'lucide-react';
 
 interface WaitingStepProps {
   jobId: string;
   onCompleted: (job: JobRecord) => void;
   onFailed: (job: JobRecord) => void;
 }
-
-const PIPELINE_STATES: { state: JobState; label: string; note: string }[] = [
-  { state: 'RECEIVED', label: 'Received Request', note: 'Opening the sketchbook...' },
-  { state: 'COMPILING_PROMPT', label: 'Preparing Narrative', note: 'Polishing your story text...' },
-  { state: 'PLANNING_TIMELINE', label: 'Planning Timeline', note: 'Timing scene transitions...' },
-  { state: 'PREPARING_IDENTITY', label: 'Analyzing Portrait', note: 'Preserving natural expressions...' },
-  { state: 'SYNTHESIZING_AUDIO', label: 'Synthesizing Voice', note: 'Singing life into spoken words...' },
-  { state: 'SCHEDULING_SEGMENTS', label: 'Scheduling Segments', note: 'Arranging keyframes into order...' },
-  { state: 'GENERATING_SEGMENTS', label: 'Rendering Frames', note: 'Painting each frame with care...' },
-  { state: 'QA_CHECKING', label: 'Quality Verification', note: 'Inspecting motion smoothness & length...' },
-  { state: 'ASSEMBLING', label: 'Finalizing Film', note: 'Stitching audio & video into MP4...' },
-  { state: 'COMPLETED', label: 'Premiere Ready', note: 'Your film is ready to watch!' },
-];
 
 export const WaitingStep: React.FC<WaitingStepProps> = ({
   jobId,
@@ -33,44 +30,107 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
   const [job, setJob] = useState<JobRecord | null>(null);
 
   useEffect(() => {
-    let timerId: ReturnType<typeof setInterval>;
+    let isSubscribed = true;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+    let pollCount = 0;
 
-    const poll = async () => {
+    const fetchJob = async () => {
+      // Pause polling if the tab is hidden
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+      }
+
       try {
         const record = await apiClient.getJob(jobId);
-        setJob(record);
+        if (!isSubscribed) return;
 
-        if (record.state === 'COMPLETED' || record.status === 'COMPLETED') {
-          onCompleted(record);
-        } else if (record.state === 'FAILED' || record.status === 'FAILED') {
-          onFailed(record);
+        setJob(record);
+        const currentState = record.state || record.status || 'RECEIVED';
+
+        // Stop polling completely on terminal states
+        if (isTerminalState(currentState)) {
+          if (currentState === 'COMPLETED') {
+            onCompleted(record);
+          } else if (currentState === 'FAILED') {
+            onFailed(record);
+          }
+          return;
         }
+
+        pollCount++;
+        const nextInterval = getPollingInterval(pollCount);
+        timerId = setTimeout(fetchJob, nextInterval);
       } catch (err) {
-        console.error('Error polling job status:', err);
+        console.error('Polling hiccup:', err);
+        pollCount++;
+        const nextInterval = getPollingInterval(pollCount);
+        timerId = setTimeout(fetchJob, nextInterval);
       }
     };
 
-    poll();
-    timerId = setInterval(poll, 3000);
+    // Tab visibility handler: resumes polling immediately when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (timerId) clearTimeout(timerId);
+        fetchJob();
+      }
+    };
 
-    return () => clearInterval(timerId);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    fetchJob(); // Start initial fetch immediately
+
+    return () => {
+      isSubscribed = false;
+      if (timerId) clearTimeout(timerId);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
   }, [jobId]);
 
   const currentState = job?.state || job?.status || 'RECEIVED';
-  const stateIndex = PIPELINE_STATES.findIndex((p) => p.state === currentState);
-  const currentPipe = PIPELINE_STATES[Math.max(0, stateIndex)] || PIPELINE_STATES[0];
+  const story = mapJobStateToStory(currentState);
+
+  // Render appropriate doodle based on story doodleKind
+  const renderStoryDoodle = () => {
+    switch (story.doodleKind) {
+      case 'spiral':
+        return <DoodleSpiral count={6} />;
+      case 'camera':
+        return <DoodleCamera size={44} />;
+      case 'mic':
+        return <DoodleMic size={44} />;
+      case 'person':
+        return <DoodlePerson width={80} height={90} color="var(--ink-primary)" />;
+      case 'plant':
+        return <DoodlePlant size={48} />;
+      case 'clock':
+        return <Clock size={40} style={{ color: 'var(--ink-terracotta)' }} />;
+      case 'sparkle':
+        return <DoodleSparkle size={36} />;
+      case 'star':
+      default:
+        return <DoodleStar size={36} />;
+    }
+  };
 
   // Calculate segment progress details if present
   const segments = job?.segments || [];
-  const completedSegments = segments.filter((s) => s.state === 'COMPLETED' || (s.progress && s.progress >= 100)).length;
+  const completedSegments = segments.filter(
+    (s) => s.state === 'COMPLETED' || (s.progress && s.progress >= 100)
+  ).length;
   const totalSegments = segments.length;
 
   return (
     <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="STUDIO RENDER" rotation="3deg" variant="blue" />
+      <Sticker label="STUDIO WAITING ROOM" rotation="3deg" variant="blue" />
 
-      <div>
+      {/* Header Copy */}
+      <header>
         <p className="handwritten" style={{ fontSize: '24px', color: 'var(--ink-terracotta)' }}>
           Please take a gentle breath while we craft...
         </p>
@@ -78,16 +138,16 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           Rendering your memory film
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
-          Job ID: <code style={{ backgroundColor: 'var(--paper-cream-alt)', padding: '2px 6px', borderRadius: '4px' }}>{jobId}</code>
+          Job ID: <code style={{ backgroundColor: 'var(--paper-cream-alt)', padding: '2px 8px', borderRadius: '4px' }}>{jobId}</code>
         </p>
-      </div>
+      </header>
 
       {/* Main Status & Animation Frame */}
-      <div
+      <main
         style={{
           padding: '28px',
           borderRadius: '12px',
-          backgroundColor: '#fff',
+          backgroundColor: '#ffffff',
           border: '1.5px dashed var(--paper-border)',
           display: 'flex',
           flexDirection: 'column',
@@ -102,20 +162,38 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           <Loader2 size={36} className="animate-spin" style={{ color: 'var(--ink-terracotta)' }} />
           <div>
             <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', color: 'var(--ink-primary)' }}>
-              {currentPipe.label}
+              {story.title}
             </h3>
-            <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-terracotta)' }}>
-              "{currentPipe.note}"
+            <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-terracotta)', marginTop: '2px' }}>
+              "{story.storyLine}"
             </p>
           </div>
         </div>
 
-        {/* Segment progress counter when rendering segments */}
+        {/* Story Progress Bar */}
+        <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600 }}>
+            <span style={{ color: 'var(--ink-primary)' }}>Pipeline Step: {currentState}</span>
+            <span style={{ color: 'var(--ink-terracotta)' }}>~{story.progressPercent}%</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--paper-border)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${story.progressPercent}%`,
+                height: '100%',
+                backgroundColor: 'var(--ink-terracotta)',
+                transition: 'width 0.4s ease',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Live Segment counter when rendering segments */}
         {totalSegments > 0 && (
           <div
             style={{
               width: '100%',
-              maxWidth: '400px',
+              maxWidth: '440px',
               padding: '12px 16px',
               borderRadius: '8px',
               backgroundColor: 'var(--paper-cream-alt)',
@@ -137,7 +215,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 style={{
                   width: `${(completedSegments / Math.max(1, totalSegments)) * 100}%`,
                   height: '100%',
-                  backgroundColor: 'var(--ink-terracotta)',
+                  backgroundColor: 'var(--ink-sage)',
                   transition: 'width 0.3s ease',
                 }}
               />
@@ -145,41 +223,11 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           </div>
         )}
 
+        {/* Story Doodle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '8px' }}>
-          <DoodlePerson width={80} height={100} color="var(--ink-primary)" />
-          <DoodleSparkle size={24} />
-          <DoodleStar size={28} />
+          {renderStoryDoodle()}
         </div>
-      </div>
-
-      {/* Step pipeline list */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
-        {PIPELINE_STATES.slice(0, 9).map((step, idx) => {
-          const isDone = stateIndex > idx;
-          const isCurrent = stateIndex === idx;
-
-          return (
-            <div
-              key={step.state}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                backgroundColor: isCurrent ? 'var(--paper-cream-alt)' : isDone ? '#fff' : 'transparent',
-                border: isCurrent ? '1px solid var(--ink-terracotta)' : '1px solid transparent',
-                fontSize: '13px',
-                color: isDone ? 'var(--ink-sage)' : isCurrent ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
-                fontWeight: isCurrent ? 'bold' : 'normal',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <span>{isDone ? '✓' : isCurrent ? '►' : '•'}</span>
-              <span>{step.label}</span>
-            </div>
-          );
-        })}
-      </div>
+      </main>
     </div>
   );
 };
