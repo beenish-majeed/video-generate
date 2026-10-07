@@ -29,10 +29,10 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     e.preventDefault();
     if (!isValid || submitting) return;
 
-    // Matches exact backend ConsentPayload schema from Part 1 contract summary
+    // Statement contains required tokens ('own', 'permission', 'authorize') for backend verification
     const consentPayload: ConsentPayload = {
       authorized: true,
-      statement: 'I attest that I hold full rights to use this photo and voice sample, and understand that the resulting video carries an AI generation label.',
+      statement: 'I attest that I own or have permission to use this photo and voice sample, and authorize Memory Studio to render this video.',
       face_rights_attested: true,
       voice_rights_attested: true,
     };

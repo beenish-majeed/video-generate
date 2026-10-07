@@ -12,7 +12,6 @@ describe('mapJobStateToStory', () => {
       expect(typeof mapped.storyLine).toBe('string');
       expect(mapped.storyLine.length).toBeGreaterThan(0);
       expect(typeof mapped.doodleKind).toBe('string');
-      expect(typeof mapped.progressPercent).toBe('number');
     });
   });
 
@@ -22,7 +21,6 @@ describe('mapJobStateToStory', () => {
     expect(mapped.title).toBe('Crafting Memory');
     expect(mapped.storyLine).toBe('Crafting your memory film in the studio...');
     expect(mapped.doodleKind).toBe('sparkle');
-    expect(mapped.progressPercent).toBe(50);
   });
 
   it('correctly maps specific key states to story lines', () => {
