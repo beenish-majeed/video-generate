@@ -11,6 +11,7 @@ interface HeroStepProps {
 export const HeroStep: React.FC<HeroStepProps> = ({ onNext }) => {
   return (
     <div
+      className="step-container"
       style={{
         padding: '32px 24px',
         display: 'flex',
@@ -43,7 +44,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onNext }) => {
       </main>
 
       {/* Single Clear "Begin" Button with Keyboard Focus Support */}
-      <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
         <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-muted)' }}>
           Ready to sketch your first scene? →
         </p>

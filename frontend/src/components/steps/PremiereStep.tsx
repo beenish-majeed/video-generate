@@ -56,7 +56,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     : '30s';
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="-3deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
       <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
 

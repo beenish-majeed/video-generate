@@ -32,7 +32,7 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
   };
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="STUDIO NOTE" rotation="-3deg" variant="amber" />
 

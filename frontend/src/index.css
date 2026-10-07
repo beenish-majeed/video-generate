@@ -161,6 +161,7 @@ html, body {
 /* Custom Scrollbar for Notebook Inner Sections */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--paper-cream);
@@ -169,3 +170,48 @@ html, body {
   background: var(--paper-border);
   border-radius: 3px;
 }
+
+/* Utility to hide scrollbars on touch tab scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile & Tablet Responsive Adaptations (360px, 768px, 1280px) */
+@media (max-width: 640px) {
+  .notebook-container {
+    min-height: auto;
+    border-radius: 8px;
+    margin: 0;
+  }
+
+  .step-container {
+    padding: 20px 14px !important;
+    gap: 16px !important;
+  }
+
+  .step-footer {
+    flex-direction: column-reverse !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+
+  .btn-terracotta,
+  .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .editorial-title {
+    font-size: 22px !important;
+  }
+
+  .handwritten {
+    font-size: 19px !important;
+  }
+}
+

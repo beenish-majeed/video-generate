@@ -5,6 +5,7 @@ import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { extractWaveformPeaks, formatDuration, type WaveformAnalysis } from '../../utils/audioWaveform';
+import { playStickerPopSound } from '../../utils/soundEffects';
 import { Upload, ArrowRight, ArrowLeft, Loader2, Play, Pause, RefreshCw, AlertCircle, Volume2 } from 'lucide-react';
 
 interface VoiceStepProps {
@@ -96,6 +97,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       const res = await apiClient.uploadAsset('voice', file, (percent) => {
         setUploadProgress(percent);
       });
+      playStickerPopSound();
       onAssetSelected(res.asset_id);
     } catch (err: unknown) {
       const mapped = mapAPIError(err);
@@ -173,7 +175,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   }, [previewUrl]);
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="-1.5deg" style={{ position: 'absolute', top: '10px', right: '50px' }} />
       <Sticker label="LET US HEAR YOU" rotation="2deg" variant="blue" />
 

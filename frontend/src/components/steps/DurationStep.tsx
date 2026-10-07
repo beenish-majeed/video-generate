@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { DurationPreset, DurationOption, DurationsResponse } from '../../types/api';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
+import { playStickerPopSound } from '../../utils/soundEffects';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
 import { motion } from 'framer-motion';
@@ -62,7 +63,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
   };
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="1.8deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="HOW LONG SHOULD IT BE?" rotation="-3deg" variant="amber" />
 
@@ -145,7 +146,10 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                 <motion.button
                   key={preset.value}
                   type="button"
-                  onClick={() => onPresetSelected(preset.value, preset.seconds)}
+                  onClick={() => {
+                    playStickerPopSound();
+                    onPresetSelected(preset.value, preset.seconds);
+                  }}
                   whileHover={{ scale: 1.03, rotate: isSelected ? 0 : tilt * 0.5 }}
                   whileTap={{ scale: 0.95 }}
                   animate={{ scale: isSelected ? 1.03 : 1, y: isSelected ? -4 : 0 }}

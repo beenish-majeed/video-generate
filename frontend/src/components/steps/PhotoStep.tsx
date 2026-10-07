@@ -4,6 +4,7 @@ import Tape from '../Tape';
 import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
+import { playStickerPopSound } from '../../utils/soundEffects';
 import { Upload, ArrowRight, ArrowLeft, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface PhotoStepProps {
@@ -72,6 +73,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       const res = await apiClient.uploadAsset('photo', file, (percent) => {
         setUploadProgress(percent);
       });
+      playStickerPopSound();
       onAssetSelected(res.asset_id);
     } catch (err: unknown) {
       const mapped = mapAPIError(err);
@@ -119,7 +121,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
   };
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="2deg" style={{ position: 'absolute', top: '12px', right: '40px' }} />
       <Sticker label="WHO IS SPEAKING?" rotation="-2deg" variant="sage" />
 

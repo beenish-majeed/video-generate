@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { ConsentPayload } from '../../types/api';
+import { playStickerPopSound } from '../../utils/soundEffects';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
 import { ArrowLeft, ShieldCheck, Loader2, Info, UserCheck, Mic, Tag } from 'lucide-react';
@@ -41,7 +42,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   };
 
   return (
-    <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="2.5deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="RIGHTS & RESPECT" rotation="-2deg" variant="sage" />
 
@@ -140,7 +141,10 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               id="face-rights-checkbox"
               type="checkbox"
               checked={faceRights}
-              onChange={(e) => setFaceRights(e.target.checked)}
+              onChange={(e) => {
+                setFaceRights(e.target.checked);
+                playStickerPopSound();
+              }}
               style={{
                 width: '22px',
                 height: '22px',
@@ -176,7 +180,10 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               id="voice-rights-checkbox"
               type="checkbox"
               checked={voiceRights}
-              onChange={(e) => setVoiceRights(e.target.checked)}
+              onChange={(e) => {
+                setVoiceRights(e.target.checked);
+                playStickerPopSound();
+              }}
               style={{
                 width: '22px',
                 height: '22px',
@@ -212,7 +219,10 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               id="authorized-checkbox"
               type="checkbox"
               checked={authorized}
-              onChange={(e) => setAuthorized(e.target.checked)}
+              onChange={(e) => {
+                setAuthorized(e.target.checked);
+                playStickerPopSound();
+              }}
               style={{
                 width: '22px',
                 height: '22px',

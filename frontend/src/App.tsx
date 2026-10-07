@@ -5,6 +5,7 @@ import type { JourneyStepId } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
 import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
+import { playPageTurnSound } from './utils/soundEffects';
 
 import HeroStep from './components/steps/HeroStep';
 import PhotoStep from './components/steps/PhotoStep';
@@ -19,6 +20,11 @@ import FailedStep from './components/steps/FailedStep';
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
   const shouldReduceMotion = useReducedMotion();
+
+  const changeStep = (step: JourneyStepId) => {
+    playPageTurnSound();
+    setCurrentStep(step);
+  };
 
   // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
@@ -113,7 +119,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <NotebookShell currentStep={currentStep} onSelectStep={(step) => setCurrentStep(step)}>
+    <NotebookShell currentStep={currentStep} onSelectStep={(step) => changeStep(step)}>
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -124,15 +130,15 @@ export const App: React.FC = () => {
           style={{ width: '100%' }}
         >
           {currentStep === 'hero' && (
-            <HeroStep onNext={() => setCurrentStep('photo')} />
+            <HeroStep onNext={() => changeStep('photo')} />
           )}
 
           {currentStep === 'photo' && (
             <PhotoStep
               selectedAssetId={photoAssetId}
               onAssetSelected={(id) => setPhotoAssetId(id)}
-              onNext={() => setCurrentStep('voice')}
-              onBack={() => setCurrentStep('hero')}
+              onNext={() => changeStep('voice')}
+              onBack={() => changeStep('hero')}
             />
           )}
 
@@ -140,8 +146,8 @@ export const App: React.FC = () => {
             <VoiceStep
               selectedAssetId={voiceAssetId}
               onAssetSelected={(id) => setVoiceAssetId(id)}
-              onNext={() => setCurrentStep('duration')}
-              onBack={() => setCurrentStep('photo')}
+              onNext={() => changeStep('duration')}
+              onBack={() => changeStep('photo')}
             />
           )}
 
@@ -152,8 +158,8 @@ export const App: React.FC = () => {
                 setDurationPreset(preset);
                 setTargetSeconds(seconds);
               }}
-              onNext={() => setCurrentStep('script')}
-              onBack={() => setCurrentStep('voice')}
+              onNext={() => changeStep('script')}
+              onBack={() => changeStep('voice')}
             />
           )}
 
@@ -164,15 +170,15 @@ export const App: React.FC = () => {
               prompt={prompt}
               onPromptChange={setPrompt}
               targetSeconds={targetSeconds}
-              onNext={() => setCurrentStep('consent')}
-              onBack={() => setCurrentStep('duration')}
+              onNext={() => changeStep('consent')}
+              onBack={() => changeStep('duration')}
             />
           )}
 
           {currentStep === 'consent' && (
             <ConsentStep
               onSubmitJob={handleCreateJob}
-              onBack={() => setCurrentStep('script')}
+              onBack={() => changeStep('script')}
               submitting={submitting}
               error={errorMessage}
             />
@@ -183,12 +189,12 @@ export const App: React.FC = () => {
               jobId={activeJobId}
               onCompleted={(job) => {
                 setCompletedJob(job);
-                setCurrentStep('premiere');
+                changeStep('premiere');
               }}
               onFailed={(job) => {
                 setFailedJob(job);
                 setErrorMessage(job.error || 'Job rendering failed.');
-                setCurrentStep('failed');
+                changeStep('failed');
               }}
             />
           )}
@@ -202,7 +208,7 @@ export const App: React.FC = () => {
                 try {
                   localStorage.removeItem('memory_studio_active_job_id');
                 } catch {}
-                setCurrentStep('hero');
+                changeStep('hero');
               }}
             />
           )}
@@ -218,7 +224,7 @@ export const App: React.FC = () => {
                 try {
                   localStorage.removeItem('memory_studio_active_job_id');
                 } catch {}
-                setCurrentStep(recommendedStep || 'consent');
+                changeStep(recommendedStep || 'consent');
               }}
             />
           )}
