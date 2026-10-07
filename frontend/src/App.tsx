@@ -67,6 +67,7 @@ export const App: React.FC = () => {
       const savedJobId = localStorage.getItem('memory_studio_active_job_id');
       if (savedJobId && !activeJobId) {
         setActiveJobId(savedJobId);
+        setCurrentStep('waiting');
       }
     } catch {
       // Ignore if localStorage unavailable
@@ -85,7 +86,7 @@ export const App: React.FC = () => {
         photo_asset_id: photoAssetId,
         voice_asset_id: voiceAssetId,
         script: script.trim(),
-        prompt: prompt.trim() || undefined,
+        prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
         duration_preset: durationPreset,
         target_duration_seconds: targetSeconds,
         consent,
