@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { JobRecord } from '../../types/api';
 import apiClient from '../../api/client';
-import { DoodleSparkle, DoodlePlant } from '../Doodles';
+import { mapAPIError } from '../../api/errorMapper';
+import { DoodleSparkle } from '../Doodles';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
-import { Download, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Download, RotateCcw, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 interface PremiereStepProps {
   job: JobRecord;
@@ -12,14 +14,54 @@ interface PremiereStepProps {
 }
 
 export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) => {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [videoStreamError, setVideoStreamError] = useState<boolean>(false);
+
+  const shouldReduceMotion = useReducedMotion();
   const downloadUrl = apiClient.getDownloadUrl(job.job_id);
+
+  // Trigger download via proxy with error mapping
+  const handleDownload = async () => {
+    setDownloading(true);
+    setDownloadError(null);
+
+    try {
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `memory-${job.job_id.slice(0, 8)}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err: unknown) {
+      const mapped = mapAPIError(err);
+      setDownloadError(mapped.message || 'We could not download the video file. Please check connection and try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const formattedDuration = job.final_video_duration_seconds
+    ? `${job.final_video_duration_seconds.toFixed(1)}s`
+    : job.target_duration_seconds
+    ? `${job.target_duration_seconds}s`
+    : '30s';
 
   return (
     <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
       <Tape rotation="-3deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
       <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
 
-      <div>
+      {/* Header Copy */}
+      <header>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CheckCircle2 size={24} style={{ color: 'var(--ink-sage)' }} />
           <p className="handwritten" style={{ fontSize: '24px', color: 'var(--ink-sage)' }}>
@@ -30,16 +72,16 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           Grand Premiere
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
-          Here is your rendered video memory ({job.final_video_duration_seconds || job.target_duration_seconds || '30'} seconds).
+          Here is your finished animated memory ({formattedDuration}). Press play to watch.
         </p>
-      </div>
+      </header>
 
-      {/* Video Player Window */}
-      <div
+      {/* Theater Frame with Opening Curtains Animation */}
+      <main
         style={{
           position: 'relative',
           borderRadius: '12px',
-          backgroundColor: '#000',
+          backgroundColor: '#121212',
           boxShadow: 'var(--shadow-notebook)',
           overflow: 'hidden',
           display: 'flex',
@@ -50,18 +92,122 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           border: '4px solid var(--paper-cream-alt)',
         }}
       >
-        <Tape rotation="1.5deg" style={{ position: 'absolute', top: '12px', right: '20px' }} />
+        <Tape rotation="1.5deg" style={{ position: 'absolute', top: '12px', right: '20px', zIndex: 20 }} />
 
-        <video
-          controls
-          autoPlay
-          src={downloadUrl}
-          style={{ width: '100%', maxHeight: '420px', objectFit: 'contain' }}
-        />
-      </div>
+        {/* Left Opening Curtain */}
+        <motion.div
+          initial={{ x: 0 }}
+          animate={{ x: shouldReduceMotion ? 0 : '-105%' }}
+          transition={{ duration: shouldReduceMotion ? 0 : 1.2, ease: [0.77, 0, 0.175, 1], delay: 0.3 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '50.5%',
+            height: '100%',
+            backgroundColor: 'var(--paper-cream-dark)',
+            borderRight: '2px dashed var(--paper-border)',
+            zIndex: 15,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            paddingRight: '20px',
+            boxShadow: '4px 0 12px rgba(0,0,0,0.2)',
+          }}
+        >
+          <span className="handwritten" style={{ fontSize: '26px', color: 'var(--ink-terracotta)' }}>Grand</span>
+        </motion.div>
 
-      {/* Download & Actions Bar */}
-      <div
+        {/* Right Opening Curtain */}
+        <motion.div
+          initial={{ x: 0 }}
+          animate={{ x: shouldReduceMotion ? 0 : '105%' }}
+          transition={{ duration: shouldReduceMotion ? 0 : 1.2, ease: [0.77, 0, 0.175, 1], delay: 0.3 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '50.5%',
+            height: '100%',
+            backgroundColor: 'var(--paper-cream-dark)',
+            borderLeft: '2px dashed var(--paper-border)',
+            zIndex: 15,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            paddingLeft: '20px',
+            boxShadow: '-4px 0 12px rgba(0,0,0,0.2)',
+          }}
+        >
+          <span className="handwritten" style={{ fontSize: '26px', color: 'var(--ink-terracotta)' }}>Premiere</span>
+        </motion.div>
+
+        {/* Video Player: NO AUTOPLAY WITH SOUND! autoPlay={false} */}
+        {videoStreamError ? (
+          <div
+            style={{
+              padding: '32px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#ffffff',
+              textAlign: 'center',
+            }}
+          >
+            <AlertCircle size={36} style={{ color: 'var(--ink-terracotta)' }} />
+            <p style={{ fontSize: '15px' }}>Could not load video preview stream.</p>
+            <button
+              type="button"
+              onClick={() => setVideoStreamError(false)}
+              className="btn-secondary"
+              style={{ fontSize: '13px', padding: '6px 14px' }}
+            >
+              <RefreshCw size={14} />
+              <span>Retry loading video</span>
+            </button>
+          </div>
+        ) : (
+          <video
+            controls
+            autoPlay={false}
+            preload="metadata"
+            src={downloadUrl}
+            onError={() => setVideoStreamError(true)}
+            style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', display: 'block' }}
+          />
+        )}
+      </main>
+
+      {/* Download Error Card */}
+      {downloadError && (
+        <div
+          role="alert"
+          style={{
+            padding: '16px 20px',
+            borderRadius: '10px',
+            backgroundColor: '#fff',
+            border: '1.5px dashed var(--ink-terracotta)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            boxShadow: 'var(--shadow-card)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
+            <p style={{ fontSize: '14px', color: 'var(--ink-muted)' }}>{downloadError}</p>
+          </div>
+          <button type="button" onClick={handleDownload} className="btn-secondary" style={{ fontSize: '13px', padding: '6px 12px' }}>
+            <RefreshCw size={14} />
+            <span>Retry Download</span>
+          </button>
+        </div>
+      )}
+
+      {/* Action Buttons: Download & Make Another */}
+      <footer
         style={{
           padding: '20px',
           borderRadius: '12px',
@@ -72,40 +218,43 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           justifyContent: 'space-between',
           gap: '16px',
           boxShadow: 'var(--shadow-card)',
+          flexWrap: 'wrap',
         }}
       >
-        <div>
-          <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
-            Download & Keep Forever
-          </h4>
-          <p className="handwritten" style={{ fontSize: '17px', color: 'var(--ink-terracotta)', marginTop: '2px' }}>
-            High-definition MP4 with synthesized audio soundtrack
-          </p>
-        </div>
-
-        <a
-          href={downloadUrl}
-          download={`memory-${job.job_id.slice(0, 8)}.mp4`}
-          className="btn-terracotta"
-          style={{ textDecoration: 'none' }}
-        >
-          <Download size={18} />
-          <span>Download Video</span>
-        </a>
-      </div>
-
-      {/* Replay / Restart */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <button onClick={onRestart} className="btn-secondary">
+        <button type="button" onClick={onRestart} className="btn-secondary">
           <RotateCcw size={16} />
-          <span>Create Another Memory</span>
+          <span>Make another video</span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DoodlePlant size={42} />
-          <DoodleSparkle size={20} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <DoodleSparkle size={20} />
+            <span className="handwritten" style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>
+              MP4 Format with AI Disclosure
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="btn-terracotta"
+            style={{ fontSize: '15px', padding: '12px 24px' }}
+          >
+            {downloading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Downloading...</span>
+              </>
+            ) : (
+              <>
+                <Download size={18} />
+                <span>Download Video</span>
+              </>
+            )}
+          </button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
