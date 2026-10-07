@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import type { JourneyStepId } from './components/PageTabs';
@@ -6,16 +6,36 @@ import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
 import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
 import { playPageTurnSound } from './utils/soundEffects';
+import { Loader2 } from 'lucide-react';
 
-import HeroStep from './components/steps/HeroStep';
-import PhotoStep from './components/steps/PhotoStep';
-import VoiceStep from './components/steps/VoiceStep';
-import DurationStep from './components/steps/DurationStep';
-import ScriptStep from './components/steps/ScriptStep';
-import ConsentStep from './components/steps/ConsentStep';
-import WaitingStep from './components/steps/WaitingStep';
-import PremiereStep from './components/steps/PremiereStep';
-import FailedStep from './components/steps/FailedStep';
+const HeroStep = lazy(() => import('./components/steps/HeroStep'));
+const PhotoStep = lazy(() => import('./components/steps/PhotoStep'));
+const VoiceStep = lazy(() => import('./components/steps/VoiceStep'));
+const DurationStep = lazy(() => import('./components/steps/DurationStep'));
+const ScriptStep = lazy(() => import('./components/steps/ScriptStep'));
+const ConsentStep = lazy(() => import('./components/steps/ConsentStep'));
+const WaitingStep = lazy(() => import('./components/steps/WaitingStep'));
+const PremiereStep = lazy(() => import('./components/steps/PremiereStep'));
+const FailedStep = lazy(() => import('./components/steps/FailedStep'));
+
+const StepFallback: React.FC = () => (
+  <div
+    style={{
+      padding: '80px 24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '14px',
+      minHeight: '360px',
+    }}
+  >
+    <Loader2 size={36} className="animate-spin" style={{ color: 'var(--ink-terracotta)' }} />
+    <p className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-terracotta)' }}>
+      Opening sketchbook page...
+    </p>
+  </div>
+);
 
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
@@ -120,116 +140,118 @@ export const App: React.FC = () => {
 
   return (
     <NotebookShell currentStep={currentStep} onSelectStep={(step) => changeStep(step)}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStep}
-          variants={pageVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          style={{ width: '100%' }}
-        >
-          {currentStep === 'hero' && (
-            <HeroStep onNext={() => changeStep('photo')} />
-          )}
+      <Suspense fallback={<StepFallback />}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            style={{ width: '100%' }}
+          >
+            {currentStep === 'hero' && (
+              <HeroStep onNext={() => changeStep('photo')} />
+            )}
 
-          {currentStep === 'photo' && (
-            <PhotoStep
-              selectedAssetId={photoAssetId}
-              onAssetSelected={(id) => setPhotoAssetId(id)}
-              onNext={() => changeStep('voice')}
-              onBack={() => changeStep('hero')}
-            />
-          )}
+            {currentStep === 'photo' && (
+              <PhotoStep
+                selectedAssetId={photoAssetId}
+                onAssetSelected={(id) => setPhotoAssetId(id)}
+                onNext={() => changeStep('voice')}
+                onBack={() => changeStep('hero')}
+              />
+            )}
 
-          {currentStep === 'voice' && (
-            <VoiceStep
-              selectedAssetId={voiceAssetId}
-              onAssetSelected={(id) => setVoiceAssetId(id)}
-              onNext={() => changeStep('duration')}
-              onBack={() => changeStep('photo')}
-            />
-          )}
+            {currentStep === 'voice' && (
+              <VoiceStep
+                selectedAssetId={voiceAssetId}
+                onAssetSelected={(id) => setVoiceAssetId(id)}
+                onNext={() => changeStep('duration')}
+                onBack={() => changeStep('photo')}
+              />
+            )}
 
-          {currentStep === 'duration' && (
-            <DurationStep
-              selectedPreset={durationPreset}
-              onPresetSelected={(preset, seconds) => {
-                setDurationPreset(preset);
-                setTargetSeconds(seconds);
-              }}
-              onNext={() => changeStep('script')}
-              onBack={() => changeStep('voice')}
-            />
-          )}
+            {currentStep === 'duration' && (
+              <DurationStep
+                selectedPreset={durationPreset}
+                onPresetSelected={(preset, seconds) => {
+                  setDurationPreset(preset);
+                  setTargetSeconds(seconds);
+                }}
+                onNext={() => changeStep('script')}
+                onBack={() => changeStep('voice')}
+              />
+            )}
 
-          {currentStep === 'script' && (
-            <ScriptStep
-              script={script}
-              onScriptChange={setScript}
-              prompt={prompt}
-              onPromptChange={setPrompt}
-              targetSeconds={targetSeconds}
-              onNext={() => changeStep('consent')}
-              onBack={() => changeStep('duration')}
-            />
-          )}
+            {currentStep === 'script' && (
+              <ScriptStep
+                script={script}
+                onScriptChange={setScript}
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                targetSeconds={targetSeconds}
+                onNext={() => changeStep('consent')}
+                onBack={() => changeStep('duration')}
+              />
+            )}
 
-          {currentStep === 'consent' && (
-            <ConsentStep
-              onSubmitJob={handleCreateJob}
-              onBack={() => changeStep('script')}
-              submitting={submitting}
-              error={errorMessage}
-            />
-          )}
+            {currentStep === 'consent' && (
+              <ConsentStep
+                onSubmitJob={handleCreateJob}
+                onBack={() => changeStep('script')}
+                submitting={submitting}
+                error={errorMessage}
+              />
+            )}
 
-          {currentStep === 'waiting' && activeJobId && (
-            <WaitingStep
-              jobId={activeJobId}
-              onCompleted={(job) => {
-                setCompletedJob(job);
-                changeStep('premiere');
-              }}
-              onFailed={(job) => {
-                setFailedJob(job);
-                setErrorMessage(job.error || 'Job rendering failed.');
-                changeStep('failed');
-              }}
-            />
-          )}
+            {currentStep === 'waiting' && activeJobId && (
+              <WaitingStep
+                jobId={activeJobId}
+                onCompleted={(job) => {
+                  setCompletedJob(job);
+                  changeStep('premiere');
+                }}
+                onFailed={(job) => {
+                  setFailedJob(job);
+                  setErrorMessage(job.error || 'Job rendering failed.');
+                  changeStep('failed');
+                }}
+              />
+            )}
 
-          {currentStep === 'premiere' && completedJob && (
-            <PremiereStep
-              job={completedJob}
-              onRestart={() => {
-                setActiveJobId(null);
-                setCompletedJob(null);
-                try {
-                  localStorage.removeItem('memory_studio_active_job_id');
-                } catch {}
-                changeStep('hero');
-              }}
-            />
-          )}
+            {currentStep === 'premiere' && completedJob && (
+              <PremiereStep
+                job={completedJob}
+                onRestart={() => {
+                  setActiveJobId(null);
+                  setCompletedJob(null);
+                  try {
+                    localStorage.removeItem('memory_studio_active_job_id');
+                  } catch {}
+                  changeStep('hero');
+                }}
+              />
+            )}
 
-          {currentStep === 'failed' && (
-            <FailedStep
-              job={failedJob}
-              errorMessage={errorMessage}
-              onRetry={(recommendedStep) => {
-                setActiveJobId(null);
-                setFailedJob(null);
-                setErrorMessage(null);
-                try {
-                  localStorage.removeItem('memory_studio_active_job_id');
-                } catch {}
-                changeStep(recommendedStep || 'consent');
-              }}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+            {currentStep === 'failed' && (
+              <FailedStep
+                job={failedJob}
+                errorMessage={errorMessage}
+                onRetry={(recommendedStep) => {
+                  setActiveJobId(null);
+                  setFailedJob(null);
+                  setErrorMessage(null);
+                  try {
+                    localStorage.removeItem('memory_studio_active_job_id');
+                  } catch {}
+                  changeStep(recommendedStep || 'consent');
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </Suspense>
     </NotebookShell>
   );
 };
