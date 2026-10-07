@@ -19,7 +19,7 @@ import FailedStep from './components/steps/FailedStep';
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
 
-  // Journey State Machine Data (Retained across error retries)
+  // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
   const [durationPreset, setDurationPreset] = useState<DurationPreset>('30s');
@@ -64,7 +64,7 @@ export const App: React.FC = () => {
         consent,
       });
 
-      // Save created job_id in localStorage as required by Part 8
+      // Save created job_id in localStorage
       try {
         localStorage.setItem('memory_studio_active_job_id', res.job_id);
       } catch {
@@ -74,7 +74,7 @@ export const App: React.FC = () => {
       setActiveJobId(res.job_id);
       setCurrentStep('waiting');
     } catch (err: unknown) {
-      // Map API, 401, 422, 5xx, or network error into kind human words
+      // Map API error into kind human words
       const mapped = mapAPIError(err);
       setErrorMessage(mapped.message);
       setFailedJob(null);
@@ -189,9 +189,15 @@ export const App: React.FC = () => {
             <FailedStep
               job={failedJob}
               errorMessage={errorMessage}
-              onRetry={() => {
-                // Returns to consent step while keeping all user input intact
-                setCurrentStep('consent');
+              onRetry={(recommendedStep) => {
+                // Clears job instance but RETAINS photo, voice, script, and prompt state!
+                setActiveJobId(null);
+                setFailedJob(null);
+                setErrorMessage(null);
+                try {
+                  localStorage.removeItem('memory_studio_active_job_id');
+                } catch {}
+                setCurrentStep(recommendedStep || 'consent');
               }}
             />
           )}
