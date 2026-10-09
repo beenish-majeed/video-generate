@@ -81,16 +81,26 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
   const mood = getMoodConfig();
 
   return (
-    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        position: 'relative',
+        width: '100%',
+      }}
+    >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="WHAT WILL YOU SAY?" rotation="2.5deg" variant="terracotta" />
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: '22px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
           Write down your story or memory...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: '28px', marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
           Spoken narrative script
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
@@ -98,9 +108,10 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         </p>
       </header>
 
-      {/* Script Text Area with Sketchbook Styling */}
-      <main style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+      {/* Script Text Area & Controls */}
+      <main style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+        {/* Label & Target Word Counter Header Bar - Responsive Flex Wrap */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
           <label
             htmlFor="narrative-script-input"
             style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -109,19 +120,20 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             <span>Narrative Script</span>
           </label>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span className="handwritten" style={{ fontSize: '18px', color: 'var(--ink-muted)' }}>
-              Need at least <strong>{analysis.minWords}</strong> words for this length ({targetSeconds}s @ {wpm} WPM)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-muted)' }}>
+              Need at least <strong>{analysis.minWords}</strong> words for {targetSeconds}s (@ {wpm} WPM)
             </span>
             <span
               style={{
-                padding: '4px 12px',
+                padding: '3px 10px',
                 borderRadius: '12px',
                 backgroundColor: mood.bgColor,
                 border: `1.5px solid ${mood.borderColor}`,
                 color: mood.textColor,
                 fontWeight: 'bold',
                 fontSize: '13px',
+                whiteSpace: 'nowrap',
               }}
             >
               {analysis.wordCount} words
@@ -129,19 +141,29 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
           </div>
         </div>
 
-        {/* Textarea */}
+        {/* Textarea - Auto-scrolls into view on mobile keyboard focus */}
         <textarea
           id="narrative-script-input"
           value={script}
           onChange={(e) => onScriptChange(e.target.value)}
+          onFocus={(e) => {
+            // Scroll focused input into view on mobile virtual keyboard popup
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }}
           placeholder={`Write your story here... e.g., "A gentle morning mist hovered over the quiet valley, as tall whispering pine trees stood sentinel against the soft golden sky..."`}
-          rows={6}
+          rows={5}
           aria-describedby="script-helper-text"
           style={{
             width: '100%',
-            padding: '16px',
+            padding: 'clamp(12px, 2.5vw, 16px)',
             borderRadius: '10px',
-            border: `2px solid ${analysis.status === 'perfect' ? 'var(--ink-sage)' : analysis.status === 'too_long' ? 'var(--ink-terracotta)' : 'var(--paper-border)'}`,
+            border: `2px solid ${
+              analysis.status === 'perfect'
+                ? 'var(--ink-sage)'
+                : analysis.status === 'too_long'
+                ? 'var(--ink-terracotta)'
+                : 'var(--paper-border)'
+            }`,
             backgroundColor: '#ffffff',
             fontFamily: 'var(--font-sans)',
             fontSize: '15px',
@@ -150,22 +172,25 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)',
             resize: 'vertical',
             outline: 'none',
+            boxSizing: 'border-box',
           }}
         />
 
-        {/* Hand-Drawn Sketchbook Progress Bar */}
+        {/* Hand-Drawn Sketchbook Progress Bar - Scales Fluidly */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
-            padding: '12px 16px',
+            padding: '12px 14px',
             borderRadius: '8px',
             backgroundColor: 'var(--paper-cream-alt)',
             border: '1px solid var(--paper-border)',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, flexWrap: 'wrap', gap: '4px' }}>
             <span style={{ color: 'var(--ink-primary)' }}>Script Target Progress ({analysis.percentage}%)</span>
             <span style={{ color: mood.textColor }}>
               {analysis.wordCount} / {analysis.targetWords} target words (Range: {analysis.minWords}–{analysis.maxWords})
@@ -184,32 +209,34 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
           </div>
         </div>
 
-        {/* Mood Helper Text Card (Moves from Worried to Happy) */}
+        {/* Mood Helper Text Card (Wraps Text Cleanly without Overlap) */}
         <div
           id="script-helper-text"
           role="status"
           style={{
-            padding: '16px 20px',
+            padding: '14px 16px',
             borderRadius: '10px',
             backgroundColor: mood.bgColor,
             border: `1.5px dashed ${mood.borderColor}`,
             display: 'flex',
             alignItems: 'flex-start',
-            gap: '12px',
+            gap: '10px',
             boxShadow: 'var(--shadow-card)',
             transition: 'all 0.2s ease',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
           {mood.icon}
-          <div>
-            <p className="handwritten" style={{ fontSize: '19px', color: mood.textColor, fontWeight: 'bold' }}>
+          <div style={{ flex: 1, minWidth: '0' }}>
+            <p className="handwritten" style={{ fontSize: '18px', color: mood.textColor, fontWeight: 'bold', wordBreak: 'break-word', lineHeight: 1.3 }}>
               {analysis.helperText}
             </p>
           </div>
         </div>
 
-        {/* Optional Visual Prompt Field */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+        {/* Optional Visual Style Prompt Field */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', width: '100%' }}>
           <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={16} style={{ color: 'var(--ink-terracotta)' }} />
             <span>Visual Style Prompt (Optional)</span>
@@ -218,22 +245,26 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             type="text"
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
+            onFocus={(e) => {
+              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
             placeholder="e.g., Warm cinematic sunlight, Studio Ghibli watercolor aesthetic, soft bokeh"
             style={{
               width: '100%',
-              padding: '12px 16px',
+              padding: '12px 14px',
               borderRadius: '8px',
               border: '1px solid var(--paper-border)',
               backgroundColor: 'var(--paper-cream-alt)',
               fontSize: '14px',
               color: 'var(--ink-primary)',
+              boxSizing: 'border-box',
             }}
           />
         </div>
       </main>
 
       {/* Navigation Footer */}
-      <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
         <button type="button" onClick={onBack} className="btn-secondary">
           <ArrowLeft size={16} />
           <span>Back</span>
