@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import SoundToggle from './SoundToggle';
 
@@ -50,9 +50,26 @@ interface PageTabsProps {
   onSelectStep?: (step: JourneyStepId) => void;
 }
 
-export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, flowMode = 'custom_media', onSelectStep }) => {
+export const PageTabs: React.FC<PageTabsProps> = ({
+  currentStep,
+  flowMode = 'custom_media',
+  onSelectStep,
+}) => {
   const stepsList = flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
   const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
+
+  const activeTabRef = useRef<HTMLButtonElement | null>(null);
+
+  // Keep active tab smoothly scrolled into view on mobile / small screens
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
+  }, [currentStep, flowMode]);
 
   return (
     <div
@@ -64,11 +81,14 @@ export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, flowMode = 'cus
         backgroundColor: 'var(--paper-cream-dark)',
         borderBottom: '1px solid var(--paper-border)',
         gap: '8px',
+        width: '100%',
       }}
     >
       {/* Scrollable Tabs List */}
       <div
         className="hide-scrollbar"
+        role="tablist"
+        aria-label="Sketchbook step navigation tabs"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -82,11 +102,16 @@ export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, flowMode = 'cus
         {stepsList.map((step, idx) => {
           const isActive = step.id === currentStep;
           const isCompleted = currentIndex > idx && currentStep !== 'failed';
-          const isClickable = idx <= currentIndex && currentStep !== 'waiting' && currentStep !== 'failed';
+          const isClickable =
+            idx <= currentIndex && currentStep !== 'waiting' && currentStep !== 'failed';
 
           return (
             <button
               key={step.id}
+              ref={isActive ? activeTabRef : null}
+              role="tab"
+              aria-selected={isActive}
+              aria-disabled={!isClickable}
               onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
               disabled={!isClickable}
               style={{
@@ -147,4 +172,3 @@ export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, flowMode = 'cus
 };
 
 export default PageTabs;
-

@@ -32,7 +32,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
         flexDirection: 'column',
         gap: '20px',
         position: 'relative',
-        maxWidth: '820px',
+        maxWidth: '840px',
         margin: '0 auto',
       }}
     >
@@ -52,17 +52,18 @@ export const HeroStep: React.FC<HeroStepProps> = ({
         </p>
       </header>
 
-      {/* Calm Illustrated Scene */}
-      <main style={{ margin: '4px 0' }}>
+      {/* Calm Illustrated Scene - Scales without distortion or cut-off */}
+      <main style={{ margin: '4px 0', width: '100%' }}>
         <HeroScene />
       </main>
 
-      {/* Choice Cards (2 Sticker-Style Options) */}
+      {/* Choice Cards (2 Sticker-Style Options - Equal Height & Aligned Text) */}
       <div
         className="welcome-choice-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          alignItems: 'stretch',
           gap: '20px',
           marginTop: '8px',
         }}
@@ -77,9 +78,11 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             padding: '20px',
             display: 'flex',
             flexDirection: 'column',
+            justifyContent: 'space-between',
             gap: '14px',
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(-0.5deg)',
+            height: '100%',
           }}
         >
           <Tape rotation="-3deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
@@ -89,7 +92,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             <Sparkles size={20} style={{ color: 'var(--ink-amber)' }} aria-hidden="true" />
           </div>
 
-          <div>
+          <div style={{ minHeight: '64px' }}>
             <h2 className="editorial-title" style={{ fontSize: '20px', marginBottom: '4px' }}>
               Write a prompt and make a video
             </h2>
@@ -98,8 +101,8 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             </p>
           </div>
 
-          {/* Prompt Input Field */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Prompt Input Field & Suggestions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
             <label
               htmlFor="welcome-prompt-input"
               className="handwritten"
@@ -128,7 +131,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             />
 
             {/* Quick Inspiration Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '2px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
               {PROMPT_SUGGESTIONS.map((sug, i) => (
                 <button
                   key={i}
@@ -181,9 +184,11 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             padding: '20px',
             display: 'flex',
             flexDirection: 'column',
+            justifyContent: 'space-between',
             gap: '14px',
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(0.5deg)',
+            height: '100%',
           }}
         >
           <Tape rotation="2deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
@@ -193,7 +198,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             <Upload size={20} style={{ color: 'var(--ink-sage)' }} aria-hidden="true" />
           </div>
 
-          <div>
+          <div style={{ minHeight: '64px' }}>
             <h2 className="editorial-title" style={{ fontSize: '20px', marginBottom: '4px' }}>
               Upload your photo or voice
             </h2>
@@ -209,11 +214,13 @@ export const HeroStep: React.FC<HeroStepProps> = ({
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
-              margin: 'auto 0',
-              padding: '8px 12px',
+              margin: '0',
+              padding: '12px 14px',
               backgroundColor: 'rgba(255, 255, 255, 0.5)',
               borderRadius: '8px',
               border: '1px solid var(--paper-border)',
+              flex: 1,
+              justifyContent: 'center',
             }}
           >
             <li style={{ fontSize: '14px', color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
