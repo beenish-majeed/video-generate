@@ -3,7 +3,7 @@ import type { ConsentPayload } from '../../types/api';
 import { playStickerPopSound } from '../../utils/soundEffects';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
-import { ArrowLeft, ShieldCheck, Loader2, Info, UserCheck, Mic, Tag } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Loader2, Info, UserCheck, Mic, Tag, AlertCircle } from 'lucide-react';
 
 interface ConsentStepProps {
   onSubmitJob: (consent: ConsentPayload) => void;
@@ -42,16 +42,26 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   };
 
   return (
-    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        position: 'relative',
+        width: '100%',
+      }}
+    >
       <Tape rotation="2.5deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="RIGHTS & RESPECT" rotation="-2deg" variant="sage" />
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: '22px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
           Keeping creativity safe, honest & respectful...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: '28px', marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
           Rights & Consent Confirmation
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
@@ -62,7 +72,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       {/* Plain Language Summary Card */}
       <section
         style={{
-          padding: '20px',
+          padding: 'clamp(14px, 3vw, 20px)',
           borderRadius: '12px',
           backgroundColor: 'var(--paper-cream-alt)',
           border: '1px solid var(--paper-border)',
@@ -70,16 +80,18 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
           flexDirection: 'column',
           gap: '14px',
           boxShadow: 'var(--shadow-card)',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Info size={20} style={{ color: 'var(--ink-terracotta)' }} />
+          <Info size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
           <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
             What Happens with Your Media
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
             <div>
@@ -112,18 +124,20 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         </div>
       </section>
 
-      {/* Active Acceptance Form (No Pre-checked Boxes) */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Active Acceptance Form (No Pre-checked Boxes; 44px+ Touch Targets) */}
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
-            padding: '20px',
+            gap: '14px',
+            padding: 'clamp(14px, 3vw, 20px)',
             borderRadius: '12px',
             backgroundColor: '#ffffff',
             border: '1.5px dashed var(--paper-border)',
             boxShadow: 'var(--shadow-card)',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
           {/* Consent 1: Face Rights */}
@@ -132,9 +146,11 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '14px',
+              gap: '12px',
               cursor: 'pointer',
               userSelect: 'none',
+              minHeight: '44px',
+              padding: '4px 0',
             }}
           >
             <input
@@ -148,16 +164,19 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               style={{
                 width: '22px',
                 height: '22px',
+                minWidth: '22px',
+                minHeight: '22px',
                 marginTop: '2px',
                 accentColor: 'var(--ink-terracotta)',
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             />
             <div>
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I attest that I have permission to use the face image in this photograph
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                 This is my own face, or I have explicit agreement from the person shown in the photo.
               </p>
             </div>
@@ -171,9 +190,11 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '14px',
+              gap: '12px',
               cursor: 'pointer',
               userSelect: 'none',
+              minHeight: '44px',
+              padding: '4px 0',
             }}
           >
             <input
@@ -187,16 +208,19 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               style={{
                 width: '22px',
                 height: '22px',
+                minWidth: '22px',
+                minHeight: '22px',
                 marginTop: '2px',
                 accentColor: 'var(--ink-terracotta)',
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             />
             <div>
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I attest that I have permission to use this voice recording sample
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                 I am the speaker, or I have explicit agreement to synthesize speech matching this voice.
               </p>
             </div>
@@ -210,9 +234,11 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '14px',
+              gap: '12px',
               cursor: 'pointer',
               userSelect: 'none',
+              minHeight: '44px',
+              padding: '4px 0',
             }}
           >
             <input
@@ -226,31 +252,56 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               style={{
                 width: '22px',
                 height: '22px',
+                minWidth: '22px',
+                minHeight: '22px',
                 marginTop: '2px',
                 accentColor: 'var(--ink-terracotta)',
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             />
             <div>
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I acknowledge the AI generation label and authorize Memory Studio to render this film
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                 I agree that this video is generated for respectful storytelling and carries an AI disclosure.
               </p>
             </div>
           </label>
         </div>
 
-        {/* Error Feedback */}
+        {/* Error Feedback Card after Job Creation - Fits 320px cleanly */}
         {error && (
-          <p role="alert" style={{ color: 'var(--ink-terracotta)', fontSize: '14px', textAlign: 'center' }}>
-            {error}
-          </p>
+          <div
+            role="alert"
+            style={{
+              padding: '14px 16px',
+              borderRadius: '10px',
+              backgroundColor: '#fff',
+              border: '1.5px dashed var(--ink-terracotta)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              width: '100%',
+              boxSizing: 'border-box',
+              boxShadow: 'var(--shadow-card)',
+            }}
+          >
+            <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+              <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: 'var(--ink-primary)' }}>
+                Job Creation Notice
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                {error}
+              </p>
+            </div>
+          </div>
         )}
 
-        {/* Navigation & Action Footer */}
-        <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+        {/* Responsive Navigation & Action Footer */}
+        <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
           <button type="button" onClick={onBack} disabled={submitting} className="btn-secondary">
             <ArrowLeft size={16} />
             <span>Back</span>
@@ -266,7 +317,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               opacity: !isValid || submitting ? 0.5 : 1,
               cursor: !isValid || submitting ? 'not-allowed' : 'pointer',
               fontSize: '16px',
-              padding: '14px 30px',
+              padding: '12px 24px',
             }}
           >
             {submitting ? (
