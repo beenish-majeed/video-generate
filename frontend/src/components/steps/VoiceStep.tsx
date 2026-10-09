@@ -21,6 +21,7 @@ import {
   Square,
   Check,
   Radio,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface VoiceStepProps {
@@ -58,7 +59,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   // Live Recording State
   const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
   const [recordingTime, setRecordingTime] = useState<number>(0);
-  const [audioLevels, setAudioLevels] = useState<number[]>(Array(10).fill(0.1));
+  const [audioLevels, setAudioLevels] = useState<number[]>(Array(10).fill(0.12));
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
@@ -70,7 +71,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Recording Refs
+  // Recording Hardware Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<number | null>(null);
@@ -85,7 +86,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Clean up recording hardware resources
+  // Thorough cleanup of microphone tracks, audio context, and timer loops
   const cleanupRecordingHardware = () => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -99,15 +100,39 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
     }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        // Ignore if already stopped
+      }
+    }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // Ignore if track already stopped
+        }
+      });
       streamRef.current = null;
     }
   };
 
   useEffect(() => {
-    return () => cleanupRecordingHardware();
+    return () => {
+      cleanupRecordingHardware();
+    };
   }, []);
+
+  const handleSwitchMode = (mode: VoiceMode) => {
+    cleanupRecordingHardware();
+    playStickerPopSound();
+    setVoiceMode(mode);
+    if (mode === 'upload') {
+      resetRecording();
+    }
+  };
 
   const processFile = async (file: File) => {
     setMappedError(null);
@@ -215,15 +240,34 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
-  // Live Microphone Recording Actions
+  // Live Microphone Recording Actions with Error Handling & Resource Cleanup
   const startRecording = async () => {
     setPermissionError(null);
     setRecordingStatus('requesting');
 
-    if (!navigator?.mediaDevices?.getUserMedia) {
+    // Check 1: Insecure Origin (Microphone APIs require HTTPS or localhost/127.0.0.1)
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]';
+    const isSecureContext =
+      window.isSecureContext || window.location.protocol === 'https:' || isLocalhost;
+
+    if (!isSecureContext) {
+      cleanupRecordingHardware();
       setRecordingStatus('error');
       setPermissionError(
-        'Microphone recording is not supported in this browser. Please use "Upload a file" instead.'
+        'Microphone access requires a secure connection (HTTPS or localhost). Please open this website over HTTPS or choose "Upload a file".'
+      );
+      return;
+    }
+
+    // Check 2: Browser MediaRecorder and getUserMedia API support
+    if (typeof window.MediaRecorder === 'undefined' || !navigator?.mediaDevices?.getUserMedia) {
+      cleanupRecordingHardware();
+      setRecordingStatus('error');
+      setPermissionError(
+        'Live microphone recording is not supported in this browser version. Please update your browser or choose "Upload a file".'
       );
       return;
     }
@@ -289,6 +333,14 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         }
       };
 
+      recorder.onerror = () => {
+        cleanupRecordingHardware();
+        setRecordingStatus('error');
+        setPermissionError(
+          'An unexpected recording error occurred. Please try again or choose "Upload a file".'
+        );
+      };
+
       recorder.start(100);
       playStickerPopSound();
       setRecordingStatus('recording');
@@ -305,14 +357,25 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         });
       }, 1000);
     } catch (err: any) {
+      cleanupRecordingHardware();
       setRecordingStatus('error');
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+
+      const errName = err?.name || '';
+      if (
+        errName === 'NotAllowedError' ||
+        errName === 'PermissionDeniedError' ||
+        errName === 'SecurityError'
+      ) {
         setPermissionError(
-          'Microphone permission was denied. Please allow microphone access in your browser settings and try again.'
+          'Microphone permission was denied. Please allow microphone access in your browser address bar settings or choose "Upload a file".'
         );
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      } else if (
+        errName === 'NotFoundError' ||
+        errName === 'DevicesNotFoundError' ||
+        errName === 'OverconstrainedError'
+      ) {
         setPermissionError(
-          'No microphone input device was found on your system. Please connect a microphone or choose "Upload a file".'
+          'No microphone input device was detected on your system. Please connect a microphone or choose "Upload a file".'
         );
       } else {
         setPermissionError(
@@ -323,28 +386,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   };
 
   const stopRecording = () => {
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-    if (animFrameRef.current) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().catch(() => {});
-      audioContextRef.current = null;
-    }
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-
+    cleanupRecordingHardware();
     playStickerPopSound();
 
     setRecordingTime((finalTime) => {
@@ -444,10 +486,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         >
           <button
             type="button"
-            onClick={() => {
-              playStickerPopSound();
-              setVoiceMode('upload');
-            }}
+            onClick={() => handleSwitchMode('upload')}
             className="handwritten"
             style={{
               display: 'flex',
@@ -471,10 +510,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              playStickerPopSound();
-              setVoiceMode('record');
-            }}
+            onClick={() => handleSwitchMode('record')}
             className="handwritten"
             style={{
               display: 'flex',
@@ -866,25 +902,28 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               </div>
             )}
 
-            {/* Recording Permission / Device Error */}
+            {/* Recording Permission / Device / Context Error Card */}
             {permissionError && (
               <div
                 style={{
-                  padding: '14px 18px',
-                  borderRadius: '8px',
+                  padding: '16px 20px',
+                  borderRadius: '10px',
                   backgroundColor: '#fff',
                   border: '1.5px dashed var(--ink-terracotta)',
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '10px',
+                  gap: '12px',
                   textAlign: 'left',
-                  maxWidth: '480px',
+                  maxWidth: '520px',
+                  boxShadow: 'var(--shadow-card)',
                 }}
               >
-                <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+                <ShieldAlert size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '16px' }}>Microphone Access</h4>
-                  <p style={{ fontSize: '13px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>{permissionError}</p>
+                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+                    Microphone Notice
+                  </h4>
+                  <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{permissionError}</p>
                 </div>
               </div>
             )}
