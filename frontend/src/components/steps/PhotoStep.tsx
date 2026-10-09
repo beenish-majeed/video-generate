@@ -121,16 +121,26 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
   };
 
   return (
-    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        position: 'relative',
+        width: '100%',
+      }}
+    >
       <Tape rotation="2deg" style={{ position: 'absolute', top: '12px', right: '40px' }} />
       <Sticker label="WHO IS SPEAKING?" rotation="-2deg" variant="sage" />
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: '22px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
           First, let’s choose the main character...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: '28px', marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
           Upload your portrait photograph
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
@@ -139,20 +149,21 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       </header>
 
       {/* Main Interactive Area: Empty / Drag & Drop / Polaroid Preview */}
-      <main>
+      <main style={{ width: '100%' }}>
         {previewUrl ? (
-          /* Taped Polaroid Presentation */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          /* Taped Polaroid Presentation - Centered & Fluid Scaling */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
             <div
               style={{
                 position: 'relative',
-                padding: '12px 12px 36px 12px',
+                padding: '10px 10px 30px 10px',
                 backgroundColor: '#ffffff',
                 borderRadius: '4px',
                 boxShadow: 'var(--shadow-notebook)',
-                transform: 'rotate(-2.5deg)',
-                maxWidth: '260px',
+                transform: 'rotate(-2deg)',
+                maxWidth: 'clamp(210px, 55vw, 280px)',
                 width: '100%',
+                margin: '0 auto',
                 border: '1px solid var(--paper-border)',
                 transition: 'transform 0.2s ease',
               }}
@@ -164,14 +175,14 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 alt={fileName ? `Uploaded portrait photo: ${fileName}` : 'Uploaded portrait photo'}
                 style={{
                   width: '100%',
-                  height: '220px',
+                  height: 'clamp(170px, 45vw, 230px)',
                   objectFit: 'cover',
                   borderRadius: '2px',
                   backgroundColor: 'var(--paper-cream-alt)',
                 }}
               />
 
-              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <div style={{ textAlign: 'center', marginTop: '8px' }}>
                 <p className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-primary)', fontWeight: 'bold' }}>
                   {fileName || 'Memory Portrait'}
                 </p>
@@ -235,7 +246,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             ) : null}
           </div>
         ) : (
-          /* Empty / Drag & Drop Dropzone */
+          /* Empty / Drag & Drop Dropzone - Easy Touch Use */
           <div
             role="button"
             tabIndex={0}
@@ -247,7 +258,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             aria-label="Upload portrait photo dropzone. Click or drag and drop an image file here."
             style={{
               position: 'relative',
-              padding: '36px 24px',
+              padding: 'clamp(24px, 5vw, 36px) clamp(16px, 4vw, 24px)',
               borderRadius: '12px',
               backgroundColor: dragActive ? 'var(--paper-cream-dark)' : 'var(--paper-cream-alt)',
               border: dragActive ? '2.5px dashed var(--ink-terracotta)' : '2px dashed var(--paper-border)',
@@ -256,7 +267,8 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '16px',
-              minHeight: '260px',
+              minHeight: 'clamp(200px, 35vh, 260px)',
+              width: '100%',
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -265,13 +277,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           >
             <Tape rotation="-3deg" style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%) rotate(-3deg)' }} />
 
-            <DoodleCamera size={56} />
+            <DoodleCamera size={52} />
 
             <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '17px' }}>
+              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: 'clamp(15px, 2.5vw, 17px)' }}>
                 Drag & drop your photograph here, or click to browse
               </p>
-              <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '4px' }}>
                 Supports PNG, JPG, or WEBP (Up to 20MB)
               </p>
             </div>
@@ -321,7 +333,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       )}
 
       {/* Navigation Footer */}
-      <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
         <button type="button" onClick={onBack} className="btn-secondary">
           <ArrowLeft size={16} />
           <span>Back</span>
