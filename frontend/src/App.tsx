@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
-import type { JourneyStepId } from './components/PageTabs';
+import type { JourneyStepId, FlowMode } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
 import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
@@ -37,8 +37,12 @@ const StepFallback: React.FC = () => (
   </div>
 );
 
+const DEFAULT_PHOTO_ASSET_ID = 'default-studio-photo';
+const DEFAULT_VOICE_ASSET_ID = 'default-studio-voice';
+
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
+  const [flowMode, setFlowMode] = useState<FlowMode>('custom_media');
   const shouldReduceMotion = useReducedMotion();
 
   const changeStep = (step: JourneyStepId) => {
@@ -51,7 +55,9 @@ export const App: React.FC = () => {
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
   const [durationPreset, setDurationPreset] = useState<DurationPreset>('30s');
   const [targetSeconds, setTargetSeconds] = useState<number>(30);
-  const [script, setScript] = useState<string>('A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.');
+  const [script, setScript] = useState<string>(
+    'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.'
+  );
   const [prompt, setPrompt] = useState<string>('Warm cinematic light, soft watercolor texture');
 
   // Active Job State
@@ -74,6 +80,19 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  const handleSelectPromptFlow = () => {
+    setFlowMode('prompt_first');
+    // Supply default studio asset IDs for prompt-first path if none uploaded yet
+    if (!photoAssetId) setPhotoAssetId(DEFAULT_PHOTO_ASSET_ID);
+    if (!voiceAssetId) setVoiceAssetId(DEFAULT_VOICE_ASSET_ID);
+    changeStep('duration');
+  };
+
+  const handleSelectCustomMediaFlow = () => {
+    setFlowMode('custom_media');
+    changeStep('photo');
+  };
+
   const handleCreateJob = async (consent: ConsentPayload) => {
     // Prevent double submission
     if (submitting) return;
@@ -81,10 +100,14 @@ export const App: React.FC = () => {
     setSubmitting(true);
     setErrorMessage(null);
 
+    // Fallback asset IDs if missing (e.g. in prompt-first mode)
+    const finalPhotoId = photoAssetId || DEFAULT_PHOTO_ASSET_ID;
+    const finalVoiceId = voiceAssetId || DEFAULT_VOICE_ASSET_ID;
+
     try {
       const res = await apiClient.createJob({
-        photo_asset_id: photoAssetId,
-        voice_asset_id: voiceAssetId,
+        photo_asset_id: finalPhotoId,
+        voice_asset_id: finalVoiceId,
         script: script.trim(),
         prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
         duration_preset: durationPreset,
@@ -140,7 +163,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <NotebookShell currentStep={currentStep} onSelectStep={(step) => changeStep(step)}>
+    <NotebookShell currentStep={currentStep} flowMode={flowMode} onSelectStep={(step) => changeStep(step)}>
       <Suspense fallback={<StepFallback />}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -152,7 +175,12 @@ export const App: React.FC = () => {
             style={{ width: '100%' }}
           >
             {currentStep === 'hero' && (
-              <HeroStep onNext={() => changeStep('photo')} />
+              <HeroStep
+                prompt={prompt}
+                onPromptChange={setPrompt}
+                onSelectPromptFlow={handleSelectPromptFlow}
+                onSelectCustomMediaFlow={handleSelectCustomMediaFlow}
+              />
             )}
 
             {currentStep === 'photo' && (
@@ -181,7 +209,7 @@ export const App: React.FC = () => {
                   setTargetSeconds(seconds);
                 }}
                 onNext={() => changeStep('script')}
-                onBack={() => changeStep('voice')}
+                onBack={() => changeStep(flowMode === 'prompt_first' ? 'hero' : 'voice')}
               />
             )}
 

@@ -13,13 +13,15 @@ export type JourneyStepId =
   | 'premiere'
   | 'failed';
 
+export type FlowMode = 'custom_media' | 'prompt_first';
+
 export interface StepDefinition {
   id: JourneyStepId;
   label: string;
   tabTitle: string;
 }
 
-export const JOURNEY_STEPS: StepDefinition[] = [
+export const CUSTOM_MEDIA_STEPS: StepDefinition[] = [
   { id: 'hero', label: 'Start', tabTitle: '00. Intro' },
   { id: 'photo', label: 'Photo', tabTitle: '01. Memory Photo' },
   { id: 'voice', label: 'Voice', tabTitle: '02. Voice Sample' },
@@ -30,13 +32,27 @@ export const JOURNEY_STEPS: StepDefinition[] = [
   { id: 'premiere', label: 'Premiere', tabTitle: '07. Final Film' },
 ];
 
+export const PROMPT_FIRST_STEPS: StepDefinition[] = [
+  { id: 'hero', label: 'Start', tabTitle: '00. Intro' },
+  { id: 'duration', label: 'Duration', tabTitle: '01. Pace & Time' },
+  { id: 'script', label: 'Script', tabTitle: '02. Narrative' },
+  { id: 'consent', label: 'Consent', tabTitle: '03. Rights & Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '04. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '05. Final Film' },
+];
+
+// Fallback for backwards compatibility if needed
+export const JOURNEY_STEPS = CUSTOM_MEDIA_STEPS;
+
 interface PageTabsProps {
   currentStep: JourneyStepId;
+  flowMode?: FlowMode;
   onSelectStep?: (step: JourneyStepId) => void;
 }
 
-export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, onSelectStep }) => {
-  const currentIndex = JOURNEY_STEPS.findIndex((s) => s.id === currentStep);
+export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, flowMode = 'custom_media', onSelectStep }) => {
+  const stepsList = flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
+  const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
 
   return (
     <div
@@ -63,7 +79,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({ currentStep, onSelectStep })
           flex: 1,
         }}
       >
-        {JOURNEY_STEPS.map((step, idx) => {
+        {stepsList.map((step, idx) => {
           const isActive = step.id === currentStep;
           const isCompleted = currentIndex > idx && currentStep !== 'failed';
           const isClickable = idx <= currentIndex && currentStep !== 'waiting' && currentStep !== 'failed';

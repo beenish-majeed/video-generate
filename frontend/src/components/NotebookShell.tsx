@@ -1,15 +1,17 @@
 import React from 'react';
-import PageTabs, { type JourneyStepId } from './PageTabs';
+import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
 import { DoodleSpiral } from './Doodles';
 
 interface NotebookShellProps {
   currentStep: JourneyStepId;
+  flowMode?: FlowMode;
   onSelectStep?: (step: JourneyStepId) => void;
   children: React.ReactNode;
 }
 
 export const NotebookShell: React.FC<NotebookShellProps> = ({
   currentStep,
+  flowMode,
   onSelectStep,
   children,
 }) => {
@@ -33,7 +35,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
         <DoodleSpiral count={14} />
 
         {/* Handmade Page Tabs Step Indicator */}
-        <PageTabs currentStep={currentStep} onSelectStep={onSelectStep} />
+        <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
 
         {/* Paper Page Inner Content */}
         <div style={{ position: 'relative', minHeight: '560px', width: '100%' }}>
