@@ -6,6 +6,7 @@ import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { extractWaveformPeaks, formatDuration, type WaveformAnalysis } from '../../utils/audioWaveform';
 import { playStickerPopSound } from '../../utils/soundEffects';
+import { convertBlobToWavFile } from '../../utils/wavEncoder';
 import {
   Upload,
   ArrowRight,
@@ -277,13 +278,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         }
       };
 
-      recorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-        const ext = recorder.mimeType?.includes('mp4') ? 'm4a' : 'webm';
-        const file = new File([blob], `recorded_voice_${Date.now()}.${ext}`, {
-          type: blob.type || 'audio/webm',
-        });
-        setRecordedFile(file);
+      recorder.onstop = async () => {
+        const rawBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        try {
+          const wavFile = await convertBlobToWavFile(rawBlob, `recorded_voice_${Date.now()}.wav`);
+          setRecordedFile(wavFile);
+        } catch {
+          const fallbackFile = new File([rawBlob], `recorded_voice_${Date.now()}.wav`, { type: 'audio/wav' });
+          setRecordedFile(fallbackFile);
+        }
       };
 
       recorder.start(100);
