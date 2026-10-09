@@ -63,16 +63,26 @@ export const DurationStep: React.FC<DurationStepProps> = ({
   };
 
   return (
-    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        position: 'relative',
+        width: '100%',
+      }}
+    >
       <Tape rotation="1.8deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="HOW LONG SHOULD IT BE?" rotation="-3deg" variant="amber" />
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: '22px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
           Setting the rhythm & pacing...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: '28px', marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
           Select video duration
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
@@ -80,8 +90,8 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         </p>
       </header>
 
-      {/* Main Interactive Preset Selection */}
-      <main style={{ minHeight: '180px' }}>
+      {/* Main Interactive Preset Selection - Fluid Grid (1 col phone, 2 col tablet, 3-4 col desktop) */}
+      <main style={{ minHeight: '180px', width: '100%' }}>
         {loading ? (
           /* Loading State */
           <div
@@ -96,6 +106,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               justifyContent: 'center',
               gap: '12px',
               color: 'var(--ink-terracotta)',
+              width: '100%',
             }}
           >
             <Loader2 size={32} className="animate-spin" />
@@ -118,6 +129,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               gap: '16px',
               textAlign: 'center',
               boxShadow: 'var(--shadow-card)',
+              width: '100%',
             }}
           >
             <AlertCircle size={32} style={{ color: 'var(--ink-terracotta)' }} />
@@ -135,8 +147,8 @@ export const DurationStep: React.FC<DurationStepProps> = ({
             </button>
           </div>
         ) : (
-          /* Sticker-like Duration Preset Cards */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '14px' }}>
+          /* Responsive Fluid Grid of Duration Preset Cards */
+          <div className="duration-cards-grid">
             {presets.map((preset, idx) => {
               const isSelected = preset.value === selectedPreset;
               // Subtle hand-placed rotation tilt for unselected cards
@@ -158,7 +170,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                   aria-label={`Select ${preset.label}, duration ${preset.seconds} seconds`}
                   style={{
                     position: 'relative',
-                    padding: '20px 14px',
+                    padding: '18px 12px',
                     borderRadius: '12px',
                     backgroundColor: isSelected ? '#ffffff' : 'var(--paper-cream-alt)',
                     border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1.5px solid var(--paper-border)',
@@ -167,10 +179,13 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: '6px',
                     boxShadow: isSelected ? 'var(--shadow-paper-float)' : 'var(--shadow-card)',
                     transform: `rotate(${tilt}deg)`,
                     outline: 'none',
+                    height: '100%',
+                    width: '100%',
                   }}
                 >
                   {/* Selected Badge Sticker */}
@@ -205,7 +220,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     {preset.seconds}s length
                   </span>
 
-                  <span style={{ fontSize: '11px', color: 'var(--ink-muted)', marginTop: '4px', fontStyle: 'italic' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--ink-muted)', marginTop: '4px', fontStyle: 'italic', textAlign: 'center' }}>
                     {formatEstimatedRenderTime(preset.seconds)}
                   </span>
                 </motion.button>
@@ -215,10 +230,10 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         )}
       </main>
 
-      {/* Kind Note about Render Time & Pacing */}
+      {/* Kind Note about Render Time & Pacing - Wraps Text Cleanly without Overflow */}
       <section
         style={{
-          padding: '20px',
+          padding: 'clamp(14px, 3vw, 20px)',
           borderRadius: '12px',
           backgroundColor: '#ffffff',
           border: '1px dashed var(--paper-border)',
@@ -226,6 +241,8 @@ export const DurationStep: React.FC<DurationStepProps> = ({
           flexDirection: 'column',
           gap: '12px',
           boxShadow: 'var(--shadow-card)',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -243,16 +260,16 @@ export const DurationStep: React.FC<DurationStepProps> = ({
 
         <div style={{ height: '1px', backgroundColor: 'var(--paper-border)', margin: '2px 0' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <Sparkles size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: '18px', color: 'var(--ink-terracotta)' }}>
+          <p className="handwritten" style={{ fontSize: '18px', color: 'var(--ink-terracotta)', lineHeight: 1.3 }}>
             For {currentOption.label} ({currentOption.seconds}s), aim for ~{approxWords} spoken words (at {wpm} words/min rate).
           </p>
         </div>
       </section>
 
       {/* Navigation Footer */}
-      <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
         <button type="button" onClick={onBack} className="btn-secondary">
           <ArrowLeft size={16} />
           <span>Back</span>

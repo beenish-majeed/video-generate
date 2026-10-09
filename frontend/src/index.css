@@ -253,3 +253,24 @@ img, svg, canvas, video {
     max-width: clamp(1100px, 65vw, 1500px);
   }
 }
+
+/* Duration Preset Cards Fluid Grid */
+.duration-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (max-width: 480px) {
+  .duration-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .duration-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
