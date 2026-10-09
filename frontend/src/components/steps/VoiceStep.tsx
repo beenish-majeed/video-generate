@@ -6,7 +6,21 @@ import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { extractWaveformPeaks, formatDuration, type WaveformAnalysis } from '../../utils/audioWaveform';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { Upload, ArrowRight, ArrowLeft, Loader2, Play, Pause, RefreshCw, AlertCircle, Volume2 } from 'lucide-react';
+import {
+  Upload,
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  Play,
+  Pause,
+  RefreshCw,
+  AlertCircle,
+  Volume2,
+  Mic,
+  Square,
+  Check,
+  Radio,
+} from 'lucide-react';
 
 interface VoiceStepProps {
   selectedAssetId: string;
@@ -15,12 +29,22 @@ interface VoiceStepProps {
   onBack: () => void;
 }
 
+type VoiceMode = 'upload' | 'record';
+type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'recorded' | 'too_short' | 'error';
+
+const MIN_RECORD_SECONDS = 3;
+const MAX_RECORD_SECONDS = 60;
+
 export const VoiceStep: React.FC<VoiceStepProps> = ({
   selectedAssetId,
   onAssetSelected,
   onNext,
   onBack,
 }) => {
+  // Voice Mode & State
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('upload');
+
+  // File Upload State
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analyzingAudio, setAnalyzingAudio] = useState(false);
@@ -30,6 +54,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [mappedError, setMappedError] = useState<MappedAPIError | null>(null);
 
+  // Live Recording State
+  const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle');
+  const [recordingTime, setRecordingTime] = useState<number>(0);
+  const [audioLevels, setAudioLevels] = useState<number[]>(Array(10).fill(0.1));
+  const [recordedFile, setRecordedFile] = useState<File | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
   // Audio Playback & Waveform State
   const [waveform, setWaveform] = useState<WaveformAnalysis | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -38,6 +69,14 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Recording Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerIntervalRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024 * 1024) {
       return `${Math.round(bytes / 1024)} KB`;
@@ -45,15 +84,44 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Clean up recording hardware resources
+  const cleanupRecordingHardware = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => cleanupRecordingHardware();
+  }, []);
+
   const processFile = async (file: File) => {
     setMappedError(null);
 
     // Client-side validation 1: Audio File Type
-    const isAudioType = file.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(file.name);
+    const isAudioType =
+      file.type.startsWith('audio/') ||
+      file.type.includes('webm') ||
+      /\.(mp3|wav|m4a|ogg|flac|aac|webm)$/i.test(file.name);
+
     if (!isAudioType) {
       setMappedError({
         title: 'Please Select an Audio File',
-        message: 'We could not read this audio format. Please choose a voice sample in MP3, WAV, or M4A format.',
+        message:
+          'We could not read this audio format. Please choose a voice sample in MP3, WAV, M4A, or WEBM format.',
         kind: 'validation',
       });
       return;
@@ -64,7 +132,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     if (file.size > MAX_SIZE_BYTES) {
       setMappedError({
         title: 'Audio File is Too Large',
-        message: `This recording is ${formatFileSize(file.size)}, exceeding our 20MB limit. Please upload a shorter audio clip.`,
+        message: `This recording is ${formatFileSize(
+          file.size
+        )}, exceeding our 20MB limit. Please upload a shorter audio clip.`,
         kind: 'too_large',
       });
       return;
@@ -144,6 +214,160 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
+  // Live Microphone Recording Actions
+  const startRecording = async () => {
+    setPermissionError(null);
+    setRecordingStatus('requesting');
+
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setRecordingStatus('error');
+      setPermissionError(
+        'Microphone recording is not supported in this browser. Please use "Upload a file" instead.'
+      );
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      // Set up AudioContext for live level meter
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const audioCtx = new AudioCtx();
+          audioContextRef.current = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 32;
+          source.connect(analyser);
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          const updateMeter = () => {
+            analyser.getByteFrequencyData(dataArray);
+            const levels: number[] = [];
+            const step = Math.floor(dataArray.length / 10) || 1;
+            for (let i = 0; i < 10; i++) {
+              const val = dataArray[i * step] || 0;
+              levels.push(Math.max(0.12, val / 255));
+            }
+            setAudioLevels(levels);
+            animFrameRef.current = requestAnimationFrame(updateMeter);
+          };
+          updateMeter();
+        }
+      } catch {
+        // Non-fatal if AudioContext initialization blocked
+      }
+
+      // Set up MediaRecorder
+      audioChunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : '';
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const ext = recorder.mimeType?.includes('mp4') ? 'm4a' : 'webm';
+        const file = new File([blob], `recorded_voice_${Date.now()}.${ext}`, {
+          type: blob.type || 'audio/webm',
+        });
+        setRecordedFile(file);
+      };
+
+      recorder.start(100);
+      playStickerPopSound();
+      setRecordingStatus('recording');
+      setRecordingTime(0);
+
+      // Timer counter loop
+      timerIntervalRef.current = window.setInterval(() => {
+        setRecordingTime((prev) => {
+          if (prev >= MAX_RECORD_SECONDS - 1) {
+            stopRecording();
+            return MAX_RECORD_SECONDS;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      setRecordingStatus('error');
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setPermissionError(
+          'Microphone permission was denied. Please allow microphone access in your browser settings and try again.'
+        );
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setPermissionError(
+          'No microphone input device was found on your system. Please connect a microphone or choose "Upload a file".'
+        );
+      } else {
+        setPermissionError(
+          'Could not access microphone. Please check browser permissions or choose "Upload a file".'
+        );
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+
+    playStickerPopSound();
+
+    setRecordingTime((finalTime) => {
+      if (finalTime < MIN_RECORD_SECONDS) {
+        setRecordingStatus('too_short');
+      } else {
+        setRecordingStatus('recorded');
+      }
+      return finalTime;
+    });
+  };
+
+  const resetRecording = () => {
+    cleanupRecordingHardware();
+    setRecordingStatus('idle');
+    setRecordingTime(0);
+    setRecordedFile(null);
+    setPermissionError(null);
+  };
+
+  const handleUseRecording = () => {
+    if (recordedFile) {
+      processFile(recordedFile);
+    }
+  };
+
   const togglePlayPause = () => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -175,7 +399,16 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   }, [previewUrl]);
 
   return (
-    <div className="step-container" style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: '32px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        position: 'relative',
+      }}
+    >
       <Tape rotation="-1.5deg" style={{ position: 'absolute', top: '10px', right: '50px' }} />
       <Sticker label="LET US HEAR YOU" rotation="2deg" variant="blue" />
 
@@ -185,12 +418,82 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           Now, let’s give your story a voice...
         </p>
         <h2 className="editorial-title" style={{ fontSize: '28px', marginTop: '4px' }}>
-          Upload a voice recording
+          Provide a voice sample
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
-          Upload a clear audio sample (10–30 seconds). We will generate speech matching this tone.
+          Upload an existing audio recording or speak directly into your microphone (3 to 60 seconds).
         </p>
       </header>
+
+      {/* Option Mode Selector (Upload vs Record Now) */}
+      {!previewUrl && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            backgroundColor: 'var(--paper-cream-alt)',
+            padding: '6px',
+            borderRadius: '10px',
+            border: '1px solid var(--paper-border)',
+            width: 'fit-content',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              playStickerPopSound();
+              setVoiceMode('upload');
+            }}
+            className="handwritten"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 18px',
+              borderRadius: '8px',
+              fontSize: '18px',
+              border: voiceMode === 'upload' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
+              backgroundColor: voiceMode === 'upload' ? 'var(--paper-cream)' : 'transparent',
+              color: voiceMode === 'upload' ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
+              cursor: 'pointer',
+              fontWeight: voiceMode === 'upload' ? 'bold' : 'normal',
+              transition: 'all 0.15s ease',
+            }}
+            aria-label="Upload an audio file option"
+          >
+            <Upload size={16} />
+            <span>Upload a file</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              playStickerPopSound();
+              setVoiceMode('record');
+            }}
+            className="handwritten"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 18px',
+              borderRadius: '8px',
+              fontSize: '18px',
+              border: voiceMode === 'record' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
+              backgroundColor: voiceMode === 'record' ? 'var(--paper-cream)' : 'transparent',
+              color: voiceMode === 'record' ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
+              cursor: 'pointer',
+              fontWeight: voiceMode === 'record' ? 'bold' : 'normal',
+              transition: 'all 0.15s ease',
+            }}
+            aria-label="Record voice live option"
+          >
+            <Mic size={16} />
+            <span>Record now</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Interactive Content */}
       <main>
@@ -337,7 +640,11 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 </span>
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    setPreviewUrl(null);
+                    setFileName(null);
+                    resetRecording();
+                  }}
                   className="btn-secondary"
                   style={{ fontSize: '13px', padding: '6px 14px' }}
                 >
@@ -350,8 +657,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Hidden HTML5 Audio Element for Preview */}
             <audio ref={audioRef} src={previewUrl} preload="auto" />
           </div>
-        ) : (
-          /* Empty / Drag & Drop Dropzone */
+        ) : voiceMode === 'upload' ? (
+          /* Option 1: File Upload Dropzone */
           <div
             role="button"
             tabIndex={0}
@@ -385,7 +692,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
             <div>
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '17px' }}>
-                Drag & drop voice audio clip (.wav, .mp3, .m4a)
+                Drag & drop voice audio clip (.wav, .mp3, .m4a, .webm)
               </p>
               <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '4px' }}>
                 Clear speech with quiet background noise works best (Up to 20MB)
@@ -397,13 +704,195 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               <span>Select Audio File</span>
             </span>
           </div>
+        ) : (
+          /* Option 2: Live Recording View */
+          <div
+            style={{
+              position: 'relative',
+              padding: '28px 24px',
+              borderRadius: '12px',
+              backgroundColor: 'var(--paper-cream-alt)',
+              border: '2px dashed var(--paper-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px',
+              minHeight: '260px',
+              textAlign: 'center',
+            }}
+          >
+            <Tape rotation="-2deg" style={{ position: 'absolute', top: '-14px', right: '40px' }} />
+
+            {/* Recording Status: Idle */}
+            {recordingStatus === 'idle' && (
+              <>
+                <DoodleMic size={48} />
+                <div>
+                  <h3 className="editorial-title" style={{ fontSize: '20px' }}>
+                    Speak into your microphone
+                  </h3>
+                  <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+                    Recording length must be between <strong>3 seconds</strong> and <strong>60 seconds</strong>.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={startRecording}
+                  className="btn-terracotta"
+                  style={{ padding: '12px 28px', fontSize: '16px' }}
+                >
+                  <Mic size={18} />
+                  <span>Start Recording</span>
+                </button>
+              </>
+            )}
+
+            {/* Recording Status: Requesting Permission */}
+            {recordingStatus === 'requesting' && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--ink-terracotta)' }} />
+                <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-terracotta)' }}>
+                  Requesting microphone permission...
+                </p>
+                <p style={{ fontSize: '14px', color: 'var(--ink-muted)' }}>
+                  Please allow microphone access in your browser prompt.
+                </p>
+              </div>
+            )}
+
+            {/* Recording Status: Active Recording */}
+            {recordingStatus === 'recording' && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
+                {/* Live REC Timer Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Radio size={18} className="animate-pulse" style={{ color: 'var(--ink-terracotta)' }} />
+                  <span className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-terracotta)', fontWeight: 'bold' }}>
+                    REC {formatDuration(recordingTime)} / 01:00
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                  Speak clearly • Recording limit: 3s to 60s
+                </p>
+
+                {/* Hand-Drawn Live Level Meter */}
+                <div
+                  aria-label="Live audio volume level meter"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    height: '60px',
+                    width: '240px',
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--paper-cream)',
+                    border: '1.5px solid var(--paper-border)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  {audioLevels.map((lvl, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        flex: 1,
+                        height: `${Math.max(12, lvl * 100)}%`,
+                        backgroundColor:
+                          lvl > 0.6 ? 'var(--ink-terracotta)' : lvl > 0.3 ? 'var(--ink-amber)' : 'var(--ink-sage)',
+                        borderRadius: '3px',
+                        border: '1px solid var(--ink-primary)',
+                        transition: 'height 0.1s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="btn-terracotta"
+                  style={{ padding: '10px 24px', backgroundColor: 'var(--ink-primary)' }}
+                >
+                  <Square size={16} fill="#ffffff" />
+                  <span>Stop Recording</span>
+                </button>
+              </div>
+            )}
+
+            {/* Recording Status: Too Short Warning */}
+            {recordingStatus === 'too_short' && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <AlertCircle size={32} style={{ color: 'var(--ink-amber)' }} />
+                <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
+                  Recording was too short ({recordingTime}s)
+                </h4>
+                <p style={{ fontSize: '14px', color: 'var(--ink-muted)' }}>
+                  Please record a voice clip between <strong>3 seconds</strong> and <strong>60 seconds</strong>.
+                </p>
+
+                <button type="button" onClick={resetRecording} className="btn-terracotta">
+                  <RefreshCw size={16} />
+                  <span>Try Recording Again</span>
+                </button>
+              </div>
+            )}
+
+            {/* Recording Status: Recorded & Ready to Review */}
+            {recordingStatus === 'recorded' && recordedFile && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ink-sage)' }}>
+                  <Check size={20} />
+                  <span className="handwritten" style={{ fontSize: '22px', fontWeight: 'bold' }}>
+                    Recording captured! ({recordingTime} seconds)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button type="button" onClick={resetRecording} className="btn-secondary">
+                    <RefreshCw size={16} />
+                    <span>Re-record</span>
+                  </button>
+
+                  <button type="button" onClick={handleUseRecording} className="btn-terracotta">
+                    <Check size={16} />
+                    <span>Use this recording</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Recording Permission / Device Error */}
+            {permissionError && (
+              <div
+                style={{
+                  padding: '14px 18px',
+                  borderRadius: '8px',
+                  backgroundColor: '#fff',
+                  border: '1.5px dashed var(--ink-terracotta)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  textAlign: 'left',
+                  maxWidth: '480px',
+                }}
+              >
+                <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '16px' }}>Microphone Access</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>{permissionError}</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Hidden File Input */}
+        {/* Hidden File Input for Upload mode */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac"
+          accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
