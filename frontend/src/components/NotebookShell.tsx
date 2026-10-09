@@ -16,19 +16,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   children,
 }) => {
   return (
-    <div
-      style={{
-        width: '100%',
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg-canvas)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 12px',
-        boxSizing: 'border-box',
-      }}
-    >
+    <div className="notebook-wrapper">
       {/* Outer Notebook Window Container */}
       <div className="notebook-container graph-paper-bg">
         {/* Notebook Top Binder Spiral */}
@@ -38,7 +26,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
         <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
 
         {/* Paper Page Inner Content */}
-        <div style={{ position: 'relative', minHeight: '560px', width: '100%' }}>
+        <div style={{ position: 'relative', minHeight: 'clamp(420px, 60dvh, 720px)', width: '100%' }}>
           {children}
         </div>
       </div>
