@@ -251,7 +251,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       window.location.hostname === '127.0.0.1' ||
       window.location.hostname === '[::1]';
     const isSecureContext =
-      window.isSecureContext || window.location.protocol === 'https:' || isLocalhost;
+      typeof window.isSecureContext !== 'undefined'
+        ? window.isSecureContext
+        : window.location.protocol === 'https:' || isLocalhost;
 
     if (!isSecureContext) {
       cleanupRecordingHardware();
