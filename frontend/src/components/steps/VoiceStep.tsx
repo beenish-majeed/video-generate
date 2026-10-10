@@ -32,7 +32,6 @@ interface VoiceStepProps {
 }
 
 import {
-  MIN_RECORD_SECONDS,
   MAX_RECORD_SECONDS,
   validateRecordingDuration,
 } from '../../utils/recordingLimits';
@@ -395,7 +394,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     playStickerPopSound();
 
     setRecordingTime((finalTime) => {
-      if (finalTime < MIN_RECORD_SECONDS) {
+      const validation = validateRecordingDuration(finalTime);
+      if (validation === 'too_short') {
         setRecordingStatus('too_short');
       } else {
         setRecordingStatus('recorded');

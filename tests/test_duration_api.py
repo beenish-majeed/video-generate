@@ -65,6 +65,7 @@ def test_valid_explicit_seconds():
 
 
 def test_invalid_preset_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "api_key", None)
     monkeypatch.setattr(settings, "allow_insecure_dev", True)
     consent = ConsentRequest(
         authorized=True,
@@ -92,6 +93,7 @@ def test_invalid_preset_rejected(monkeypatch):
 
 
 def test_too_long_duration_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "api_key", None)
     monkeypatch.setattr(settings, "allow_insecure_dev", True)
     response = client.post(
         "/v1/jobs",

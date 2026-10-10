@@ -46,6 +46,12 @@ export function getStepListForMode(flowMode: FlowMode = 'custom_media'): StepDef
   return flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
 }
 
+interface PageTabsProps {
+  currentStep: JourneyStepId;
+  flowMode?: FlowMode;
+  onSelectStep?: (step: JourneyStepId) => void;
+}
+
 export const PageTabs: React.FC<PageTabsProps> = ({
   currentStep,
   flowMode = 'custom_media',

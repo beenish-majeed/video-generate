@@ -9,6 +9,7 @@ client = TestClient(app)
 
 
 def test_script_too_short_for_requested_duration_rejected(monkeypatch):
+    monkeypatch.setattr(settings, "api_key", None)
     monkeypatch.setattr(settings, "allow_insecure_dev", True)
     # 20 words script ~ 8.0s speech duration @ 150 WPM
     short_script = " ".join(["word"] * 20)

@@ -12,7 +12,7 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     currentStep: 'photo',
     photoAssetId: '',
     voiceAssetId: '',
-    durationPreset: '60s',
+    durationPreset: '30s',
     targetSeconds: 60,
     script: 'A calm mountain path with autumn leaves falling gently.',
     prompt: 'Warm cinematic sunset watercolor style',
@@ -28,7 +28,7 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     // Shared data RETAINED
     expect(nextState.script).toBe('A calm mountain path with autumn leaves falling gently.');
     expect(nextState.prompt).toBe('Warm cinematic sunset watercolor style');
-    expect(nextState.durationPreset).toBe('60s');
+    expect(nextState.durationPreset).toBe('30s');
     expect(nextState.targetSeconds).toBe(60);
 
     // Transient error CLEARED

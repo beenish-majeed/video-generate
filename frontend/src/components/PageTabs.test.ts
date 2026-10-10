@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   CUSTOM_MEDIA_STEPS,
-  PROMPT_FIRST_STEPS,
   getStepListForMode,
 } from './PageTabs';
 
