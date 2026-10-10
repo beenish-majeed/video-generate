@@ -498,6 +498,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               justifyContent: 'center',
               gap: '6px',
               padding: '8px 14px',
+              minHeight: '44px',
               borderRadius: '8px',
               fontSize: '17px',
               border: voiceMode === 'upload' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
@@ -525,6 +526,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               justifyContent: 'center',
               gap: '6px',
               padding: '8px 14px',
+              minHeight: '44px',
               borderRadius: '8px',
               fontSize: '17px',
               border: voiceMode === 'record' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
@@ -907,12 +909,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-                  <button type="button" onClick={resetRecording} className="btn-secondary" style={{ fontSize: '13px', padding: '8px 14px', flex: '1 1 120px' }}>
+                  <button type="button" onClick={resetRecording} className="btn-secondary" style={{ fontSize: '13px', padding: '8px 14px', minHeight: '44px', flex: '1 1 120px' }}>
                     <RefreshCw size={14} />
                     <span>Re-record</span>
                   </button>
 
-                  <button type="button" onClick={handleUseRecording} className="btn-terracotta" style={{ fontSize: '13px', padding: '8px 14px', flex: '1 1 140px' }}>
+                  <button type="button" onClick={handleUseRecording} className="btn-terracotta" style={{ fontSize: '13px', padding: '8px 14px', minHeight: '44px', flex: '1 1 140px' }}>
                     <Check size={14} />
                     <span>Use this recording</span>
                   </button>

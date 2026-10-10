@@ -131,7 +131,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             />
 
             {/* Quick Inspiration Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
               {PROMPT_SUGGESTIONS.map((sug, i) => (
                 <button
                   key={i}
@@ -139,14 +139,17 @@ export const HeroStep: React.FC<HeroStepProps> = ({
                   onClick={() => onPromptChange(sug)}
                   className="handwritten"
                   style={{
-                    fontSize: '13px',
-                    padding: '2px 8px',
-                    borderRadius: '12px',
+                    fontSize: '14px',
+                    padding: '6px 12px',
+                    minHeight: '38px',
+                    borderRadius: '14px',
                     border: '1px dashed var(--paper-border)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.75)',
                     color: 'var(--ink-muted)',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
                   }}
                   aria-label={`Use suggestion: ${sug}`}
                 >

@@ -115,8 +115,8 @@ export const PageTabs: React.FC<PageTabsProps> = ({
               onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
               disabled={!isClickable}
               style={{
-                padding: '6px 12px',
-                minHeight: '40px',
+                padding: '8px 14px',
+                minHeight: '44px',
                 borderRadius: '8px 8px 0 0',
                 border: '1px solid var(--paper-border)',
                 borderBottom: isActive ? '1px solid var(--paper-cream)' : '1px solid var(--paper-border)',

@@ -237,7 +237,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="btn-secondary"
-                  style={{ fontSize: '14px', padding: '8px 16px' }}
+                  style={{ fontSize: '14px', padding: '8px 16px', minHeight: '44px' }}
                 >
                   <RefreshCw size={14} />
                   <span>Choose a different photo</span>
