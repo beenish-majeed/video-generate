@@ -41,13 +41,9 @@ export const PROMPT_FIRST_STEPS: StepDefinition[] = [
   { id: 'premiere', label: 'Premiere', tabTitle: '05. Final Film' },
 ];
 
-// Fallback for backwards compatibility if needed
-export const JOURNEY_STEPS = CUSTOM_MEDIA_STEPS;
-
-interface PageTabsProps {
-  currentStep: JourneyStepId;
-  flowMode?: FlowMode;
-  onSelectStep?: (step: JourneyStepId) => void;
+// Helper to get step definitions for a given flow mode
+export function getStepListForMode(flowMode: FlowMode = 'custom_media'): StepDefinition[] {
+  return flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
 }
 
 export const PageTabs: React.FC<PageTabsProps> = ({
@@ -55,7 +51,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   flowMode = 'custom_media',
   onSelectStep,
 }) => {
-  const stepsList = flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
+  const stepsList = getStepListForMode(flowMode);
   const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
 
   const activeTabRef = useRef<HTMLButtonElement | null>(null);

@@ -31,11 +31,14 @@ interface VoiceStepProps {
   onBack: () => void;
 }
 
+import {
+  MIN_RECORD_SECONDS,
+  MAX_RECORD_SECONDS,
+  validateRecordingDuration,
+} from '../../utils/recordingLimits';
+
 type VoiceMode = 'upload' | 'record';
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'recorded' | 'too_short' | 'error';
-
-const MIN_RECORD_SECONDS = 3;
-const MAX_RECORD_SECONDS = 60;
 
 export const VoiceStep: React.FC<VoiceStepProps> = ({
   selectedAssetId,

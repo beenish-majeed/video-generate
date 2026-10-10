@@ -1,10 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { CUSTOM_MEDIA_STEPS, PROMPT_FIRST_STEPS } from './PageTabs';
+import {
+  CUSTOM_MEDIA_STEPS,
+  PROMPT_FIRST_STEPS,
+  getStepListForMode,
+} from './PageTabs';
 
-describe('PageTabs Step Configuration', () => {
-  it('defines 8 steps for custom media flow', () => {
-    expect(CUSTOM_MEDIA_STEPS).toHaveLength(8);
-    expect(CUSTOM_MEDIA_STEPS.map((s) => s.id)).toEqual([
+describe('Path-Based Step List Unit Tests', () => {
+  it('1. Upload path (custom_media): returns 8 steps in exact order', () => {
+    const steps = getStepListForMode('custom_media');
+    expect(steps).toHaveLength(8);
+    expect(steps.map((s) => s.id)).toEqual([
       'hero',
       'photo',
       'voice',
@@ -14,11 +19,23 @@ describe('PageTabs Step Configuration', () => {
       'waiting',
       'premiere',
     ]);
+
+    expect(steps.map((s) => s.tabTitle)).toEqual([
+      '00. Intro',
+      '01. Memory Photo',
+      '02. Voice Sample',
+      '03. Pace & Time',
+      '04. Narrative',
+      '05. Rights & Consent',
+      '06. Studio Render',
+      '07. Final Film',
+    ]);
   });
 
-  it('defines 6 steps for prompt first flow (skipping photo & voice steps)', () => {
-    expect(PROMPT_FIRST_STEPS).toHaveLength(6);
-    expect(PROMPT_FIRST_STEPS.map((s) => s.id)).toEqual([
+  it('2. Prompt path (prompt_first): returns 6 steps in exact order (skipping photo & voice)', () => {
+    const steps = getStepListForMode('prompt_first');
+    expect(steps).toHaveLength(6);
+    expect(steps.map((s) => s.id)).toEqual([
       'hero',
       'duration',
       'script',
@@ -26,12 +43,30 @@ describe('PageTabs Step Configuration', () => {
       'waiting',
       'premiere',
     ]);
+
+    expect(steps.map((s) => s.tabTitle)).toEqual([
+      '00. Intro',
+      '01. Pace & Time',
+      '02. Narrative',
+      '03. Rights & Consent',
+      '04. Studio Render',
+      '05. Final Film',
+    ]);
   });
 
-  it('maintains proper numbered tab titles for prompt first flow', () => {
-    expect(PROMPT_FIRST_STEPS[0].tabTitle).toBe('00. Intro');
-    expect(PROMPT_FIRST_STEPS[1].tabTitle).toBe('01. Pace & Time');
-    expect(PROMPT_FIRST_STEPS[2].tabTitle).toBe('02. Narrative');
-    expect(PROMPT_FIRST_STEPS[3].tabTitle).toBe('03. Rights & Consent');
+  it('3. Photo and Voice steps exist ONLY in custom_media path', () => {
+    const customMediaIds = getStepListForMode('custom_media').map((s) => s.id);
+    const promptFirstIds = getStepListForMode('prompt_first').map((s) => s.id);
+
+    expect(customMediaIds).toContain('photo');
+    expect(customMediaIds).toContain('voice');
+
+    expect(promptFirstIds).not.toContain('photo');
+    expect(promptFirstIds).not.toContain('voice');
+  });
+
+  it('4. Default flowMode falls back to custom_media step list', () => {
+    const steps = getStepListForMode();
+    expect(steps).toEqual(CUSTOM_MEDIA_STEPS);
   });
 });
