@@ -17,6 +17,8 @@ const PROMPT_SUGGESTIONS = [
   'Autumn leaves softly falling along a quiet park path',
 ];
 
+export const ENABLE_PROMPT_PATH = false;
+
 export const HeroStep: React.FC<HeroStepProps> = ({
   prompt,
   onPromptChange,
@@ -69,6 +71,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
         }}
       >
         {/* Card 1: Write a prompt and make a video */}
+        {ENABLE_PROMPT_PATH && (
         <div
           style={{
             position: 'relative',
@@ -174,6 +177,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             <ArrowRight size={18} aria-hidden="true" />
           </button>
         </div>
+        )}
 
         {/* Card 2: Upload your photo or voice */}
         <div
