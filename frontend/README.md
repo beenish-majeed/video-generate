@@ -126,6 +126,34 @@ Different browsers and operating systems record raw audio streams in diverse con
 
 ---
 
+## 📱 Supported Screen Sizes & Responsive Layouts
+
+The UI is constructed with responsive fluid typography (`clamp()`), flexbox/grid containers, and CSS custom properties that scale from **320px smartphones up to 2560px ultra-wide monitors**:
+
+### 1. Small Phones (320px – 480px)
+* **Full-Bleed Notebook**: Borders and outer margins collapse to maximize screen estate without clipping content.
+* **Safe Area Insets**: Explicit `env(safe-area-inset-*)` padding protects navigation buttons and headers from device notches, camera punch-holes, and home indicator bars.
+* **Full-Width Stacked Touch Targets**: Step footers stack buttons vertically (`flex-direction: column-reverse`) with accessible `min-height: 44px` touch targets.
+* **Single-Column Presets**: The duration cards grid collapses into a single accessible column (`grid-template-columns: 1fr`).
+* **Horizontal Touch Tabs**: The binder tabs scroll smoothly with hidden scrollbars for natural swiping.
+
+### 2. Large Phones & Tablets (481px – 768px)
+* **Two-Column Presets**: Duration cards arrange into a 2-column grid.
+* **Proportional Scaling**: Step containers expand comfortably with dynamic gap spacing (`clamp(0.85rem, 3vw, 1.25rem)`).
+
+### 3. Desktop Displays (769px – 1440px)
+* **Floating Notebook Page**: The sketchbook is centered against the dark charcoal canvas with paper drop shadows (`--shadow-notebook`) and folded-page corners.
+* **Standard Container Bounds**: Notebook container width scales dynamically via `clamp(740px, 80vw, 1300px)`.
+
+### 4. Ultra-Wide Displays (1600px – 2560px)
+* **Restrained Typography & Proportions**: Controlled by `@media (min-width: 1600px)`. The notebook caps its max width at `clamp(1100px, 65vw, 1500px)`, preventing paragraphs, textareas, or controls from stretching excessively across 2K or 4K monitors.
+
+### 5. Landscape Mobile Orientation
+* **Dynamic Viewport Height (`dvh`)**: Containers use `min-height: 100dvh` and fluid vertical padding (`clamp(0.5rem, 2dvh, 1.5rem)`), ensuring header and controls remain visible on short horizontal screens.
+* **Internal Page Scrolling**: Step containers maintain `overflow-y: auto` so all inputs and buttons are reachable when virtual mobile keyboards expand horizontally.
+
+---
+
 ## 📁 Directory & File Architecture
 
 ```
