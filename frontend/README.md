@@ -62,6 +62,36 @@ BACKEND_URL=https://api.yourdomain.com
 
 ---
 
+## 📖 Welcome Page & The Two Creation Paths
+
+The application opens on a sketchbook welcome screen featuring a warm illustrated hero scene, an optional creative prompt input with quick suggestion chips, and two distinct path selection cards:
+
+### 1. "Upload Photo & Voice" Path (`custom_media`)
+Designed for creators who bring their own media files or record live audio:
+1. **Welcome**: Set creative prompt or mood.
+2. **Photo**: Upload portrait photograph (JPEG, PNG, WEBP, up to 10MB) pinned to canvas.
+3. **Voice**: Upload audio file (MP3, WAV, M4A, WEBM, up to 20MB) or record directly using the microphone.
+4. **Duration**: Select video length from dynamic presets loaded from the backend (e.g. 5s, 30s, 2m, 5m, 10m).
+5. **Script**: Draft narrative story matching duration guidelines (150 WPM pacing with visual feedback).
+6. **Rights / Consent**: Review and check all 3 legal attestations (face permission, voice ownership, synthesis authorization).
+7. **Waiting Room**: Real-time animated progress tracking across neural synthesis stages.
+8. **Premiere**: Theater preview screening with direct MP4 download.
+
+### 2. "Start with Prompt" Path (`prompt_first`)
+Designed for idea-first generation starting directly from a narrative concept:
+1. **Welcome**: Enter creative story prompt.
+2. **Duration**: Select target video duration preset.
+3. **Script**: Enter narrative script fitted to the chosen duration bounds.
+4. **Rights / Consent**: Affirm ownership and synthesis consent.
+5. **Waiting Room**: Real-time progress monitoring.
+6. **Premiere**: Video player preview and download.
+
+*Note on prompt path backend support*: The frontend supplies studio default identifiers (`default-studio-photo` and `default-studio-voice`) in prompt-first mode. If the backend does not have pre-seeded default studio assets on disk, job submission returns an explanatory error card informing the user to supply photo and voice assets.
+
+Throughout both paths, clickable notebook binder tabs at the top allow inspecting completed stages and jumping back to prior steps without losing entered input.
+
+---
+
 ## 📁 Directory & File Architecture
 
 ```
