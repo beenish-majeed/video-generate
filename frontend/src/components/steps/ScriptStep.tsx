@@ -58,7 +58,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
           icon: <Frown size={22} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />,
           bgColor: '#fffcf5',
           borderColor: 'var(--ink-amber)',
-          textColor: 'var(--ink-amber)',
+          textColor: '#874c00',
         };
       case 'too_long':
         return {
@@ -109,7 +109,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       </header>
 
       {/* Script Text Area & Controls */}
-      <main style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+      <div role="region" aria-label="Narrative script workspace" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
         {/* Label & Target Word Counter Header Bar - Responsive Flex Wrap */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
           <label
@@ -261,7 +261,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             }}
           />
         </div>
-      </main>
+      </div>
 
       {/* Navigation Footer */}
       <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>

@@ -77,7 +77,9 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
       </header>
 
       {/* Theater Frame with Opening Curtains Animation */}
-      <main
+      <div
+        role="region"
+        aria-label="Theater screening frame"
         style={{
           position: 'relative',
           borderRadius: '12px',
@@ -181,7 +183,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             style={{ width: '100%', maxHeight: '460px', objectFit: 'contain', display: 'block' }}
           />
         )}
-      </main>
+      </div>
 
       {/* Download Error Card */}
       {downloadError && (

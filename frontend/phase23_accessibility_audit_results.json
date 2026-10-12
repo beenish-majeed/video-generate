@@ -1,0 +1,264 @@
+{
+  "axeReports": [
+    {
+      "step": "Welcome Page (HeroStep)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 42,
+      "violations": []
+    },
+    {
+      "step": "PhotoStep (Empty)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 42,
+      "violations": []
+    },
+    {
+      "step": "PhotoStep (Uploaded)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 37,
+      "violations": []
+    },
+    {
+      "step": "VoiceStep (Upload Mode)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 36,
+      "violations": []
+    },
+    {
+      "step": "VoiceStep (Record Mode Idle)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 35,
+      "violations": []
+    },
+    {
+      "step": "VoiceStep (Actively Recording)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 36,
+      "violations": []
+    },
+    {
+      "step": "VoiceStep (Recorded State)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 35,
+      "violations": []
+    },
+    {
+      "step": "DurationStep",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 35,
+      "violations": []
+    },
+    {
+      "step": "ScriptStep (Empty)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 39,
+      "violations": []
+    },
+    {
+      "step": "ScriptStep (Filled)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 39,
+      "violations": []
+    },
+    {
+      "step": "ConsentStep",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 39,
+      "violations": []
+    },
+    {
+      "step": "WaitingStep (Processing)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 34,
+      "violations": []
+    },
+    {
+      "step": "PremiereStep",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 35,
+      "violations": []
+    },
+    {
+      "step": "FailedStep (Error State)",
+      "score": 100,
+      "violationsCount": 0,
+      "passesCount": 34,
+      "violations": []
+    }
+  ],
+  "kbLog": [
+    {
+      "action": "Focused on \"Upload Photo & Voice\" after 7 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Upload Photo & Voice\""
+    },
+    {
+      "action": "Focused on \"Upload portrait photo dropzone\" after 2 Tab(s)",
+      "activeElement": "<div> role=\"button\" label=\"Upload portrait photo dropzone. Click or drag and drop an image file here.\" text=\"Drag & drop your photograph he\""
+    },
+    {
+      "action": "Focused on \"Continue to Voice\" after 3 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Continue to Voice\""
+    },
+    {
+      "action": "Focused on \"Record now\" after 3 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Record now\""
+    },
+    {
+      "action": "Focused on \"Start Recording\" after 1 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Start Recording\""
+    },
+    {
+      "action": "Focused on \"Stop Recording\" after 1 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Stop Recording\""
+    },
+    {
+      "action": "Focused on \"Use this recording\" after 2 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Use this recording\""
+    },
+    {
+      "action": "Focused on \"Continue to Duration\" after 4 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Continue to Duration\""
+    },
+    {
+      "action": "Focused on \"Continue to Script\" after 6 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Continue to Script\""
+    },
+    {
+      "action": "Focused on \"Continue to Rights\" after 3 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Continue to Rights\""
+    },
+    {
+      "action": "Focused on \"Create My Memory Film\" after 2 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Create My Memory Film\""
+    },
+    {
+      "action": "Focused on \"Make another video\" after 3 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Make another video\""
+    },
+    {
+      "action": "Focused on \"Start with Prompt\" after 6 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Start with Prompt\""
+    },
+    {
+      "action": "Focused on \"Continue to Script\" after 1 Tab(s)",
+      "activeElement": "<body> role=\"\" label=\"\" text=\"Memory Studio — Turn Memories \""
+    },
+    {
+      "action": "Focused on \"Continue to Rights\" after 5 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Continue to Rights\""
+    },
+    {
+      "action": "Focused on \"Create My Memory Film\" after 2 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Create My Memory Film\""
+    },
+    {
+      "action": "Focused on \"Make another video\" after 3 Tab(s)",
+      "activeElement": "<button> role=\"\" label=\"\" text=\"Make another video\""
+    }
+  ],
+  "computedColors": {
+    "bgCanvas": "#1c1e20",
+    "paperCream": "#faf6ee",
+    "paperCreamAlt": "#f3ecd9",
+    "paperCreamDark": "#e8ded0",
+    "paperBorder": "#dcd0be",
+    "inkPrimary": "#2c2825",
+    "inkMuted": "#6e655c",
+    "inkTerracotta": "#b84e27",
+    "inkSage": "#3e6d4c",
+    "inkBlue": "#365b79",
+    "inkAmber": "#c27d19"
+  },
+  "contrastChecks": [
+    {
+      "name": "Main Text (--ink-primary) on Paper Sheet (--paper-cream)",
+      "fg": "#2c2825",
+      "bg": "#faf6ee",
+      "ratio": 13.554142019618412,
+      "ratioStr": "13.55:1"
+    },
+    {
+      "name": "Main Text (--ink-primary) on Card Box (--paper-cream-alt)",
+      "fg": "#2c2825",
+      "bg": "#f3ecd9",
+      "ratio": 12.391812653126856,
+      "ratioStr": "12.39:1"
+    },
+    {
+      "name": "Muted Text (--ink-muted) on Paper Sheet (--paper-cream)",
+      "fg": "#6e655c",
+      "bg": "#faf6ee",
+      "ratio": 5.295364736877115,
+      "ratioStr": "5.30:1"
+    },
+    {
+      "name": "Muted Text (--ink-muted) on Card Box (--paper-cream-alt)",
+      "fg": "#6e655c",
+      "bg": "#f3ecd9",
+      "ratio": 4.84126311015317,
+      "ratioStr": "4.84:1"
+    },
+    {
+      "name": "Primary Button White Text on Terracotta (--ink-terracotta)",
+      "fg": "#ffffff",
+      "bg": "#b84e27",
+      "ratio": 5.051571979066962,
+      "ratioStr": "5.05:1"
+    },
+    {
+      "name": "Secondary Button Text (--ink-primary) on (--paper-cream-alt)",
+      "fg": "#2c2825",
+      "bg": "#f3ecd9",
+      "ratio": 12.391812653126856,
+      "ratioStr": "12.39:1"
+    },
+    {
+      "name": "Terracotta Accent Text (--ink-terracotta) on Paper Sheet",
+      "fg": "#b84e27",
+      "bg": "#faf6ee",
+      "ratio": 4.686346908310065,
+      "ratioStr": "4.69:1"
+    },
+    {
+      "name": "Sage Accent Text (--ink-sage) on Paper Sheet",
+      "fg": "#3e6d4c",
+      "bg": "#faf6ee",
+      "ratio": 5.57154844214143,
+      "ratioStr": "5.57:1"
+    },
+    {
+      "name": "Blue Accent Text (--ink-blue) on Paper Sheet",
+      "fg": "#365b79",
+      "bg": "#faf6ee",
+      "ratio": 6.650449085256844,
+      "ratioStr": "6.65:1"
+    },
+    {
+      "name": "Amber Warning Text (--ink-amber) on Paper Sheet",
+      "fg": "#c27d19",
+      "bg": "#faf6ee",
+      "ratio": 3.121394157991607,
+      "ratioStr": "3.12:1"
+    },
+    {
+      "name": "Paper Outline (--paper-border) on Paper Sheet",
+      "fg": "#dcd0be",
+      "bg": "#faf6ee",
+      "ratio": 1.4107963465264386,
+      "ratioStr": "1.41:1"
+    }
+  ]
+}

@@ -508,13 +508,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               fontSize: '17px',
               border: voiceMode === 'upload' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
               backgroundColor: voiceMode === 'upload' ? 'var(--paper-cream)' : 'transparent',
-              color: voiceMode === 'upload' ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
+              color: voiceMode === 'upload' ? 'var(--ink-terracotta)' : '#524b42',
               cursor: 'pointer',
               fontWeight: voiceMode === 'upload' ? 'bold' : 'normal',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}
-            aria-label="Upload an audio file option"
           >
             <Upload size={16} />
             <span>Upload a file</span>
@@ -536,13 +535,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               fontSize: '17px',
               border: voiceMode === 'record' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
               backgroundColor: voiceMode === 'record' ? 'var(--paper-cream)' : 'transparent',
-              color: voiceMode === 'record' ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
+              color: voiceMode === 'record' ? 'var(--ink-terracotta)' : '#524b42',
               cursor: 'pointer',
               fontWeight: voiceMode === 'record' ? 'bold' : 'normal',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}
-            aria-label="Record voice live option"
           >
             <Mic size={16} />
             <span>Record now</span>
@@ -551,7 +549,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       )}
 
       {/* Main Interactive Content */}
-      <main style={{ width: '100%' }}>
+      <div role="region" aria-label="Voice recording workspace" style={{ width: '100%' }}>
         {previewUrl ? (
           /* Waveform Preview Player Box - Scales Fluidly to Container Width */
           <div
@@ -727,7 +725,6 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            aria-label="Upload voice recording audio dropzone. Click or drag and drop an audio file here."
             style={{
               position: 'relative',
               padding: 'clamp(24px, 4vw, 36px) clamp(16px, 3vw, 24px)',
@@ -755,7 +752,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: 'clamp(15px, 2.5vw, 17px)' }}>
                 Drag & drop voice audio clip (.wav, .mp3, .m4a, .webm)
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '4px' }}>
                 Clear speech with quiet background noise works best (Up to 20MB)
               </p>
             </div>
@@ -836,12 +833,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   </span>
                 </div>
 
-                <p style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                <p style={{ fontSize: '12px', color: '#4e473f' }}>
                   Speak clearly • Recording limit: 3s to 60s
                 </p>
 
                 {/* Hand-Drawn Live Level Meter */}
                 <div
+                  role="img"
                   aria-label="Live audio volume level meter"
                   style={{
                     display: 'flex',
@@ -963,7 +961,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
-      </main>
+      </div>
 
       {/* Kind Human Error State Card */}
       {mappedError && (

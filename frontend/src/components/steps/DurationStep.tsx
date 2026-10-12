@@ -91,7 +91,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
       </header>
 
       {/* Main Interactive Preset Selection - Fluid Grid (1 col phone, 2 col tablet, 3-4 col desktop) */}
-      <main style={{ minHeight: '180px', width: '100%' }}>
+      <div role="region" aria-label="Duration preset selection" style={{ minHeight: '180px', width: '100%' }}>
         {loading ? (
           /* Loading State */
           <div
@@ -167,7 +167,6 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                   animate={{ scale: isSelected ? 1.03 : 1, y: isSelected ? -4 : 0 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   aria-pressed={isSelected}
-                  aria-label={`Select ${preset.label}, duration ${preset.seconds} seconds`}
                   style={{
                     position: 'relative',
                     padding: '18px 12px',
@@ -183,7 +182,6 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     gap: '6px',
                     boxShadow: isSelected ? 'var(--shadow-paper-float)' : 'var(--shadow-card)',
                     transform: `rotate(${tilt}deg)`,
-                    outline: 'none',
                     height: '100%',
                     width: '100%',
                   }}
@@ -210,17 +208,17 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     </div>
                   )}
 
-                  <Clock size={22} style={{ color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-muted)' }} />
+                  <Clock size={22} style={{ color: isSelected ? 'var(--ink-terracotta)' : '#524b42' }} />
 
                   <span style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--font-serif)', marginTop: '2px' }}>
                     {preset.label}
                   </span>
 
-                  <span className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-muted)' }}>
+                  <span className="handwritten" style={{ fontSize: '16px', color: '#4e473f' }}>
                     {preset.seconds}s length
                   </span>
 
-                  <span style={{ fontSize: '11px', color: 'var(--ink-muted)', marginTop: '4px', fontStyle: 'italic', textAlign: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#4e473f', marginTop: '4px', fontStyle: 'italic', textAlign: 'center' }}>
                     {formatEstimatedRenderTime(preset.seconds)}
                   </span>
                 </motion.button>
@@ -228,7 +226,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
             })}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Kind Note about Render Time & Pacing - Wraps Text Cleanly without Overflow */}
       <section
@@ -248,10 +246,10 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           <Hourglass size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
               A Kind Note on Studio Render Time
-            </h4>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '4px', lineHeight: 1.5 }}>
+            </h3>
+            <p style={{ fontSize: '14px', color: '#4e473f', marginTop: '4px', lineHeight: 1.5 }}>
               Longer videos take longer to craft carefully: rendering takes about <strong>3.7 times</strong> the video length.
               For instance, a 5-minute video takes about 18 minutes to render completely.
             </p>

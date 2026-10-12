@@ -22,7 +22,7 @@ export const SoundToggle: React.FC = () => {
     <button
       type="button"
       onClick={handleToggle}
-      aria-label={enabled ? 'Mute sound effects' : 'Enable sound effects'}
+      aria-label={enabled ? 'Sound: On - click to mute sound effects' : 'Sound: Off - click to enable sound effects'}
       aria-pressed={enabled}
       title={enabled ? 'Sound effects active (click to mute)' : 'Sound effects muted (click to enable)'}
       style={{
@@ -32,8 +32,8 @@ export const SoundToggle: React.FC = () => {
         padding: '8px 14px',
         borderRadius: '9999px',
         backgroundColor: enabled ? 'var(--paper-cream)' : 'rgba(225, 215, 200, 0.4)',
-        border: enabled ? '1.5px solid var(--ink-terracotta)' : '1px dashed var(--ink-muted)',
-        color: enabled ? 'var(--ink-terracotta)' : 'var(--ink-muted)',
+        border: enabled ? '1.5px solid var(--ink-terracotta)' : '1px dashed #524b42',
+        color: enabled ? 'var(--ink-terracotta)' : '#3e3832',
         fontFamily: 'var(--font-hand)',
         fontSize: '15px',
         fontWeight: 'bold',
@@ -41,14 +41,13 @@ export const SoundToggle: React.FC = () => {
         transition: 'all 0.2s ease',
         minHeight: '44px',
         userSelect: 'none',
-        outline: 'none',
         flexShrink: 0,
       }}
     >
       {enabled ? (
         <Volume2 size={16} style={{ color: 'var(--ink-terracotta)' }} />
       ) : (
-        <VolumeX size={16} style={{ color: 'var(--ink-muted)' }} />
+        <VolumeX size={16} style={{ color: '#3e3832' }} />
       )}
       <span>{enabled ? 'Sound: On' : 'Sound: Off'}</span>
     </button>

@@ -91,6 +91,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         className="hide-scrollbar"
         role="tablist"
         aria-label="Sketchbook step navigation tabs"
+        tabIndex={0}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -131,7 +132,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   ? 'var(--ink-terracotta)'
                   : isCompleted
                   ? 'var(--ink-primary)'
-                  : 'var(--ink-muted)',
+                  : '#524b42',
                 fontFamily: 'var(--font-hand)',
                 fontSize: '16px',
                 fontWeight: isActive ? 'bold' : '500',

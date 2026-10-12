@@ -232,12 +232,14 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           Rendering your memory film
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px', wordBreak: 'break-word' }}>
-          Job ID: <code style={{ backgroundColor: 'var(--paper-cream-alt)', padding: '2px 8px', borderRadius: '4px', wordBreak: 'break-all', display: 'inline-block', maxWidth: '100%' }}>{jobId}</code>
+          Job ID: <code style={{ backgroundColor: 'var(--paper-cream-alt)', color: 'var(--ink-primary)', padding: '2px 8px', borderRadius: '4px', wordBreak: 'break-all', display: 'inline-block', maxWidth: '100%' }}>{jobId}</code>
         </p>
       </header>
 
       {/* Main Ambient Frame */}
-      <main
+      <div
+        role="region"
+        aria-label="Studio rendering stage"
         style={{
           padding: 'clamp(18px, 4vw, 28px) clamp(12px, 3vw, 24px)',
           borderRadius: '12px',
@@ -261,7 +263,6 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               ? {}
               : {
                   scale: [1, 1.02, 1],
-                  opacity: [0.92, 1, 0.92],
                 }
           }
           transition={{
@@ -276,7 +277,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(18px, 4vw, 22px)', color: 'var(--ink-primary)', wordBreak: 'break-word' }}>
               {story.title}
             </h3>
-            <p className="handwritten" style={{ fontSize: 'clamp(17px, 3.5vw, 21px)', color: 'var(--ink-terracotta)', marginTop: '2px', wordBreak: 'break-word' }}>
+            <p className="handwritten" style={{ fontSize: 'clamp(17px, 3.5vw, 21px)', color: '#9c3f1d', marginTop: '2px', wordBreak: 'break-word' }}>
               "{story.storyLine}"
             </p>
           </div>
@@ -330,7 +331,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{formatMinSec(elapsedSeconds)} elapsed</span>
             </div>
 
-            <div style={{ fontSize: '13px', color: 'var(--ink-muted)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: '13px', color: 'var(--ink-primary)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
               ~{formatMinSec(estimatedRenderSeconds)} estimated render
             </div>
           </div>
@@ -341,10 +342,10 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           {renderStoryDoodle()}
         </div>
 
-        <p className="handwritten" style={{ fontSize: 'clamp(15px, 3vw, 17px)', color: 'var(--ink-muted)', marginTop: '4px', textAlign: 'center', wordBreak: 'break-word' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(15px, 3vw, 17px)', color: 'var(--ink-primary)', marginTop: '4px', textAlign: 'center', wordBreak: 'break-word' }}>
           Taking care with every frame... your memory is taking shape.
         </p>
-      </main>
+      </div>
     </div>
   );
 };

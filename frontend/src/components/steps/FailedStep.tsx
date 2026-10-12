@@ -50,7 +50,9 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
       </header>
 
       {/* Main Kind Explanation Card */}
-      <main
+      <div
+        role="region"
+        aria-label="Error explanation card"
         style={{
           padding: 'clamp(16px, 4vw, 24px)',
           borderRadius: '12px',
@@ -131,7 +133,7 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
             </pre>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Action Footer */}
       <footer

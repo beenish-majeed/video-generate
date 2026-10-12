@@ -12,8 +12,8 @@
   
   --ink-primary: #2c2825;          /* Hand-inked charcoal text */
   --ink-muted: #6e655c;            /* Pencil note muted text */
-  --ink-terracotta: #c85a32;       /* Warm terracotta / coral ink accent */
-  --ink-terracotta-hover: #ad4923;
+  --ink-terracotta: #b84e27;       /* Warm terracotta / coral ink accent (WCAG AA 5.05:1) */
+  --ink-terracotta-hover: #9c3f1d;
   --ink-sage: #3e6d4c;             /* Muted sage green accent */
   --ink-blue: #365b79;             /* Muted dusty blue accent */
   --ink-amber: #c27d19;            /* Soft warm amber */
@@ -275,4 +275,17 @@ img, svg, canvas, video {
   .duration-cards-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+}
+
+/* Accessible Screen Reader Utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

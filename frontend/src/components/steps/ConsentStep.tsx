@@ -71,6 +71,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
 
       {/* Plain Language Summary Card */}
       <section
+        aria-label="What happens with your media"
         style={{
           padding: 'clamp(14px, 3vw, 20px)',
           borderRadius: '12px',
@@ -96,7 +97,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
             <div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Photograph</p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 Used strictly to synthesize natural facial animation for this video.
               </p>
             </div>
@@ -106,7 +107,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
             <div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Voice Recording</p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 Used to clone speech tone and pronounce your script narrative.
               </p>
             </div>
@@ -116,7 +117,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
             <div>
               <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 The rendered film carries a discrete AI label so viewers know it was synthetically crafted.
               </p>
             </div>
@@ -176,7 +177,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I attest that I have permission to use the face image in this photograph
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 This is my own face, or I have explicit agreement from the person shown in the photo.
               </p>
             </div>
@@ -220,7 +221,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I attest that I have permission to use this voice recording sample
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 I am the speaker, or I have explicit agreement to synthesize speech matching this voice.
               </p>
             </div>
@@ -264,7 +265,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
                 I acknowledge the AI generation label and authorize Memory Studio to render this film
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
                 I agree that this video is generated for respectful storytelling and carries an AI disclosure.
               </p>
             </div>

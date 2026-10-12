@@ -53,9 +53,9 @@ export const HeroStep: React.FC<HeroStepProps> = ({
       </header>
 
       {/* Calm Illustrated Scene - Scales without distortion or cut-off */}
-      <main style={{ margin: '4px 0', width: '100%' }}>
+      <div role="region" aria-label="Creative illustration" style={{ margin: '4px 0', width: '100%' }}>
         <HeroScene />
-      </main>
+      </div>
 
       {/* Choice Cards (2 Sticker-Style Options - Equal Height & Aligned Text) */}
       <div
@@ -145,13 +145,12 @@ export const HeroStep: React.FC<HeroStepProps> = ({
                     borderRadius: '14px',
                     border: '1px dashed var(--paper-border)',
                     backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                    color: 'var(--ink-muted)',
+                    color: '#4e473f',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     display: 'inline-flex',
                     alignItems: 'center',
                   }}
-                  aria-label={`Use suggestion: ${sug}`}
                 >
                   ✨ {sug.slice(0, 24)}...
                 </button>
@@ -163,7 +162,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             type="button"
             onClick={onSelectPromptFlow}
             className="btn-terracotta"
-            aria-label="Start video creation using your prompt"
             style={{
               marginTop: 'auto',
               justifyContent: 'center',
@@ -244,7 +242,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             type="button"
             onClick={onSelectCustomMediaFlow}
             className="btn-secondary"
-            aria-label="Start video creation by uploading photo or voice"
             style={{
               marginTop: 'auto',
               justifyContent: 'center',

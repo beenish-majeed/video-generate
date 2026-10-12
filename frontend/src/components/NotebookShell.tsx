@@ -20,15 +20,20 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
       {/* Outer Notebook Window Container */}
       <div className="notebook-container graph-paper-bg">
         {/* Notebook Top Binder Spiral */}
-        <DoodleSpiral count={14} />
+        <header aria-label="Notebook Binder">
+          <h1 className="sr-only">Memory Studio — Turn Memories into Cinematic Videos</h1>
+          <DoodleSpiral count={14} />
+        </header>
 
         {/* Handmade Page Tabs Step Indicator */}
-        <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
+        <nav aria-label="Step navigation">
+          <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
+        </nav>
 
         {/* Paper Page Inner Content */}
-        <div style={{ position: 'relative', minHeight: 'clamp(420px, 60dvh, 720px)', width: '100%' }}>
+        <main id="main-content" style={{ position: 'relative', minHeight: 'clamp(420px, 60dvh, 720px)', width: '100%' }}>
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

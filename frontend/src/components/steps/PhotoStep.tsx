@@ -149,7 +149,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       </header>
 
       {/* Main Interactive Area: Empty / Drag & Drop / Polaroid Preview */}
-      <main style={{ width: '100%' }}>
+      <div role="region" aria-label="Photo upload workspace" style={{ width: '100%' }}>
         {previewUrl ? (
           /* Taped Polaroid Presentation - Centered & Fluid Scaling */
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
@@ -303,7 +303,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
-      </main>
+      </div>
 
       {/* Kind Human Error State Card */}
       {mappedError && (

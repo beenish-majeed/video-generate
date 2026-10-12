@@ -20,22 +20,22 @@ export const Sticker: React.FC<StickerProps> = ({
     terracotta: {
       bg: '#faece6',
       border: 'var(--ink-terracotta)',
-      color: 'var(--ink-terracotta)',
+      color: '#8c3515',
     },
     sage: {
       bg: '#eaf4ed',
       border: 'var(--ink-sage)',
-      color: 'var(--ink-sage)',
+      color: '#2d5339',
     },
     blue: {
       bg: '#eaf1f6',
       border: 'var(--ink-blue)',
-      color: 'var(--ink-blue)',
+      color: '#234b67',
     },
     amber: {
       bg: '#fdf5e6',
       border: 'var(--ink-amber)',
-      color: 'var(--ink-amber)',
+      color: '#874c00',
     },
   };
 
