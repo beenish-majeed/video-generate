@@ -247,7 +247,30 @@ frontend/
 
 ## ⚠️ Known Limits
 
-1. **Render Time Estimator**: Video compilation and audio lip-sync rendering take approximately **3.7 times** the video length. For example, a 30-second preset takes ~110 seconds, while a 5-minute video takes ~18 minutes to render.
-2. **In-Memory Job State**: Rendering jobs execute within the active backend process. If the backend server restarts during rendering, active jobs transition to `FAILED` status with an error explaining the restart.
-3. **Script Word Count Pacing**: Spoken audio duration must fit within a 90%–110% tolerance window of the target duration (at ~150 words per minute). Scripts below 90% or above 110% are blocked on the client and rejected by backend synthesis.
-4. **No Video Retention Policy**: Generated video assets and download proxy streams are stored in local job storage. There is no automated retention/cleanup policy for old job artifacts.
+1. **Render Time (~3.7x Video Duration)**:
+   * Neural audio synthesis, segment scheduling, and neural lip-sync generation take approximately **3.7 times** the chosen video duration.
+   * Real-world rendering benchmarks:
+     * **5-second video**: ~18 seconds
+     * **30-second video**: ~110 seconds (~1.8 minutes)
+     * **2-minute video**: ~7.4 minutes
+     * **5-minute video**: ~18.5 minutes
+     * **10-minute video**: ~37 minutes
+   * The Duration preset cards and Waiting Room progress indicator both display realistic estimates derived from this multiplier.
+
+2. **In-Process Job Execution & Server Restarts**:
+   * Video generation jobs run asynchronously within the active backend server process (`ThreadPoolExecutor` thread pool).
+   * There is no external task queue (such as Celery or Redis). If the backend server (`uvicorn`) restarts or stops during rendering, in-flight jobs cannot resume.
+   * Upon server startup, an automated recovery routine scans the SQLite jobs table and transitions all interrupted jobs to `FAILED` with: *"Job was interrupted by a server restart."* The frontend displays a recovery card allowing users to retry without losing their script or assets.
+
+3. **Script Length Must Match Chosen Duration**:
+   * Speech pacing is calculated based on a conversational benchmark of **150 words per minute** (retrieved from `GET /v1/durations`).
+   * The script must be long enough to produce speech within a strict **90% to 110% tolerance window** of the target video duration.
+   * Example script requirements:
+     * **5s preset**: ~11 to 14 words
+     * **30s preset**: ~68 to 83 words (~75 words optimal)
+     * **2m preset**: ~270 to 330 words
+   * If a script is too short or too long, the "Continue to Rights" button is disabled with real-time word count feedback, and backend synthesis enforces the 10% audio duration tolerance.
+
+4. **No Video Retention or Auto-Cleanup Policy**:
+   * Rendered video files (`final_video.mp4`), audio stems, subtitle files (`subtitles.vtt`), and uploaded assets remain saved in local filesystem storage (`storage/jobs/<job_id>/` and `storage/assets/`).
+   * The system does not run an automated background retention or pruning policy. Administrators must manually clean up disk space or manage the `storage/` directory.
