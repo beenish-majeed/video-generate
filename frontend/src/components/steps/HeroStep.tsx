@@ -59,15 +59,17 @@ export const HeroStep: React.FC<HeroStepProps> = ({
         <HeroScene />
       </div>
 
-      {/* Choice Cards (2 Sticker-Style Options - Equal Height & Aligned Text) */}
+      {/* Choice Cards */}
       <div
         className="welcome-choice-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: ENABLE_PROMPT_PATH ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
+          justifyItems: 'center',
           alignItems: 'stretch',
           gap: '20px',
           marginTop: '8px',
+          width: '100%',
         }}
       >
         {/* Card 1: Write a prompt and make a video */}
@@ -194,6 +196,9 @@ export const HeroStep: React.FC<HeroStepProps> = ({
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(0.5deg)',
             height: '100%',
+            width: '100%',
+            maxWidth: ENABLE_PROMPT_PATH ? 'none' : '560px',
+            boxSizing: 'border-box',
           }}
         >
           <Tape rotation="2deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
