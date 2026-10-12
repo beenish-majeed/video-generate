@@ -15,6 +15,10 @@ external/wav2lip/
 
 # Temporary scratch files
 scratch/
+test-results/
+playwright-report/
+screenshots/
+*.mp4
 
 node_modules/
 dist/
