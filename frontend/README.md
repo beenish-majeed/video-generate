@@ -154,6 +154,60 @@ The UI is constructed with responsive fluid typography (`clamp()`), flexbox/grid
 
 ---
 
+## 🎭 Running Playwright Tests & Fake Microphone Flags
+
+The frontend test suite includes end-to-end browser specifications validating the journey flow, accessibility, and audio/video interactions.
+
+### 1. Executing Tests
+To run the Playwright test suite:
+
+```bash
+cd frontend
+
+# Run all Playwright test specifications
+npx playwright test
+
+# Run specific happy path test
+npx playwright test e2e/happyPath.spec.ts
+
+# Run with interactive UI mode
+npx playwright test --ui
+
+# Run in headed browser mode
+npx playwright test --headed
+```
+
+### 2. Fake Microphone Flags for Automated Runs
+Headless environments, CI pipelines, and automated test runners lack physical audio microphones and cannot display interactive OS permission dialogs. When testing the live voice recording feature with Playwright, Chromium must be launched with synthetic media stream arguments and granted context permission:
+
+```typescript
+import { chromium } from 'playwright';
+
+// Launch Chromium with synthetic media input flags
+const browser = await chromium.launch({
+  args: [
+    // Generates synthetic media (a clean beep tone) instead of failing on missing hardware
+    '--use-fake-device-for-media-stream',
+    // Automatically grants the browser getUserMedia permission without showing UI modal
+    '--use-fake-ui-for-media-stream',
+  ],
+});
+
+// Grant browser context permission for the microphone
+const context = await browser.newContext({
+  permissions: ['microphone'],
+});
+
+const page = await context.newPage();
+```
+
+**Why both flags are required:**
+* `--use-fake-device-for-media-stream`: Supplies a synthetic audio stream to `navigator.mediaDevices.getUserMedia({ audio: true })`. Without this, headless browsers fail immediately with `NotFoundError: Requested device not found`.
+* `--use-fake-ui-for-media-stream`: Bypasses the browser's "Allow microphone access?" permission prompt, allowing immediate test execution.
+* `permissions: ['microphone']`: Bypasses Chromium's per-origin security permission gate.
+
+---
+
 ## 📁 Directory & File Architecture
 
 ```
