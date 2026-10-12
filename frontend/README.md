@@ -92,6 +92,40 @@ Throughout both paths, clickable notebook binder tabs at the top allow inspectin
 
 ---
 
+## 🎙️ Live Voice Recording & Hardware Requirements
+
+The Voice step supports both pre-recorded file uploads (MP3, WAV, M4A, WEBM up to 20MB) and direct in-browser microphone capture:
+
+### 1. Secure Contexts (HTTPS or Localhost Only)
+Browser security policies (`navigator.mediaDevices.getUserMedia`) strictly require a **Secure Context**:
+* Works automatically when accessing via `http://localhost:3000` or `http://127.0.0.1:3000`.
+* Plain HTTP access over local network IPs (e.g. `http://192.168.1.50:3000`) will be blocked by modern browsers, showing a descriptive microphone security warning.
+
+### 2. Testing on a Mobile Phone
+To test live microphone recording on a smartphone over your local network:
+* **Option A (Recommended — Secure Tunnel)**: Use an HTTPS tunnel to forward your local port:
+  ```bash
+  # Using cloudflared
+  cloudflared tunnel --url http://localhost:3000
+
+  # Or using ngrok
+  ngrok http 3000
+  ```
+  Open the resulting `https://*.trycloudflare.com` or `https://*.ngrok-free.app` URL on your phone browser.
+* **Option B (Vite HTTPS)**: Configure HTTPS in Vite (e.g., using `@vitejs/plugin-basic-ssl` or local certificates via `mkcert`).
+* **Option C (Chrome Android Flag)**: In Chrome mobile, navigate to `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add your host URL (e.g., `http://192.168.1.50:3000`), enable it, and relaunch.
+
+### 3. Recording Duration Limits
+* **Minimum Length**: **3 seconds** (`MIN_RECORD_SECONDS = 3`). Shorter recordings display a helpful `"too short"` alert prompting you to speak at least 3 seconds of reference audio.
+* **Maximum Length**: **60 seconds** (`MAX_RECORD_SECONDS = 60`). The live recorder displays an elapsed counter and dynamic audio visualizer bars, automatically stopping at the 60-second limit.
+
+### 4. Client-Side WAV Conversion
+Different browsers and operating systems record raw audio streams in diverse container formats (such as Opus in `audio/webm` or AAC in `audio/mp4`).
+* Before sending to the backend, the frontend captures audio chunks into a `Blob`, decodes the PCM sample data with the browser's `AudioContext`, and runs an in-browser encoder (`src/utils/wavEncoder.ts`).
+* The encoder outputs a clean, standard **16-bit PCM WAV file** (`audio/wav`) directly in the client, ensuring consistent zero-transcoding compatibility with the backend synthesis pipeline.
+
+---
+
 ## 📁 Directory & File Architecture
 
 ```
