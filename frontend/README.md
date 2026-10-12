@@ -77,7 +77,7 @@ Designed for creators who bring their own media files or record live audio:
 7. **Waiting Room**: Real-time animated progress tracking across neural synthesis stages.
 8. **Premiere**: Theater preview screening with direct MP4 download.
 
-### 2. "Start with Prompt" Path (`prompt_first`)
+### 2. "Start with Prompt" Path (`prompt_first` — Currently Disabled)
 Designed for idea-first generation starting directly from a narrative concept:
 1. **Welcome**: Enter creative story prompt.
 2. **Duration**: Select target video duration preset.
@@ -86,7 +86,8 @@ Designed for idea-first generation starting directly from a narrative concept:
 5. **Waiting Room**: Real-time progress monitoring.
 6. **Premiere**: Video player preview and download.
 
-*Note on prompt path backend support*: The frontend supplies studio default identifiers (`default-studio-photo` and `default-studio-voice`) in prompt-first mode. If the backend does not have pre-seeded default studio assets on disk, job submission returns an explanatory error card informing the user to supply photo and voice assets.
+> [!NOTE]
+> **Status**: The "Start with Prompt" card is currently disabled and hidden on the welcome page (`ENABLE_PROMPT_PATH = false` in `src/components/steps/HeroStep.tsx`). Because the backend requires uploaded photo and voice assets and does not yet support default studio assets (returning *"Photo asset not found"* for placeholder IDs), this path is temporarily gated until default asset support is implemented in the backend. The code and routing logic remain intact so the path can be re-enabled by setting `ENABLE_PROMPT_PATH = true`.
 
 Throughout both paths, clickable notebook binder tabs at the top allow inspecting completed stages and jumping back to prior steps without losing entered input.
 
