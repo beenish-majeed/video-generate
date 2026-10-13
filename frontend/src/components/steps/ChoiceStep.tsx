@@ -4,7 +4,7 @@ import Sticker from '../Sticker';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
-export const ENABLE_PROMPT_PATH = false;
+export const ENABLE_PROMPT_PATH = true;
 
 export interface ChoiceStepProps {
   onSelectPromptFlow: () => void;

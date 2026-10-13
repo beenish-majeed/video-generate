@@ -4,8 +4,8 @@ import { describe, it, expect } from 'vitest';
 import { ChoiceStep, ENABLE_PROMPT_PATH } from './ChoiceStep';
 
 describe('ChoiceStep screen and prompt path gating', () => {
-  it('has ENABLE_PROMPT_PATH configured as false', () => {
-    expect(ENABLE_PROMPT_PATH).toBe(false);
+  it('has ENABLE_PROMPT_PATH configured as true', () => {
+    expect(ENABLE_PROMPT_PATH).toBe(true);
   });
 
   it('renders both path cards on the choice screen', () => {
@@ -28,7 +28,7 @@ describe('ChoiceStep screen and prompt path gating', () => {
     expect(html).toContain('Back');
   });
 
-  it('renders prompt card as disabled with Coming soon sticker and note when ENABLE_PROMPT_PATH is false', () => {
+  it('renders prompt card as enabled and active without Coming soon state when ENABLE_PROMPT_PATH is true', () => {
     const html = renderToStaticMarkup(
       React.createElement(ChoiceStep, {
         onSelectPromptFlow: () => {},
@@ -37,17 +37,17 @@ describe('ChoiceStep screen and prompt path gating', () => {
       })
     );
 
-    // Prompt card gating
-    expect(html).toContain('aria-disabled="true"');
-    expect(html).toContain('COMING SOON');
-    expect(html).toContain('Default studio assets are not yet available');
-    expect(html).toContain('Coming soon (needs default assets)');
+    // Prompt card active state
+    expect(html).toContain('QUICK PROMPT');
+    expect(html).toContain('Start with Prompt');
+    expect(html).not.toContain('aria-disabled="true"');
 
-    // Active button for prompt flow must NOT be rendered as a button action
-    expect(html).not.toContain('<button type="button" class="btn-terracotta"');
-    expect(html).not.toContain('Start with Prompt');
+    // Coming soon elements must NOT be present
+    expect(html).not.toContain('COMING SOON');
+    expect(html).not.toContain('Default studio assets are not yet available');
+    expect(html).not.toContain('Coming soon (needs default assets)');
 
-    // Upload card action button MUST be rendered and active
+    // Custom media upload card action button must also be present
     expect(html).toContain('Use my photo &amp; voice');
   });
 });
