@@ -295,3 +295,85 @@ class JobRecord(BaseModel):
     output_path: Optional[str] = None
     subtitle_path: Optional[str] = None
     error: Optional[str] = None
+
+
+class ScriptGenerateRequest(BaseModel):
+    prompt: str = Field(..., max_length=1000)
+    duration_preset: Optional[str] = None
+    target_duration_seconds: Optional[float] = None
+    tone: Optional[str] = "friendly"
+    language: Optional[str] = "en"
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt(cls, v: str) -> str:
+        clean = v.strip() if v else ""
+        if not clean:
+            raise ValueError("prompt cannot be empty.")
+        if len(clean) > 1000:
+            raise ValueError(f"prompt length ({len(clean)}) exceeds maximum allowed 1000 characters.")
+        return clean
+
+    @field_validator("duration_preset")
+    @classmethod
+    def validate_preset(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip().lower()
+        presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
+        if v_clean not in presets:
+            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(presets.keys())}")
+        seconds = presets[v_clean]
+        if seconds < settings.min_duration_seconds or seconds > settings.max_duration_policy_seconds:
+            raise ValueError(
+                f"duration_preset '{v}' ({seconds}s) is outside policy limits "
+                f"({settings.min_duration_seconds}s - {settings.max_duration_policy_seconds}s)."
+            )
+        return v_clean
+
+    @field_validator("target_duration_seconds")
+    @classmethod
+    def validate_duration_seconds(cls, v: Optional[float]) -> Optional[float]:
+        if v is None:
+            return v
+        if v < settings.min_duration_seconds:
+            raise ValueError(
+                f"target_duration_seconds ({v}s) is below minimum allowed ({settings.min_duration_seconds}s)."
+            )
+        if v > settings.max_duration_policy_seconds:
+            raise ValueError(
+                f"target_duration_seconds ({v}s) exceeds maximum policy limit ({settings.max_duration_policy_seconds}s)."
+            )
+        return v
+
+    @field_validator("tone")
+    @classmethod
+    def validate_tone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return "friendly"
+        v_clean = v.strip().lower()
+        allowed = {"friendly", "professional", "storytelling", "educational"}
+        if v_clean not in allowed:
+            raise ValueError(f"Invalid tone '{v}'. Allowed tones: {sorted(allowed)}")
+        return v_clean
+
+    def resolve_target_duration_seconds(self) -> float:
+        if self.target_duration_seconds is not None:
+            return self.target_duration_seconds
+        if self.duration_preset is not None:
+            presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
+            return presets[self.duration_preset.strip().lower()]
+        raise ValueError("Either 'duration_preset' or 'target_duration_seconds' must be provided.")
+
+    @model_validator(mode="after")
+    def validate_duration_presence(self) -> "ScriptGenerateRequest":
+        if self.duration_preset is None and self.target_duration_seconds is None:
+            raise ValueError("Either 'duration_preset' or 'target_duration_seconds' must be provided.")
+        return self
+
+
+class ScriptGenerateResponse(BaseModel):
+    script: str
+    word_count: int
+    estimated_seconds: float
+    target_words: int
