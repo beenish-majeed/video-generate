@@ -1,14 +1,16 @@
+from src.config import settings
 from src.models.schemas import CompiledPlan, Timeline, TimelineEvent
 from src.utils.text import split_sentences
 
 
-def estimate_speech_seconds(text: str, speed: float = 1.0, wpm: float = 150.0) -> float:
+def estimate_speech_seconds(text: str, speed: float = 1.0, wpm: float | None = None) -> float:
     words = len(text.split())
     if words == 0:
         return 0.5
 
+    actual_wpm = wpm if wpm is not None else settings.words_per_minute
     speed = max(0.1, float(speed))
-    seconds = words / (wpm * speed) * 60.0
+    seconds = words / (actual_wpm * speed) * 60.0
     return max(0.2, seconds)
 
 
