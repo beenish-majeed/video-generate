@@ -55,15 +55,6 @@ def clean_script_text(text: str) -> str:
     # Remove markdown headings
     cleaned = re.sub(r"(?m)^#{1,6}\s+.*$", "", cleaned)
 
-    # Remove speaker labels at line start (e.g., "Narrator:", "Host:", "Speaker 1:")
-    cleaned = re.sub(r"(?m)^[A-Za-z0-9_\s]{1,24}:\s*", "", cleaned)
-
-    # Remove stage directions in brackets [applause], [laughs], [music]
-    cleaned = re.sub(r"\[[^\]]*\]", " ", cleaned)
-
-    # Remove stage directions in parentheses (pause), (smiling), (sighs)
-    cleaned = re.sub(r"\([^)]*\)", " ", cleaned)
-
     # Remove markdown formatting bold/italics/code/quotes/links
     cleaned = re.sub(r"\*\*([^*]+)\*\*", r"\1", cleaned)
     cleaned = re.sub(r"\*([^*]+)\*", r"\1", cleaned)
@@ -72,6 +63,15 @@ def clean_script_text(text: str) -> str:
     cleaned = re.sub(r"`([^`]+)`", r"\1", cleaned)
     cleaned = re.sub(r"(?m)^>\s*", "", cleaned)
     cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", cleaned)
+
+    # Remove speaker labels at line start (e.g., "Narrator:", "Host:", "Speaker 1:")
+    cleaned = re.sub(r"(?m)^[A-Za-z0-9_\s]{1,24}:\s*", "", cleaned)
+
+    # Remove stage directions in brackets [applause], [laughs], [music]
+    cleaned = re.sub(r"\[[^\]]*\]", " ", cleaned)
+
+    # Remove stage directions in parentheses (pause), (smiling), (sighs)
+    cleaned = re.sub(r"\([^)]*\)", " ", cleaned)
 
     # Remove emojis across standard unicode blocks
     cleaned = re.sub(r"[\U00010000-\U0010ffff]", "", cleaned)
