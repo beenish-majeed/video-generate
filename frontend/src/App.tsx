@@ -66,7 +66,6 @@ export const App: React.FC = () => {
     'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.'
   );
   const [prompt, setPrompt] = useState<string>('Warm cinematic light, soft watercolor texture');
-  const [isGeneratingScript, setIsGeneratingScript] = useState<boolean>(false);
 
   // Active Job State
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -90,34 +89,13 @@ export const App: React.FC = () => {
 
   const handleSelectPromptFlow = () => {
     setFlowMode('prompt_first');
+    setScript('');
     changeStep('idea');
   };
 
   const handleSelectCustomMediaFlow = () => {
     setFlowMode('custom_media');
     changeStep('photo');
-  };
-
-  const handleGenerateScript = async () => {
-    const topic = ideaText.trim() || prompt.trim();
-    if (!topic) return;
-    setIsGeneratingScript(true);
-    try {
-      const res = await apiClient.generateScript({
-        prompt: topic,
-        duration_preset: durationPreset,
-        target_duration_seconds: targetSeconds,
-        tone,
-      });
-      if (res?.script) {
-        setScript(res.script);
-      }
-    } catch (err: unknown) {
-      const mapped = mapAPIError(err);
-      setErrorMessage(mapped.message);
-    } finally {
-      setIsGeneratingScript(false);
-    }
   };
 
   const handleCreateJob = async (consent: ConsentPayload) => {
@@ -270,27 +248,9 @@ export const App: React.FC = () => {
               <LookVoiceStep
                 initialAvatarId={avatarPresetId}
                 initialVoiceId={voicePresetId}
-                onNext={async (avatarId, voiceId) => {
+                onNext={(avatarId, voiceId) => {
                   setAvatarPresetId(avatarId);
                   setVoicePresetId(voiceId);
-                  if ((!script || script === 'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.') && ideaText.trim()) {
-                    try {
-                      setIsGeneratingScript(true);
-                      const res = await apiClient.generateScript({
-                        prompt: ideaText.trim(),
-                        duration_preset: durationPreset,
-                        target_duration_seconds: targetSeconds,
-                        tone,
-                      });
-                      if (res?.script) {
-                        setScript(res.script);
-                      }
-                    } catch {
-                      // Allow user to write script manually
-                    } finally {
-                      setIsGeneratingScript(false);
-                    }
-                  }
                   changeStep('script');
                 }}
                 onBack={() => changeStep('duration')}
@@ -304,11 +264,12 @@ export const App: React.FC = () => {
                 prompt={prompt}
                 onPromptChange={setPrompt}
                 targetSeconds={targetSeconds}
+                durationPreset={durationPreset}
+                ideaText={ideaText}
+                tone={tone}
+                isPromptPath={flowMode === 'prompt_first'}
                 onNext={() => changeStep('consent')}
                 onBack={() => changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration')}
-                isPromptPath={flowMode === 'prompt_first'}
-                onGenerateScript={handleGenerateScript}
-                isGeneratingScript={isGeneratingScript}
               />
             )}
 

@@ -2,21 +2,29 @@ import React, { useEffect, useState } from 'react';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
 import apiClient from '../../api/client';
+import { mapAPIError } from '../../api/errorMapper';
 import { analyzeScriptWords, type ScriptWordAnalysis } from '../../utils/scriptWordCount';
-import { ArrowRight, ArrowLeft, FileText, Sparkles, AlertTriangle, Frown, Smile } from 'lucide-react';
+import { ArrowRight, ArrowLeft, FileText, Sparkles, AlertTriangle, Frown, Smile, RotateCcw, AlertCircle } from 'lucide-react';
+import type { DurationPreset, ScriptTone } from '../../types/api';
 
-interface ScriptStepProps {
+export const DEFAULT_SCRIPT =
+  'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.';
+
+export interface ScriptStepProps {
   script: string;
   onScriptChange: (script: string) => void;
   prompt: string;
   onPromptChange: (prompt: string) => void;
   targetSeconds: number;
+  durationPreset?: DurationPreset;
   wordsPerMinute?: number;
+  ideaText?: string;
+  tone?: ScriptTone;
+  isPromptPath?: boolean;
+  initialLoading?: boolean;
+  initialError?: string | null;
   onNext: () => void;
   onBack: () => void;
-  isPromptPath?: boolean;
-  onGenerateScript?: () => Promise<void>;
-  isGeneratingScript?: boolean;
 }
 
 export const ScriptStep: React.FC<ScriptStepProps> = ({
@@ -25,14 +33,27 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
   prompt,
   onPromptChange,
   targetSeconds,
+  durationPreset = '30s',
   wordsPerMinute: propWpm,
+  ideaText = '',
+  tone = 'storytelling',
+  isPromptPath = false,
+  initialLoading,
+  initialError = null,
   onNext,
   onBack,
-  isPromptPath = false,
-  onGenerateScript,
-  isGeneratingScript = false,
 }) => {
+  const shouldAutoGenerate = isPromptPath && (!script || script === DEFAULT_SCRIPT);
+
   const [wpm, setWpm] = useState<number>(propWpm || 150);
+  const [isLoading, setIsLoading] = useState<boolean>(
+    initialLoading !== undefined ? initialLoading : (shouldAutoGenerate && !initialError)
+  );
+  const [generationError, setGenerationError] = useState<string | null>(initialError);
+  const [lastGeneratedScript, setLastGeneratedScript] = useState<string>(script);
+  const [hasGeneratedOnce, setHasGeneratedOnce] = useState<boolean>(
+    Boolean(script && script !== DEFAULT_SCRIPT)
+  );
 
   // Fetch real words_per_minute from GET /v1/durations dynamically
   useEffect(() => {
@@ -51,6 +72,61 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       isMounted = false;
     };
   }, []);
+
+  // Story-style generator function
+  const executeGeneration = async () => {
+    const topic = (ideaText || prompt || '').trim();
+    if (!topic) return;
+
+    setIsLoading(true);
+    setGenerationError(null);
+
+    try {
+      const res = await apiClient.generateScript({
+        prompt: topic,
+        duration_preset: durationPreset,
+        target_duration_seconds: targetSeconds,
+        tone,
+      });
+
+      if (res && res.script) {
+        onScriptChange(res.script);
+        setLastGeneratedScript(res.script);
+        setHasGeneratedOnce(true);
+      }
+    } catch (err: unknown) {
+      const mapped = mapAPIError(err);
+      setGenerationError(mapped.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Call POST /v1/scripts/generate when user arrives on prompt path with ungenerated or default script
+  useEffect(() => {
+    if (isPromptPath && !hasGeneratedOnce && (!script || script === DEFAULT_SCRIPT)) {
+      executeGeneration();
+    }
+  }, [isPromptPath]);
+
+  // "Write it again": regenerates, asking before replacing user's edits
+  const handleRegenerate = () => {
+    const isEdited = lastGeneratedScript
+      ? script.trim() !== lastGeneratedScript.trim()
+      : Boolean(script.trim());
+
+    if (isEdited) {
+      const confirmDiscard =
+        typeof window !== 'undefined' && typeof window.confirm === 'function'
+          ? window.confirm(
+              'You have made edits to your script. Discard your edits and write a new script with AI?'
+            )
+          : true;
+      if (!confirmDiscard) return;
+    }
+
+    executeGeneration();
+  };
 
   // Compute structured word analysis via pure function
   const analysis: ScriptWordAnalysis = analyzeScriptWords(script, targetSeconds, wpm);
@@ -86,6 +162,22 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
 
   const mood = getMoodConfig();
 
+  // Clear out of bounds feedback message after editing
+  const getOutOfBoundsMessage = () => {
+    if (analysis.status === 'too_short') {
+      return `Your script has ${analysis.wordCount} words, which is under the minimum of ${analysis.minWords} words for a ${targetSeconds}s video. Please add more detail so speech covers the duration comfortably.`;
+    }
+    if (analysis.status === 'too_long') {
+      return `Your script has ${analysis.wordCount} words, which exceeds the maximum of ${analysis.maxWords} words for a ${targetSeconds}s video. Please shorten your script so it doesn't rush or overflow.`;
+    }
+    if (analysis.status === 'empty') {
+      return `Please write or generate a spoken script for your video narration.`;
+    }
+    return null;
+  };
+
+  const outOfBoundsMessage = getOutOfBoundsMessage();
+
   return (
     <div
       className="step-container"
@@ -96,6 +188,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         gap: '20px',
         position: 'relative',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
@@ -114,204 +207,433 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         </p>
       </header>
 
-      {/* Script Text Area & Controls */}
-      <div role="region" aria-label="Narrative script workspace" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-        {/* Label & Target Word Counter Header Bar - Responsive Flex Wrap */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label
-              htmlFor="narrative-script-input"
-              style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <FileText size={18} />
-              <span>Narrative Script</span>
-            </label>
-            {isPromptPath && onGenerateScript && (
-              <button
-                type="button"
-                onClick={onGenerateScript}
-                disabled={isGeneratingScript}
-                className="btn-secondary"
-                style={{
-                  fontSize: '12px',
-                  padding: '3px 8px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  minHeight: '28px',
-                  cursor: isGeneratingScript ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <Sparkles size={13} style={{ color: 'var(--ink-terracotta)' }} />
-                <span>{isGeneratingScript ? 'Writing...' : 'Regenerate'}</span>
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-muted)' }}>
-              Need at least <strong>{analysis.minWords}</strong> words for {targetSeconds}s (@ {wpm} WPM)
-            </span>
-            <span
-              style={{
-                padding: '3px 10px',
-                borderRadius: '12px',
-                backgroundColor: mood.bgColor,
-                border: `1.5px solid ${mood.borderColor}`,
-                color: mood.textColor,
-                fontWeight: 'bold',
-                fontSize: '13px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {analysis.wordCount} words
-            </span>
-          </div>
-        </div>
-
-        {/* Textarea - Auto-scrolls into view on mobile keyboard focus */}
-        <textarea
-          id="narrative-script-input"
-          value={script}
-          onChange={(e) => onScriptChange(e.target.value)}
-          onFocus={(e) => {
-            // Scroll focused input into view on mobile virtual keyboard popup
-            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }}
-          placeholder={`Write your story here... e.g., "A gentle morning mist hovered over the quiet valley, as tall whispering pine trees stood sentinel against the soft golden sky..."`}
-          rows={5}
-          aria-describedby="script-helper-text"
-          style={{
-            width: '100%',
-            padding: 'clamp(12px, 2.5vw, 16px)',
-            borderRadius: '10px',
-            border: `2px solid ${
-              analysis.status === 'perfect'
-                ? 'var(--ink-sage)'
-                : analysis.status === 'too_long'
-                ? 'var(--ink-terracotta)'
-                : 'var(--paper-border)'
-            }`,
-            backgroundColor: '#ffffff',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '15px',
-            lineHeight: 1.6,
-            color: 'var(--ink-primary)',
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)',
-            resize: 'vertical',
-            outline: 'none',
-            boxSizing: 'border-box',
-          }}
-        />
-
-        {/* Hand-Drawn Sketchbook Progress Bar - Scales Fluidly */}
+      {/* 1. Calm Story-Style Loading State (Never a fake percentage) */}
+      {isLoading ? (
         <div
+          role="status"
+          aria-live="polite"
+          data-testid="story-loading-state"
           style={{
+            padding: 'clamp(28px, 5vw, 44px) clamp(16px, 4vw, 32px)',
+            borderRadius: 'var(--radius-paper)',
+            backgroundColor: 'var(--paper-cream-alt)',
+            border: '1.5px dashed var(--paper-border)',
+            boxShadow: 'var(--shadow-card)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
-            padding: '12px 14px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1px solid var(--paper-border)',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: '16px',
             width: '100%',
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, flexWrap: 'wrap', gap: '4px' }}>
-            <span style={{ color: 'var(--ink-primary)' }}>Script Target Progress ({analysis.percentage}%)</span>
-            <span style={{ color: mood.textColor }}>
-              {analysis.wordCount} / {analysis.targetWords} target words (Range: {analysis.minWords}–{analysis.maxWords})
-            </span>
+          <Tape rotation="-1deg" style={{ margin: '-10px auto 0 auto' }} />
+          <Sticker label="DRAFTING YOUR STORY" variant="terracotta" rotation="1.5deg" />
+
+          <div style={{ position: 'relative', margin: '10px 0' }}>
+            <Sparkles size={40} className="animate-pulse" style={{ color: 'var(--ink-terracotta)' }} />
           </div>
 
-          <div style={{ width: '100%', height: '10px', backgroundColor: 'var(--paper-border)', borderRadius: '5px', overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${Math.min(100, analysis.percentage)}%`,
-                height: '100%',
-                backgroundColor: mood.textColor,
-                transition: 'width 0.25s ease, background-color 0.25s ease',
-              }}
-            />
-          </div>
-        </div>
+          <h3
+            className="editorial-title"
+            style={{ fontSize: 'clamp(20px, 3vw, 24px)', margin: 0, color: 'var(--ink-primary)' }}
+          >
+            Listening to your idea...
+          </h3>
 
-        {/* Mood Helper Text Card (Wraps Text Cleanly without Overlap) */}
-        <div
-          id="script-helper-text"
-          role="status"
-          style={{
-            padding: '14px 16px',
-            borderRadius: '10px',
-            backgroundColor: mood.bgColor,
-            border: `1.5px dashed ${mood.borderColor}`,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-            boxShadow: 'var(--shadow-card)',
-            transition: 'all 0.2s ease',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        >
-          {mood.icon}
-          <div style={{ flex: 1, minWidth: '0' }}>
-            <p className="handwritten" style={{ fontSize: '18px', color: mood.textColor, fontWeight: 'bold', wordBreak: 'break-word', lineHeight: 1.3 }}>
-              {analysis.helperText}
+          <p
+            className="handwritten"
+            style={{
+              fontSize: 'clamp(17px, 2.5vw, 20px)',
+              color: 'var(--ink-terracotta)',
+              margin: 0,
+              maxWidth: '540px',
+              wordBreak: 'break-word',
+            }}
+          >
+            "{ideaText || prompt || 'Your story idea'}"
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              maxWidth: '480px',
+              color: 'var(--ink-muted)',
+              fontSize: '14px',
+              lineHeight: 1.5,
+              marginTop: '4px',
+            }}
+          >
+            <p style={{ margin: 0 }}>
+              Turning your thought into complete spoken sentences for a {targetSeconds}s film...
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', color: '#7a7062' }}>
+              This takes about 10–25 seconds. Take a quiet breath while our storyteller writes.
             </p>
           </div>
-        </div>
 
-        {/* Optional Visual Style Prompt Field */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', width: '100%' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Sparkles size={16} style={{ color: 'var(--ink-terracotta)' }} />
-            <span>Visual Style Prompt (Optional)</span>
-          </label>
-          <input
-            type="text"
-            value={prompt}
-            onChange={(e) => onPromptChange(e.target.value)}
+          <div style={{ marginTop: '12px' }}>
+            <button
+              type="button"
+              onClick={onBack}
+              className="btn-secondary"
+              style={{ fontSize: '14px', padding: '8px 16px' }}
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+        </div>
+      ) : generationError ? (
+        /* 2. Generation Error State with Retry Button */
+        <div
+          role="alert"
+          data-testid="story-error-state"
+          style={{
+            padding: 'clamp(24px, 4vw, 36px) clamp(16px, 4vw, 28px)',
+            borderRadius: 'var(--radius-paper)',
+            backgroundColor: '#fffaf8',
+            border: '2px solid var(--ink-terracotta)',
+            boxShadow: 'var(--shadow-card)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: '14px',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <Tape rotation="1.5deg" style={{ margin: '-10px auto 0 auto' }} />
+          <AlertCircle size={36} style={{ color: 'var(--ink-terracotta)' }} />
+
+          <h3 className="editorial-title" style={{ fontSize: '22px', margin: 0, color: 'var(--ink-primary)' }}>
+            Couldn't draft your script right now
+          </h3>
+
+          <p style={{ color: 'var(--ink-muted)', fontSize: '14px', maxWidth: '480px', lineHeight: 1.5, margin: 0 }}>
+            {generationError}
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              marginTop: '8px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={executeGeneration}
+              className="btn-terracotta"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <RotateCcw size={16} />
+              <span>Try Again</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setGenerationError(null);
+                setHasGeneratedOnce(true);
+              }}
+              className="btn-secondary"
+            >
+              <span>Write manually</span>
+            </button>
+
+            <button type="button" onClick={onBack} className="btn-secondary">
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* 3. Script Workspace with Editable Textarea & Write It Again */
+        <div
+          role="region"
+          aria-label="Narrative script workspace"
+          style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}
+        >
+          {/* Header Action Row */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label
+                htmlFor="narrative-script-input"
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  color: 'var(--ink-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <FileText size={18} />
+                <span>Narrative Script</span>
+              </label>
+
+              {isPromptPath && (
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  className="btn-secondary"
+                  data-testid="write-it-again-btn"
+                  style={{
+                    fontSize: '13px',
+                    padding: '4px 10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    minHeight: '30px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Sparkles size={14} style={{ color: 'var(--ink-terracotta)' }} />
+                  <span>Write it again</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-muted)' }}>
+                Target range: <strong>{analysis.minWords}–{analysis.maxWords}</strong> words (@ {wpm} WPM)
+              </span>
+              <span
+                style={{
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  backgroundColor: mood.bgColor,
+                  border: `1.5px solid ${mood.borderColor}`,
+                  color: mood.textColor,
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {analysis.wordCount} words
+              </span>
+            </div>
+          </div>
+
+          {/* Textarea - Auto-scrolls into view on mobile keyboard focus */}
+          <textarea
+            id="narrative-script-input"
+            value={script}
+            onChange={(e) => onScriptChange(e.target.value)}
             onFocus={(e) => {
               e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
-            placeholder="e.g., Warm cinematic sunlight, Studio Ghibli watercolor aesthetic, soft bokeh"
+            placeholder={`Write your story here... e.g., "A gentle morning mist hovered over the quiet valley, as tall whispering pine trees stood sentinel against the soft golden sky..."`}
+            rows={5}
+            aria-describedby="script-helper-text"
             style={{
               width: '100%',
-              padding: '12px 14px',
-              borderRadius: '8px',
-              border: '1px solid var(--paper-border)',
-              backgroundColor: 'var(--paper-cream-alt)',
-              fontSize: '14px',
+              padding: 'clamp(12px, 2.5vw, 16px)',
+              borderRadius: '10px',
+              border: `2px solid ${
+                analysis.status === 'perfect'
+                  ? 'var(--ink-sage)'
+                  : analysis.status === 'too_long'
+                  ? 'var(--ink-terracotta)'
+                  : 'var(--paper-border)'
+              }`,
+              backgroundColor: '#ffffff',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              lineHeight: 1.6,
               color: 'var(--ink-primary)',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)',
+              resize: 'vertical',
+              outline: 'none',
               boxSizing: 'border-box',
             }}
           />
+
+          {/* Hand-Drawn Sketchbook Progress Bar */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--paper-cream-alt)',
+              border: '1px solid var(--paper-border)',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '13px',
+                fontWeight: 600,
+                flexWrap: 'wrap',
+                gap: '4px',
+              }}
+            >
+              <span style={{ color: 'var(--ink-primary)' }}>
+                Script Target Progress ({analysis.percentage}%)
+              </span>
+              <span style={{ color: mood.textColor }}>
+                {analysis.wordCount} / {analysis.targetWords} target words (Range: {analysis.minWords}–{analysis.maxWords})
+              </span>
+            </div>
+
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                backgroundColor: 'var(--paper-border)',
+                borderRadius: '5px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${Math.min(100, analysis.percentage)}%`,
+                  height: '100%',
+                  backgroundColor: mood.textColor,
+                  transition: 'width 0.25s ease, background-color 0.25s ease',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Mood / Out of Bounds Message Card */}
+          <div
+            id="script-helper-text"
+            role="status"
+            style={{
+              padding: '14px 16px',
+              borderRadius: '10px',
+              backgroundColor: mood.bgColor,
+              border: `1.5px dashed ${mood.borderColor}`,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              boxShadow: 'var(--shadow-card)',
+              transition: 'all 0.2s ease',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            {mood.icon}
+            <div style={{ flex: 1, minWidth: '0' }}>
+              <p
+                className="handwritten"
+                style={{
+                  fontSize: '18px',
+                  color: mood.textColor,
+                  fontWeight: 'bold',
+                  wordBreak: 'break-word',
+                  lineHeight: 1.3,
+                  margin: 0,
+                }}
+              >
+                {analysis.helperText}
+              </p>
+              {outOfBoundsMessage && (
+                <p
+                  style={{
+                    fontSize: '13px',
+                    color: mood.textColor,
+                    marginTop: '4px',
+                    lineHeight: 1.4,
+                    margin: '4px 0 0 0',
+                  }}
+                >
+                  {outOfBoundsMessage}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Optional Visual Style Prompt Field */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', width: '100%' }}>
+            <label
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--ink-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Sparkles size={16} style={{ color: 'var(--ink-terracotta)' }} />
+              <span>Visual Style Prompt (Optional)</span>
+            </label>
+            <input
+              type="text"
+              value={prompt}
+              onChange={(e) => onPromptChange(e.target.value)}
+              onFocus={(e) => {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }}
+              placeholder="e.g., Warm cinematic sunlight, Studio Ghibli watercolor aesthetic, soft bokeh"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: '1px solid var(--paper-border)',
+                backgroundColor: 'var(--paper-cream-alt)',
+                fontSize: '14px',
+                color: 'var(--ink-primary)',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* Navigation Footer */}
+          <footer
+            className="step-footer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: '8px',
+            }}
+          >
+            <button type="button" onClick={onBack} className="btn-secondary">
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!analysis.isWithinBounds}
+              className="btn-terracotta"
+              style={{
+                opacity: !analysis.isWithinBounds ? 0.5 : 1,
+                cursor: !analysis.isWithinBounds ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span>Continue to Rights</span>
+              <ArrowRight size={16} />
+            </button>
+          </footer>
         </div>
-      </div>
-
-      {/* Navigation Footer */}
-      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <button type="button" onClick={onBack} className="btn-secondary">
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!analysis.isWithinBounds}
-          className="btn-terracotta"
-          style={{
-            opacity: !analysis.isWithinBounds ? 0.5 : 1,
-            cursor: !analysis.isWithinBounds ? 'not-allowed' : 'pointer',
-          }}
-        >
-          <span>Continue to Rights</span>
-          <ArrowRight size={16} />
-        </button>
-      </footer>
+      )}
     </div>
   );
 };
