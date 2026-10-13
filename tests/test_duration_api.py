@@ -13,14 +13,16 @@ def test_get_durations_endpoint():
     response = client.get("/v1/durations")
     assert response.status_code == 200
     data = response.json()
-    assert "words_per_minute" in data
+    assert data["words_per_minute"] == 148.0
     assert "min_duration_seconds" in data
     assert "max_duration_policy_seconds" in data
     assert "allowed_presets" in data
     preset_values = [p["value"] for p in data["allowed_presets"]]
     assert "5s" in preset_values
     assert "30s" in preset_values
+    assert "1m" in preset_values
     assert "2m" in preset_values
+    assert "3m" in preset_values
     assert "5m" in preset_values
     assert "10m" in preset_values
 
@@ -42,6 +44,35 @@ def test_valid_preset():
         duration_preset="2m",
     )
     assert req.resolve_target_duration_seconds() == 120.0
+
+
+def test_valid_preset_1m_and_3m():
+    consent = ConsentRequest(
+        authorized=True,
+        statement="I authorize this video generation and own all rights.",
+        face_rights_attested=True,
+        voice_rights_attested=True,
+    )
+    long_script = " ".join(["word"] * 450)
+    req_1m = JobCreate(
+        photo_asset_id="photo_123",
+        voice_asset_id="voice_123",
+        script=long_script,
+        prompt="Random prompt",
+        consent=consent,
+        duration_preset="1m",
+    )
+    assert req_1m.resolve_target_duration_seconds() == 60.0
+
+    req_3m = JobCreate(
+        photo_asset_id="photo_123",
+        voice_asset_id="voice_123",
+        script=long_script,
+        prompt="Random prompt",
+        consent=consent,
+        duration_preset="3m",
+    )
+    assert req_3m.resolve_target_duration_seconds() == 180.0
 
 
 def test_valid_explicit_seconds():
