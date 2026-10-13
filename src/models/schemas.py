@@ -202,6 +202,17 @@ from src.config import settings
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
+DURATION_PRESETS: dict[str, float] = {
+    "5s": 5.0,
+    "30s": 30.0,
+    "1m": 60.0,
+    "2m": 120.0,
+    "3m": 180.0,
+    "5m": 300.0,
+    "10m": 600.0,
+}
+
+
 class JobCreate(BaseModel):
     photo_asset_id: str
     voice_asset_id: str
@@ -218,10 +229,9 @@ class JobCreate(BaseModel):
         if v is None:
             return v
         v_clean = v.strip().lower()
-        presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
-        if v_clean not in presets:
-            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(presets.keys())}")
-        seconds = presets[v_clean]
+        if v_clean not in DURATION_PRESETS:
+            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(DURATION_PRESETS.keys())}")
+        seconds = DURATION_PRESETS[v_clean]
         if seconds < settings.min_duration_seconds or seconds > settings.max_duration_policy_seconds:
             raise ValueError(
                 f"duration_preset '{v}' ({seconds}s) is outside policy limits "
@@ -248,8 +258,7 @@ class JobCreate(BaseModel):
         if self.target_duration_seconds is not None:
             return self.target_duration_seconds
         if self.duration_preset is not None:
-            presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
-            return presets.get(self.duration_preset.strip().lower())
+            return DURATION_PRESETS.get(self.duration_preset.strip().lower())
         return None
 
     @model_validator(mode="after")
@@ -320,10 +329,9 @@ class ScriptGenerateRequest(BaseModel):
         if v is None:
             return v
         v_clean = v.strip().lower()
-        presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
-        if v_clean not in presets:
-            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(presets.keys())}")
-        seconds = presets[v_clean]
+        if v_clean not in DURATION_PRESETS:
+            raise ValueError(f"Invalid duration_preset '{v}'. Allowed presets: {sorted(DURATION_PRESETS.keys())}")
+        seconds = DURATION_PRESETS[v_clean]
         if seconds < settings.min_duration_seconds or seconds > settings.max_duration_policy_seconds:
             raise ValueError(
                 f"duration_preset '{v}' ({seconds}s) is outside policy limits "
@@ -361,8 +369,7 @@ class ScriptGenerateRequest(BaseModel):
         if self.target_duration_seconds is not None:
             return self.target_duration_seconds
         if self.duration_preset is not None:
-            presets = {"5s": 5.0, "30s": 30.0, "2m": 120.0, "5m": 300.0, "10m": 600.0}
-            return presets[self.duration_preset.strip().lower()]
+            return DURATION_PRESETS[self.duration_preset.strip().lower()]
         raise ValueError("Either 'duration_preset' or 'target_duration_seconds' must be provided.")
 
     @model_validator(mode="after")

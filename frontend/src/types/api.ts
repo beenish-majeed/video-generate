@@ -2,7 +2,7 @@
  * API Contract types for Video Generation Backend (FastAPI)
  */
 
-export type DurationPreset = '5s' | '30s' | '2m' | '5m' | '10m';
+export type DurationPreset = '5s' | '30s' | '1m' | '2m' | '3m' | '5m' | '10m';
 
 export interface DurationOption {
   label: string;

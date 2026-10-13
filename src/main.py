@@ -105,7 +105,9 @@ def get_duration_options():
         "allowed_presets": [
             {"label": "5 seconds", "value": "5s", "seconds": 5.0},
             {"label": "30 seconds", "value": "30s", "seconds": 30.0},
+            {"label": "1 minute", "value": "1m", "seconds": 60.0},
             {"label": "2 minutes", "value": "2m", "seconds": 120.0},
+            {"label": "3 minutes", "value": "3m", "seconds": 180.0},
             {"label": "5 minutes", "value": "5m", "seconds": 300.0},
             {"label": "10 minutes", "value": "10m", "seconds": 600.0},
         ],
