@@ -62,34 +62,38 @@ BACKEND_URL=https://api.yourdomain.com
 
 ---
 
-## 📖 Welcome Page & The Two Creation Paths
+## 📖 Welcome Page & The Choice Screen
 
-The application opens on a sketchbook welcome screen featuring a warm illustrated hero scene, an optional creative prompt input with quick suggestion chips, and two distinct path selection cards:
+The application opens on a clean sketchbook **Welcome page** featuring an original illustrated hero scene, a warm headline, a concise explanation, and a single **"Get started"** button.
 
-### 1. "Upload Photo & Voice" Path (`custom_media`)
+Clicking "Get started" transitions to the **Choice screen**, which presents two creative paths side by side on wide screens and stacked on narrow viewports (320px to 2560px):
+
+### 1. "Use my own photo and voice" Path (`custom_media`)
 Designed for creators who bring their own media files or record live audio:
-1. **Welcome**: Set creative prompt or mood.
-2. **Photo**: Upload portrait photograph (JPEG, PNG, WEBP, up to 10MB) pinned to canvas.
-3. **Voice**: Upload audio file (MP3, WAV, M4A, WEBM, up to 20MB) or record directly using the microphone.
-4. **Duration**: Select video length from dynamic presets loaded from the backend (e.g. 5s, 30s, 2m, 5m, 10m).
-5. **Script**: Draft narrative story matching duration guidelines (150 WPM pacing with visual feedback).
-6. **Rights / Consent**: Review and check all 3 legal attestations (face permission, voice ownership, synthesis authorization).
-7. **Waiting Room**: Real-time animated progress tracking across neural synthesis stages.
-8. **Premiere**: Theater preview screening with direct MP4 download.
+1. **Photo**: Upload portrait photograph (JPEG, PNG, WEBP, up to 10MB) pinned to canvas.
+2. **Voice**: Upload audio file (MP3, WAV, M4A, WEBM, up to 20MB) or record directly using the microphone.
+3. **Duration**: Select video length from dynamic presets loaded from the backend (e.g. 5s, 30s, 2m, 5m, 10m).
+4. **Script**: Draft narrative story matching duration guidelines (150 WPM pacing with visual feedback).
+5. **Rights / Consent**: Review and check all 3 legal attestations (face permission, voice ownership, synthesis authorization).
+6. **Waiting Room**: Real-time animated progress tracking across neural synthesis stages.
+7. **Premiere**: Theater preview screening with direct MP4 download.
 
-### 2. "Start with Prompt" Path (`prompt_first` — Currently Disabled)
+### 2. "Start with a prompt" Path (`prompt_first` — Coming Soon)
 Designed for idea-first generation starting directly from a narrative concept:
-1. **Welcome**: Enter creative story prompt.
-2. **Duration**: Select target video duration preset.
-3. **Script**: Enter narrative script fitted to the chosen duration bounds.
-4. **Rights / Consent**: Affirm ownership and synthesis consent.
-5. **Waiting Room**: Real-time progress monitoring.
-6. **Premiere**: Video player preview and download.
+1. **Duration**: Select target video duration preset.
+2. **Script**: Enter narrative script fitted to the chosen duration bounds.
+3. **Rights / Consent**: Affirm ownership and synthesis consent.
+4. **Waiting Room**: Real-time progress monitoring.
+5. **Premiere**: Video player preview and download.
 
 > [!NOTE]
-> **Status**: The "Start with Prompt" card is currently disabled and hidden on the welcome page (`ENABLE_PROMPT_PATH = false` in `src/components/steps/HeroStep.tsx`). Because the backend requires uploaded photo and voice assets and does not yet support default studio assets (returning *"Photo asset not found"* for placeholder IDs), this path is temporarily gated until default asset support is implemented in the backend. The code and routing logic remain intact so the path can be re-enabled by setting `ENABLE_PROMPT_PATH = true`.
+> **Status**: The "Start with a prompt" card is currently gated on the choice screen (`ENABLE_PROMPT_PATH = false` in `src/components/steps/ChoiceStep.tsx`). While disabled, it displays a "Coming soon" sticker, is `aria-disabled`, non-clickable, and non-focusable as an action, with an explanatory note that the backend requires default studio assets. The underlying prompt flow code remains fully implemented and can be activated by toggling `ENABLE_PROMPT_PATH = true`.
 
-Throughout both paths, clickable notebook binder tabs at the top allow inspecting completed stages and jumping back to prior steps without losing entered input.
+### 🧭 Navigation & Step Tabs
+* **Hidden Tabs on Welcome & Choice**: The top step tab bar is hidden on the welcome and choice screens.
+* **Isolated Path Steps**: Once a path begins, the tab bar displays only the steps belonging to that specific journey.
+* **Persistent State**: Navigating backwards (Choice -> Welcome, or Photo/Duration -> Choice) preserves all user-entered scripts, prompts, presets, and asset IDs.
+
 
 ---
 
