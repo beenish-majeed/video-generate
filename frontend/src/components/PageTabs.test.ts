@@ -1,15 +1,18 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
 import {
+  PageTabs,
   CUSTOM_MEDIA_STEPS,
+  PROMPT_FIRST_STEPS,
   getStepListForMode,
 } from './PageTabs';
 
 describe('Path-Based Step List Unit Tests', () => {
-  it('1. Upload path (custom_media): returns 8 steps in exact order', () => {
+  it('1. Upload path (custom_media): returns 7 steps in exact order (excluding welcome and choice)', () => {
     const steps = getStepListForMode('custom_media');
-    expect(steps).toHaveLength(8);
+    expect(steps).toHaveLength(7);
     expect(steps.map((s) => s.id)).toEqual([
-      'hero',
       'photo',
       'voice',
       'duration',
@@ -20,7 +23,6 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
 
     expect(steps.map((s) => s.tabTitle)).toEqual([
-      '00. Intro',
       '01. Memory Photo',
       '02. Voice Sample',
       '03. Pace & Time',
@@ -31,11 +33,10 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
   });
 
-  it('2. Prompt path (prompt_first): returns 6 steps in exact order (skipping photo & voice)', () => {
+  it('2. Prompt path (prompt_first): returns 5 steps in exact order (skipping photo & voice)', () => {
     const steps = getStepListForMode('prompt_first');
-    expect(steps).toHaveLength(6);
+    expect(steps).toHaveLength(5);
     expect(steps.map((s) => s.id)).toEqual([
-      'hero',
       'duration',
       'script',
       'consent',
@@ -44,7 +45,6 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
 
     expect(steps.map((s) => s.tabTitle)).toEqual([
-      '00. Intro',
       '01. Pace & Time',
       '02. Narrative',
       '03. Rights & Consent',
@@ -68,4 +68,25 @@ describe('Path-Based Step List Unit Tests', () => {
     const steps = getStepListForMode();
     expect(steps).toEqual(CUSTOM_MEDIA_STEPS);
   });
+
+  it('5. PageTabs returns null (hidden tabs) on welcome (hero) and choice screens', () => {
+    const heroMarkup = renderToStaticMarkup(
+      React.createElement(PageTabs, { currentStep: 'hero' })
+    );
+    expect(heroMarkup).toBe('');
+
+    const choiceMarkup = renderToStaticMarkup(
+      React.createElement(PageTabs, { currentStep: 'choice' })
+    );
+    expect(choiceMarkup).toBe('');
+  });
+
+  it('6. PageTabs renders navigation tabs on workflow steps', () => {
+    const photoMarkup = renderToStaticMarkup(
+      React.createElement(PageTabs, { currentStep: 'photo', flowMode: 'custom_media' })
+    );
+    expect(photoMarkup).toContain('01. Memory Photo');
+    expect(photoMarkup).toContain('role="tablist"');
+  });
 });
+

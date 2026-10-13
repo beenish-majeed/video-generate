@@ -23,7 +23,6 @@ export interface StepDefinition {
 }
 
 export const CUSTOM_MEDIA_STEPS: StepDefinition[] = [
-  { id: 'hero', label: 'Start', tabTitle: '00. Intro' },
   { id: 'photo', label: 'Photo', tabTitle: '01. Memory Photo' },
   { id: 'voice', label: 'Voice', tabTitle: '02. Voice Sample' },
   { id: 'duration', label: 'Duration', tabTitle: '03. Pace & Time' },
@@ -34,7 +33,6 @@ export const CUSTOM_MEDIA_STEPS: StepDefinition[] = [
 ];
 
 export const PROMPT_FIRST_STEPS: StepDefinition[] = [
-  { id: 'hero', label: 'Start', tabTitle: '00. Intro' },
   { id: 'duration', label: 'Duration', tabTitle: '01. Pace & Time' },
   { id: 'script', label: 'Script', tabTitle: '02. Narrative' },
   { id: 'consent', label: 'Consent', tabTitle: '03. Rights & Consent' },
@@ -58,6 +56,11 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   flowMode = 'custom_media',
   onSelectStep,
 }) => {
+  // Step tabs are hidden on welcome and choice screens
+  if (currentStep === 'hero' || currentStep === 'choice') {
+    return null;
+  }
+
   const stepsList = getStepListForMode(flowMode);
   const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
 
