@@ -1,0 +1,18 @@
+{
+  "avatars": [
+    {
+      "id": "avatar_default",
+      "name": "Default Presenter",
+      "file_path": "assets/avatars/default_avatar.jpg"
+    }
+  ],
+  "voices": [
+    {
+      "id": "voice_piper_lessac",
+      "name": "Lessac (English US)",
+      "model_path": "src/models/piper/en_US-lessac-medium.onnx",
+      "config_path": "src/models/piper/en_US-lessac-medium.onnx.json",
+      "sample_path": "assets/voices/default_voice.wav"
+    }
+  ]
+}
