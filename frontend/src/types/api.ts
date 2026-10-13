@@ -29,16 +29,54 @@ export interface AssetUploadResponse {
   sha256: string;
 }
 
+export interface AvatarPreset {
+  id: string;
+  name: string;
+  thumbnail_url: string;
+}
+
+export interface VoicePreset {
+  id: string;
+  name: string;
+  sample_url?: string;
+}
+
+export interface PresetsResponse {
+  avatars: AvatarPreset[];
+  voices: VoicePreset[];
+}
+
+export type ScriptTone = 'friendly' | 'professional' | 'storytelling' | 'educational';
+
+export interface ScriptGeneratePayload {
+  prompt: string;
+  duration_preset?: DurationPreset;
+  target_duration_seconds?: number;
+  tone?: ScriptTone;
+  language?: string;
+}
+
+export interface ScriptGenerateResponse {
+  script: string;
+  word_count: number;
+  estimated_seconds: number;
+  target_words: number;
+}
+
 export interface ConsentPayload {
   authorized: boolean;
   statement: string;
-  face_rights_attested: boolean;
-  voice_rights_attested: boolean;
+  face_rights_attested?: boolean;
+  voice_rights_attested?: boolean;
+  ai_generated_accepted?: boolean;
+  ai_label_accepted?: boolean;
 }
 
 export interface JobCreatePayload {
-  photo_asset_id: string;
-  voice_asset_id: string;
+  photo_asset_id?: string;
+  voice_asset_id?: string;
+  avatar_preset_id?: string;
+  voice_preset_id?: string;
   script: string;
   prompt?: string;
   consent: ConsentPayload;

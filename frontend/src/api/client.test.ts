@@ -73,4 +73,54 @@ describe('MemoryStudioAPIClient.createJob', () => {
       'Script duration mismatch: script gives 12s but target is 30s'
     );
   });
+
+  it('fetches presets from GET /v1/presets', async () => {
+    const mockPresets = {
+      avatars: [{ id: 'avatar_default', name: 'Default Avatar', thumbnail_url: '/v1/presets/avatars/avatar_default/thumbnail' }],
+      voices: [{ id: 'voice_piper_lessac', name: 'Piper Lessac' }],
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockPresets,
+    } as any);
+
+    const result = await apiClient.getPresets();
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/v1/presets', expect.objectContaining({ headers: expect.any(Object) }));
+    expect(result.avatars).toHaveLength(1);
+    expect(result.voices).toHaveLength(1);
+  });
+
+  it('generates script via POST /v1/scripts/generate', async () => {
+    const mockScriptResp = {
+      script: 'A lovely morning walk in the forest.',
+      word_count: 7,
+      estimated_seconds: 3.0,
+      target_words: 7,
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockScriptResp,
+    } as any);
+
+    const result = await apiClient.generateScript({
+      prompt: 'A walk in the forest',
+      duration_preset: '30s',
+      tone: 'friendly',
+    });
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/scripts/generate',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: 'A walk in the forest',
+          duration_preset: '30s',
+          tone: 'friendly',
+        }),
+      })
+    );
+    expect(result.script).toBe('A lovely morning walk in the forest.');
+  });
 });

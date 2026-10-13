@@ -5,7 +5,7 @@
 export interface MappedAPIError {
   title: string;
   message: string;
-  kind: 'network' | 'validation' | 'auth' | 'too_large' | 'server' | 'unknown';
+  kind: 'network' | 'validation' | 'auth' | 'too_large' | 'rate_limit' | 'server' | 'unknown';
 }
 
 export function mapAPIError(error: unknown): MappedAPIError {
@@ -21,6 +21,19 @@ export function mapAPIError(error: unknown): MappedAPIError {
   const errStr = error instanceof Error ? error.message : String(error);
   const lower = errStr.toLowerCase();
 
+  // Timeout Errors
+  if (
+    lower.includes('timeout') ||
+    lower.includes('timed out') ||
+    lower.includes('aborted')
+  ) {
+    return {
+      title: 'Request Timed Out',
+      message: 'The studio took a bit too long to respond. Please check your connection and try again.',
+      kind: 'network',
+    };
+  }
+
   // Network or Connection Error
   if (
     lower.includes('failed to fetch') ||
@@ -32,6 +45,19 @@ export function mapAPIError(error: unknown): MappedAPIError {
       title: 'Connection Hiccup',
       message: 'We could not reach the Memory Studio server. Please check that the server is running and try again.',
       kind: 'network',
+    };
+  }
+
+  // 429 Rate Limit
+  if (
+    lower.includes('429') ||
+    lower.includes('rate limit') ||
+    lower.includes('too many requests')
+  ) {
+    return {
+      title: 'Studio Needs a Moment',
+      message: 'The studio is receiving a lot of requests right now. Please wait a moment and try again.',
+      kind: 'rate_limit',
     };
   }
 
@@ -53,13 +79,20 @@ export function mapAPIError(error: unknown): MappedAPIError {
     };
   }
 
-  // 422 Unprocessable Entity (e.g. Script length mismatch or validation failure)
+  // 422 Unprocessable Entity
   if (
     lower.includes('422') ||
     lower.includes('unprocessable') ||
     lower.includes('mismatch') ||
     lower.includes('duration')
   ) {
+    if (lower.includes('prompt') || lower.includes('1000')) {
+      return {
+        title: 'Idea Needs a Touch-Up',
+        message: 'Please keep your idea prompt under 1000 characters and try again.',
+        kind: 'validation',
+      };
+    }
     return {
       title: 'Script Pacing Mismatch',
       message: errStr.includes('HTTP Error 422')
@@ -78,10 +111,18 @@ export function mapAPIError(error: unknown): MappedAPIError {
     };
   }
 
+  // 502 Bad Gateway / AI Generation Error
+  if (lower.includes('502') || lower.includes('bad gateway') || lower.includes('llm generation failed')) {
+    return {
+      title: 'AI Writer Hiccup',
+      message: 'The script writing assistant ran into an issue connecting to the AI model. Please try again.',
+      kind: 'server',
+    };
+  }
+
   // 500 / 5xx Server Error
   if (
     lower.includes('500') ||
-    lower.includes('502') ||
     lower.includes('503') ||
     lower.includes('internal server error')
   ) {

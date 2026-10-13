@@ -4,6 +4,9 @@ import type {
   AssetKind,
   JobCreatePayload,
   JobRecord,
+  PresetsResponse,
+  ScriptGeneratePayload,
+  ScriptGenerateResponse,
 } from '../types/api';
 
 /**
@@ -152,6 +155,25 @@ class MemoryStudioAPIClient {
    */
   async getJob(jobId: string): Promise<JobRecord> {
     return this.request<JobRecord>(`/v1/jobs/${jobId}`);
+  }
+
+  /**
+   * GET /v1/presets
+   * Retrieves available avatar and voice presets.
+   */
+  async getPresets(): Promise<PresetsResponse> {
+    return this.request<PresetsResponse>('/v1/presets');
+  }
+
+  /**
+   * POST /v1/scripts/generate
+   * Generates tailored narrative script matching topic, tone, and target duration.
+   */
+  async generateScript(payload: ScriptGeneratePayload): Promise<ScriptGenerateResponse> {
+    return this.request<ScriptGenerateResponse>('/v1/scripts/generate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   /**

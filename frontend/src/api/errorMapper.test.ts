@@ -84,4 +84,44 @@ describe('mapAPIError', () => {
     expect(result.kind).toBe('network');
     expect(result.title).toBe('Connection Hiccup');
   });
+
+  it('maps 429 Rate Limit error', () => {
+    // @ts-ignore
+    globalThis.navigator = { onLine: true };
+    const error = new Error('HTTP Error 429: Too Many Requests - rate limit exceeded');
+    const result = mapAPIError(error);
+    expect(result.kind).toBe('rate_limit');
+    expect(result.title).toBe('Studio Needs a Moment');
+    expect(result.message).toContain('receiving a lot of requests');
+  });
+
+  it('maps 502 Bad Gateway / LLM generation failure', () => {
+    // @ts-ignore
+    globalThis.navigator = { onLine: true };
+    const error = new Error('HTTP Error 502: Bad Gateway - LLM generation failed');
+    const result = mapAPIError(error);
+    expect(result.kind).toBe('server');
+    expect(result.title).toBe('AI Writer Hiccup');
+    expect(result.message).toContain('issue connecting to the AI model');
+  });
+
+  it('maps request timeout error', () => {
+    // @ts-ignore
+    globalThis.navigator = { onLine: true };
+    const error = new Error('AbortError: The operation was aborted due to timeout');
+    const result = mapAPIError(error);
+    expect(result.kind).toBe('network');
+    expect(result.title).toBe('Request Timed Out');
+    expect(result.message).toContain('took a bit too long');
+  });
+
+  it('maps 422 Prompt too long error', () => {
+    // @ts-ignore
+    globalThis.navigator = { onLine: true };
+    const error = new Error('HTTP Error 422: prompt exceeds 1000 characters limit');
+    const result = mapAPIError(error);
+    expect(result.kind).toBe('validation');
+    expect(result.title).toBe('Idea Needs a Touch-Up');
+    expect(result.message).toContain('under 1000 characters');
+  });
 });
