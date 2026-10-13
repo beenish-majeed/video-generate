@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   transitionFlowMode,
+  startJourney,
+  navigateBackStep,
   DEFAULT_PHOTO_ASSET_ID,
   DEFAULT_VOICE_ASSET_ID,
   type StudioFlowState,
@@ -73,4 +75,57 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     expect(backToCustomState.photoAssetId).toBe('');
     expect(backToCustomState.voiceAssetId).toBe('');
   });
+
+  it('5. Welcome -> Choice transition moves from hero to choice step', () => {
+    const heroState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'hero',
+    };
+    const choiceState = startJourney(heroState);
+    expect(choiceState.currentStep).toBe('choice');
+    expect(choiceState.script).toBe(initialCustomState.script);
+  });
+
+  it('6. Back navigation from choice screen returns to hero step keeping entered data', () => {
+    const choiceState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'choice',
+      photoAssetId: 'photo-1',
+      voiceAssetId: 'voice-1',
+      script: 'Personal memory text',
+      prompt: 'Personal visual prompt',
+    };
+    const backState = navigateBackStep(choiceState);
+    expect(backState.currentStep).toBe('hero');
+    expect(backState.photoAssetId).toBe('photo-1');
+    expect(backState.voiceAssetId).toBe('voice-1');
+    expect(backState.script).toBe('Personal memory text');
+    expect(backState.prompt).toBe('Personal visual prompt');
+  });
+
+  it('7. Back navigation from first step of upload path (photo) returns to choice screen keeping data', () => {
+    const photoState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'photo',
+      flowMode: 'custom_media',
+      photoAssetId: 'uploaded-photo-99',
+    };
+    const backState = navigateBackStep(photoState);
+    expect(backState.currentStep).toBe('choice');
+    expect(backState.photoAssetId).toBe('uploaded-photo-99');
+    expect(backState.script).toBe(initialCustomState.script);
+  });
+
+  it('8. Back navigation from first step of prompt path (duration) returns to choice screen keeping data', () => {
+    const promptDurationState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'duration',
+      flowMode: 'prompt_first',
+      script: 'Written idea text',
+    };
+    const backState = navigateBackStep(promptDurationState);
+    expect(backState.currentStep).toBe('choice');
+    expect(backState.script).toBe('Written idea text');
+  });
 });
+

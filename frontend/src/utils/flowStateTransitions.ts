@@ -17,6 +17,17 @@ export interface StudioFlowState {
 }
 
 /**
+ * Pure state transition reducer function for starting the flow from welcome.
+ */
+export function startJourney(prevState: StudioFlowState): StudioFlowState {
+  return {
+    ...prevState,
+    currentStep: 'choice',
+    errorMessage: null,
+  };
+}
+
+/**
  * Pure state transition reducer function for switching creative paths.
  * Retains shared user input (script, prompt, duration, custom assets) while setting path defaults.
  */
@@ -46,3 +57,36 @@ export function transitionFlowMode(
     errorMessage: null,
   };
 }
+
+/**
+ * Pure state transition reducer function for navigating backwards.
+ * Retains all entered user data while determining previous step.
+ */
+export function navigateBackStep(prevState: StudioFlowState): StudioFlowState {
+  const { currentStep, flowMode } = prevState;
+
+  if (currentStep === 'choice') {
+    return { ...prevState, currentStep: 'hero', errorMessage: null };
+  }
+  if (currentStep === 'photo') {
+    return { ...prevState, currentStep: 'choice', errorMessage: null };
+  }
+  if (currentStep === 'duration' && flowMode === 'prompt_first') {
+    return { ...prevState, currentStep: 'choice', errorMessage: null };
+  }
+  if (currentStep === 'voice') {
+    return { ...prevState, currentStep: 'photo', errorMessage: null };
+  }
+  if (currentStep === 'duration' && flowMode === 'custom_media') {
+    return { ...prevState, currentStep: 'voice', errorMessage: null };
+  }
+  if (currentStep === 'script') {
+    return { ...prevState, currentStep: 'duration', errorMessage: null };
+  }
+  if (currentStep === 'consent') {
+    return { ...prevState, currentStep: 'script', errorMessage: null };
+  }
+
+  return prevState;
+}
+

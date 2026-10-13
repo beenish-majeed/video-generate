@@ -4,6 +4,7 @@ import SoundToggle from './SoundToggle';
 
 export type JourneyStepId =
   | 'hero'
+  | 'choice'
   | 'photo'
   | 'voice'
   | 'duration'
