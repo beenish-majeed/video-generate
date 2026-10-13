@@ -1,30 +1,28 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
-import { HeroStep, ENABLE_PROMPT_PATH } from './HeroStep';
+import { HeroStep } from './HeroStep';
 
-describe('HeroStep welcome page option gating', () => {
-  it('has ENABLE_PROMPT_PATH configured as false', () => {
-    expect(ENABLE_PROMPT_PATH).toBe(false);
-  });
-
-  it('shows only the upload option when ENABLE_PROMPT_PATH is false', () => {
+describe('HeroStep welcome page', () => {
+  it('renders hero scene, headline, and single "Get started" button without choice cards', () => {
     const html = renderToStaticMarkup(
       React.createElement(HeroStep, {
-        prompt: '',
-        onPromptChange: () => {},
-        onSelectPromptFlow: () => {},
-        onSelectCustomMediaFlow: () => {},
+        onGetStarted: () => {},
       })
     );
 
-    // The upload option must be rendered
-    expect(html).toContain('Upload your photo or voice');
-    expect(html).toContain('Upload Photo &amp; Voice');
+    // Warm headline and one line explanation
+    expect(html).toContain('Turn your ideas into a quiet, living video memory.');
+    expect(html).toContain('Craft an intimate animated memory with handwritten notes and gentle sound.');
 
-    // The prompt-first card elements must NOT be rendered
+    // Single "Get started" button
+    expect(html).toContain('Get started');
+
+    // Choice cards must NOT be on this welcome page
+    expect(html).not.toContain('Upload your photo or voice');
     expect(html).not.toContain('Write a prompt and make a video');
-    expect(html).not.toContain('Start with Prompt');
     expect(html).not.toContain('welcome-prompt-input');
+    expect(html).not.toContain('Upload Photo &amp; Voice');
+    expect(html).not.toContain('Start with Prompt');
   });
 });

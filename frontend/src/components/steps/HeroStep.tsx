@@ -1,30 +1,26 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import HeroScene from '../HeroScene';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
-import { ArrowRight, Sparkles, Upload, MessageSquare } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export interface HeroStepProps {
-  prompt: string;
-  onPromptChange: (prompt: string) => void;
-  onSelectPromptFlow: () => void;
-  onSelectCustomMediaFlow: () => void;
+  onGetStarted: () => void;
+  // Optional backwards compatibility props
+  prompt?: string;
+  onPromptChange?: (prompt: string) => void;
+  onSelectPromptFlow?: () => void;
+  onSelectCustomMediaFlow?: () => void;
 }
 
-const PROMPT_SUGGESTIONS = [
-  'A serene mountain lake at sunset with gentle breeze',
-  'Quiet morning tea in a cozy sunlit room',
-  'Autumn leaves softly falling along a quiet park path',
-];
+export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
-export const ENABLE_PROMPT_PATH = false;
+  // Focus heading on transition for accessibility
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
-export const HeroStep: React.FC<HeroStepProps> = ({
-  prompt,
-  onPromptChange,
-  onSelectPromptFlow,
-  onSelectCustomMediaFlow,
-}) => {
   return (
     <div
       className="step-container"
@@ -36,233 +32,66 @@ export const HeroStep: React.FC<HeroStepProps> = ({
         position: 'relative',
         maxWidth: '840px',
         margin: '0 auto',
+        alignItems: 'center',
       }}
     >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
-      <Sticker label="MEMORY STUDIO" rotation="3deg" variant="terracotta" />
-
-      {/* Header Section */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
-        <p className="handwritten" style={{ fontSize: '24px', color: 'var(--ink-terracotta)' }}>
-          Welcome, traveler of memories...
-        </p>
-        <h1 className="editorial-title" style={{ fontSize: '32px', lineHeight: 1.2 }}>
-          Turn your ideas into a quiet, living video memory.
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', lineHeight: 1.5 }}>
-          Choose your creative path below to begin crafting your personal animated film.
-        </p>
-      </header>
-
-      {/* Calm Illustrated Scene - Scales without distortion or cut-off */}
-      <div role="region" aria-label="Creative illustration" style={{ margin: '4px 0', width: '100%' }}>
-        <HeroScene />
+      <div style={{ alignSelf: 'flex-start' }}>
+        <Sticker label="MEMORY STUDIO" rotation="3deg" variant="terracotta" />
       </div>
 
-      {/* Choice Cards */}
-      <div
-        className="welcome-choice-grid"
+      {/* Header Section */}
+      <header
         style={{
-          display: 'grid',
-          gridTemplateColumns: ENABLE_PROMPT_PATH ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
-          justifyItems: 'center',
-          alignItems: 'stretch',
-          gap: '20px',
-          marginTop: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          marginTop: '6px',
+          textAlign: 'center',
           width: '100%',
         }}
       >
-        {/* Card 1: Write a prompt and make a video */}
-        {ENABLE_PROMPT_PATH && (
-        <div
+        <p className="handwritten" style={{ fontSize: '24px', color: 'var(--ink-terracotta)', margin: 0 }}>
+          Welcome, traveler of memories...
+        </p>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="editorial-title"
+          style={{ fontSize: '32px', lineHeight: 1.2, margin: 0, outline: 'none' }}
+        >
+          Turn your ideas into a quiet, living video memory.
+        </h1>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '16px', lineHeight: 1.5, margin: 0 }}>
+          Craft an intimate animated memory with handwritten notes and gentle sound.
+        </p>
+      </header>
+
+      {/* Calm Illustrated Scene */}
+      <div role="region" aria-label="Creative illustration" style={{ margin: '8px 0', width: '100%' }}>
+        <HeroScene />
+      </div>
+
+      {/* Single "Get started" button */}
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '4px' }}>
+        <button
+          type="button"
+          onClick={onGetStarted}
+          className="btn-secondary"
           style={{
-            position: 'relative',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '14px',
-            boxShadow: 'var(--shadow-card)',
-            transform: 'rotate(-0.5deg)',
-            height: '100%',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            minHeight: '48px',
+            padding: '12px 32px',
+            fontSize: '17px',
+            cursor: 'pointer',
           }}
         >
-          <Tape rotation="-3deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Sticker label="QUICK PROMPT" variant="amber" rotation="-1deg" />
-            <Sparkles size={20} style={{ color: 'var(--ink-amber)' }} aria-hidden="true" />
-          </div>
-
-          <div style={{ minHeight: '64px' }}>
-            <h2 className="editorial-title" style={{ fontSize: '20px', marginBottom: '4px' }}>
-              Write a prompt and make a video
-            </h2>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>
-              Type an idea or scene description to quickly generate your video memory.
-            </p>
-          </div>
-
-          {/* Prompt Input Field & Suggestions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-            <label
-              htmlFor="welcome-prompt-input"
-              className="handwritten"
-              style={{ fontSize: '17px', color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <MessageSquare size={14} />
-              <span>Your scene prompt:</span>
-            </label>
-            <textarea
-              id="welcome-prompt-input"
-              value={prompt}
-              onChange={(e) => onPromptChange(e.target.value)}
-              placeholder="e.g. Warm cinematic light, soft watercolor texture of a quiet sunset..."
-              rows={3}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--paper-border)',
-                backgroundColor: 'var(--paper-cream)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                color: 'var(--ink-primary)',
-                resize: 'none',
-              }}
-            />
-
-            {/* Quick Inspiration Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-              {PROMPT_SUGGESTIONS.map((sug, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => onPromptChange(sug)}
-                  className="handwritten"
-                  style={{
-                    fontSize: '14px',
-                    padding: '6px 12px',
-                    minHeight: '38px',
-                    borderRadius: '14px',
-                    border: '1px dashed var(--paper-border)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                    color: '#4e473f',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  ✨ {sug.slice(0, 24)}...
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onSelectPromptFlow}
-            className="btn-terracotta"
-            style={{
-              marginTop: 'auto',
-              justifyContent: 'center',
-              width: '100%',
-              fontSize: '16px',
-              padding: '12px 20px',
-            }}
-          >
-            <span>Start with Prompt</span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </button>
-        </div>
-        )}
-
-        {/* Card 2: Upload your photo or voice */}
-        <div
-          style={{
-            position: 'relative',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '14px',
-            boxShadow: 'var(--shadow-card)',
-            transform: 'rotate(0.5deg)',
-            height: '100%',
-            width: '100%',
-            maxWidth: ENABLE_PROMPT_PATH ? 'none' : '560px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <Tape rotation="2deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Sticker label="CUSTOM MEDIA" variant="sage" rotation="1deg" />
-            <Upload size={20} style={{ color: 'var(--ink-sage)' }} aria-hidden="true" />
-          </div>
-
-          <div style={{ minHeight: '64px' }}>
-            <h2 className="editorial-title" style={{ fontSize: '20px', marginBottom: '4px' }}>
-              Upload your photo or voice
-            </h2>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>
-              Upload your personal portrait image and voice sample for full customization.
-            </p>
-          </div>
-
-          {/* Features Highlights */}
-          <ul
-            style={{
-              listStyle: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              margin: '0',
-              padding: '12px 14px',
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-              borderRadius: '8px',
-              border: '1px solid var(--paper-border)',
-              flex: 1,
-              justifyContent: 'center',
-            }}
-          >
-            <li style={{ fontSize: '14px', color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>📸</span>
-              <span>Upload portrait photo (.jpg, .png)</span>
-            </li>
-            <li style={{ fontSize: '14px', color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🎙️</span>
-              <span>Clone voice sample (.wav, .mp3, .ogg)</span>
-            </li>
-            <li style={{ fontSize: '14px', color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🎨</span>
-              <span>Customize timing, script & narrative</span>
-            </li>
-          </ul>
-
-          <button
-            type="button"
-            onClick={onSelectCustomMediaFlow}
-            className="btn-secondary"
-            style={{
-              marginTop: 'auto',
-              justifyContent: 'center',
-              width: '100%',
-              fontSize: '16px',
-              padding: '12px 20px',
-            }}
-          >
-            <span>Upload Photo & Voice</span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </button>
-        </div>
+          <span>Get started</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
