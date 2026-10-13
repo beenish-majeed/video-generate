@@ -78,21 +78,23 @@ Designed for creators who bring their own media files or record live audio:
 6. **Waiting Room**: Real-time animated progress tracking across neural synthesis stages.
 7. **Premiere**: Theater preview screening with direct MP4 download.
 
-### 2. "Start with a prompt" Path (`prompt_first` — Coming Soon)
+### 2. "Start with a prompt" Path (`prompt_first`)
 Designed for idea-first generation starting directly from a narrative concept:
-1. **Duration**: Select target video duration preset.
-2. **Script**: Enter narrative script fitted to the chosen duration bounds.
-3. **Rights / Consent**: Affirm ownership and synthesis consent.
-4. **Waiting Room**: Real-time progress monitoring.
-5. **Premiere**: Video player preview and download.
+1. **Idea**: Enter a creative concept (up to 1,000 characters with live counter), choose an example starter chip, and select narrator tone (`friendly`, `professional`, `storytelling`, `educational`).
+2. **Length**: Choose duration preset (`30s`, `1m`, `2m`, `3m`, `5m`, `10m`) based on calibrated speech timing.
+3. **Look & Voice**: Select character appearance from curated avatar presets (taped polaroid style) and narrator voice model from Piper presets.
+4. **Script**: Generates spoken narrative script via backend LLM (`POST /v1/scripts/generate`) upon arrival with a calm story-style loading screen (never fake percentages). Allows editing with live word counter, 90%–110% duration calibration check, and "Write it again" AI regeneration with edit-protection confirmation.
+5. **Rights / Consent**: Transparent AI disclosure confirmation (accepting AI generation and AI transparency label, without claiming ownership of preset assets).
+6. **Waiting Room**: Real-time progress monitoring through neural synthesis stages.
+7. **Premiere**: Theater preview screening with direct MP4 download.
 
 > [!NOTE]
-> **Status**: The "Start with a prompt" card is currently gated on the choice screen (`ENABLE_PROMPT_PATH = false` in `src/components/steps/ChoiceStep.tsx`). While disabled, it displays a "Coming soon" sticker, is `aria-disabled`, non-clickable, and non-focusable as an action, with an explanatory note that the backend requires default studio assets. The underlying prompt flow code remains fully implemented and can be activated by toggling `ENABLE_PROMPT_PATH = true`.
+> **Status**: The "Start with a prompt" path is fully active (`ENABLE_PROMPT_PATH = true` in `src/components/steps/ChoiceStep.tsx`) and backed by safe allowlisted avatar/voice presets and the backend script writer service.
 
 ### 🧭 Navigation & Step Tabs
 * **Hidden Tabs on Welcome & Choice**: The top step tab bar is hidden on the welcome and choice screens.
-* **Isolated Path Steps**: Once a path begins, the tab bar displays only the steps belonging to that specific journey.
-* **Persistent State**: Navigating backwards (Choice -> Welcome, or Photo/Duration -> Choice) preserves all user-entered scripts, prompts, presets, and asset IDs.
+* **Isolated Path Steps**: Once a path begins, the tab bar displays only the steps belonging to that specific journey (7 tabs for each creative path).
+* **Persistent State**: Navigating backwards (Choice -> Welcome, or between steps) preserves all user-entered scripts, ideas, prompts, presets, and asset IDs across the entire session.
 
 
 ---
