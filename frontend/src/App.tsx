@@ -9,6 +9,7 @@ import { playPageTurnSound } from './utils/soundEffects';
 import { Loader2 } from 'lucide-react';
 
 const HeroStep = lazy(() => import('./components/steps/HeroStep'));
+const ChoiceStep = lazy(() => import('./components/steps/ChoiceStep'));
 const PhotoStep = lazy(() => import('./components/steps/PhotoStep'));
 const VoiceStep = lazy(() => import('./components/steps/VoiceStep'));
 const DurationStep = lazy(() => import('./components/steps/DurationStep'));
@@ -175,11 +176,14 @@ export const App: React.FC = () => {
             style={{ width: '100%' }}
           >
             {currentStep === 'hero' && (
-              <HeroStep
-                prompt={prompt}
-                onPromptChange={setPrompt}
+              <HeroStep onGetStarted={() => changeStep('choice')} />
+            )}
+
+            {currentStep === 'choice' && (
+              <ChoiceStep
                 onSelectPromptFlow={handleSelectPromptFlow}
                 onSelectCustomMediaFlow={handleSelectCustomMediaFlow}
+                onBack={() => changeStep('hero')}
               />
             )}
 
@@ -188,7 +192,7 @@ export const App: React.FC = () => {
                 selectedAssetId={photoAssetId}
                 onAssetSelected={(id) => setPhotoAssetId(id)}
                 onNext={() => changeStep('voice')}
-                onBack={() => changeStep('hero')}
+                onBack={() => changeStep('choice')}
               />
             )}
 
@@ -209,7 +213,7 @@ export const App: React.FC = () => {
                   setTargetSeconds(seconds);
                 }}
                 onNext={() => changeStep('script')}
-                onBack={() => changeStep(flowMode === 'prompt_first' ? 'hero' : 'voice')}
+                onBack={() => changeStep(flowMode === 'prompt_first' ? 'choice' : 'voice')}
               />
             )}
 
