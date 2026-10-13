@@ -14,6 +14,9 @@ interface ScriptStepProps {
   wordsPerMinute?: number;
   onNext: () => void;
   onBack: () => void;
+  isPromptPath?: boolean;
+  onGenerateScript?: () => Promise<void>;
+  isGeneratingScript?: boolean;
 }
 
 export const ScriptStep: React.FC<ScriptStepProps> = ({
@@ -25,6 +28,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
   wordsPerMinute: propWpm,
   onNext,
   onBack,
+  isPromptPath = false,
+  onGenerateScript,
+  isGeneratingScript = false,
 }) => {
   const [wpm, setWpm] = useState<number>(propWpm || 150);
 
@@ -112,13 +118,35 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       <div role="region" aria-label="Narrative script workspace" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
         {/* Label & Target Word Counter Header Bar - Responsive Flex Wrap */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
-          <label
-            htmlFor="narrative-script-input"
-            style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <FileText size={18} />
-            <span>Narrative Script</span>
-          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label
+              htmlFor="narrative-script-input"
+              style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FileText size={18} />
+              <span>Narrative Script</span>
+            </label>
+            {isPromptPath && onGenerateScript && (
+              <button
+                type="button"
+                onClick={onGenerateScript}
+                disabled={isGeneratingScript}
+                className="btn-secondary"
+                style={{
+                  fontSize: '12px',
+                  padding: '3px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  minHeight: '28px',
+                  cursor: isGeneratingScript ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <Sparkles size={13} style={{ color: 'var(--ink-terracotta)' }} />
+                <span>{isGeneratingScript ? 'Writing...' : 'Regenerate'}</span>
+              </button>
+            )}
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-muted)' }}>

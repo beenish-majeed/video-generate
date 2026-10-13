@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import type { JourneyStepId, FlowMode } from './components/PageTabs';
-import type { DurationPreset, ConsentPayload, JobRecord } from './types/api';
+import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload } from './types/api';
 import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
 import { playPageTurnSound } from './utils/soundEffects';
@@ -10,9 +10,11 @@ import { Loader2 } from 'lucide-react';
 
 const HeroStep = lazy(() => import('./components/steps/HeroStep'));
 const ChoiceStep = lazy(() => import('./components/steps/ChoiceStep'));
+const IdeaStep = lazy(() => import('./components/steps/IdeaStep'));
 const PhotoStep = lazy(() => import('./components/steps/PhotoStep'));
 const VoiceStep = lazy(() => import('./components/steps/VoiceStep'));
 const DurationStep = lazy(() => import('./components/steps/DurationStep'));
+const LookVoiceStep = lazy(() => import('./components/steps/LookVoiceStep'));
 const ScriptStep = lazy(() => import('./components/steps/ScriptStep'));
 const ConsentStep = lazy(() => import('./components/steps/ConsentStep'));
 const WaitingStep = lazy(() => import('./components/steps/WaitingStep'));
@@ -54,12 +56,17 @@ export const App: React.FC = () => {
   // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
+  const [ideaText, setIdeaText] = useState<string>('');
+  const [tone, setTone] = useState<ScriptTone>('storytelling');
+  const [avatarPresetId, setAvatarPresetId] = useState<string>('');
+  const [voicePresetId, setVoicePresetId] = useState<string>('');
   const [durationPreset, setDurationPreset] = useState<DurationPreset>('30s');
   const [targetSeconds, setTargetSeconds] = useState<number>(30);
   const [script, setScript] = useState<string>(
     'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.'
   );
   const [prompt, setPrompt] = useState<string>('Warm cinematic light, soft watercolor texture');
+  const [isGeneratingScript, setIsGeneratingScript] = useState<boolean>(false);
 
   // Active Job State
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -83,15 +90,34 @@ export const App: React.FC = () => {
 
   const handleSelectPromptFlow = () => {
     setFlowMode('prompt_first');
-    // Supply default studio asset IDs for prompt-first path if none uploaded yet
-    if (!photoAssetId) setPhotoAssetId(DEFAULT_PHOTO_ASSET_ID);
-    if (!voiceAssetId) setVoiceAssetId(DEFAULT_VOICE_ASSET_ID);
-    changeStep('duration');
+    changeStep('idea');
   };
 
   const handleSelectCustomMediaFlow = () => {
     setFlowMode('custom_media');
     changeStep('photo');
+  };
+
+  const handleGenerateScript = async () => {
+    const topic = ideaText.trim() || prompt.trim();
+    if (!topic) return;
+    setIsGeneratingScript(true);
+    try {
+      const res = await apiClient.generateScript({
+        prompt: topic,
+        duration_preset: durationPreset,
+        target_duration_seconds: targetSeconds,
+        tone,
+      });
+      if (res?.script) {
+        setScript(res.script);
+      }
+    } catch (err: unknown) {
+      const mapped = mapAPIError(err);
+      setErrorMessage(mapped.message);
+    } finally {
+      setIsGeneratingScript(false);
+    }
   };
 
   const handleCreateJob = async (consent: ConsentPayload) => {
@@ -101,20 +127,29 @@ export const App: React.FC = () => {
     setSubmitting(true);
     setErrorMessage(null);
 
-    // Fallback asset IDs if missing (e.g. in prompt-first mode)
-    const finalPhotoId = photoAssetId || DEFAULT_PHOTO_ASSET_ID;
-    const finalVoiceId = voiceAssetId || DEFAULT_VOICE_ASSET_ID;
+    const isPrompt = flowMode === 'prompt_first';
+    const payload: JobCreatePayload = isPrompt
+      ? {
+          avatar_preset_id: avatarPresetId || 'avatar_default',
+          voice_preset_id: voicePresetId || 'voice_piper_lessac',
+          script: script.trim(),
+          prompt: ideaText.trim() || prompt.trim() || 'Warm cinematic light, soft watercolor texture',
+          duration_preset: durationPreset,
+          target_duration_seconds: targetSeconds,
+          consent,
+        }
+      : {
+          photo_asset_id: photoAssetId || DEFAULT_PHOTO_ASSET_ID,
+          voice_asset_id: voiceAssetId || DEFAULT_VOICE_ASSET_ID,
+          script: script.trim(),
+          prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
+          duration_preset: durationPreset,
+          target_duration_seconds: targetSeconds,
+          consent,
+        };
 
     try {
-      const res = await apiClient.createJob({
-        photo_asset_id: finalPhotoId,
-        voice_asset_id: finalVoiceId,
-        script: script.trim(),
-        prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
-        duration_preset: durationPreset,
-        target_duration_seconds: targetSeconds,
-        consent,
-      });
+      const res = await apiClient.createJob(payload);
 
       // Save created job_id in localStorage
       try {
@@ -187,6 +222,20 @@ export const App: React.FC = () => {
               />
             )}
 
+            {currentStep === 'idea' && (
+              <IdeaStep
+                initialIdea={ideaText}
+                initialTone={tone}
+                onNext={(newIdea, newTone) => {
+                  setIdeaText(newIdea);
+                  setTone(newTone);
+                  setPrompt(newIdea);
+                  changeStep('duration');
+                }}
+                onBack={() => changeStep('choice')}
+              />
+            )}
+
             {currentStep === 'photo' && (
               <PhotoStep
                 selectedAssetId={photoAssetId}
@@ -212,8 +261,39 @@ export const App: React.FC = () => {
                   setDurationPreset(preset);
                   setTargetSeconds(seconds);
                 }}
-                onNext={() => changeStep('script')}
-                onBack={() => changeStep(flowMode === 'prompt_first' ? 'choice' : 'voice')}
+                onNext={() => changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'script')}
+                onBack={() => changeStep(flowMode === 'prompt_first' ? 'idea' : 'voice')}
+              />
+            )}
+
+            {currentStep === 'look_voice' && (
+              <LookVoiceStep
+                initialAvatarId={avatarPresetId}
+                initialVoiceId={voicePresetId}
+                onNext={async (avatarId, voiceId) => {
+                  setAvatarPresetId(avatarId);
+                  setVoicePresetId(voiceId);
+                  if ((!script || script === 'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.') && ideaText.trim()) {
+                    try {
+                      setIsGeneratingScript(true);
+                      const res = await apiClient.generateScript({
+                        prompt: ideaText.trim(),
+                        duration_preset: durationPreset,
+                        target_duration_seconds: targetSeconds,
+                        tone,
+                      });
+                      if (res?.script) {
+                        setScript(res.script);
+                      }
+                    } catch {
+                      // Allow user to write script manually
+                    } finally {
+                      setIsGeneratingScript(false);
+                    }
+                  }
+                  changeStep('script');
+                }}
+                onBack={() => changeStep('duration')}
               />
             )}
 
@@ -225,7 +305,10 @@ export const App: React.FC = () => {
                 onPromptChange={setPrompt}
                 targetSeconds={targetSeconds}
                 onNext={() => changeStep('consent')}
-                onBack={() => changeStep('duration')}
+                onBack={() => changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration')}
+                isPromptPath={flowMode === 'prompt_first'}
+                onGenerateScript={handleGenerateScript}
+                isGeneratingScript={isGeneratingScript}
               />
             )}
 
@@ -235,6 +318,7 @@ export const App: React.FC = () => {
                 onBack={() => changeStep('script')}
                 submitting={submitting}
                 error={errorMessage}
+                isPromptPath={flowMode === 'prompt_first'}
               />
             )}
 

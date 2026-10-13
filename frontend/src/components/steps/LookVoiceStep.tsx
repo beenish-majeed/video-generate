@@ -4,7 +4,7 @@ import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { ArrowRight, ArrowLeft, Mic, Check, Volume2, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Mic, Check, Loader2, AlertCircle } from 'lucide-react';
 import type { AvatarPreset, VoicePreset } from '../../types/api';
 
 export interface LookVoiceStepProps {

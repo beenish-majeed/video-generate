@@ -10,6 +10,7 @@ interface ConsentStepProps {
   onBack: () => void;
   submitting: boolean;
   error?: string | null;
+  isPromptPath?: boolean;
 }
 
 export const ConsentStep: React.FC<ConsentStepProps> = ({
@@ -17,28 +18,43 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   onBack,
   submitting,
   error,
+  isPromptPath = false,
 }) => {
   // Global Rule & Requirement: NO pre-checked boxes! All default to false.
   const [faceRights, setFaceRights] = useState(false);
   const [voiceRights, setVoiceRights] = useState(false);
   const [authorized, setAuthorized] = useState(false);
 
-  // All 3 consents must be actively accepted by the user
-  const isValid = faceRights && voiceRights && authorized;
+  // Prompt path consents (AI generation & AI label acceptance)
+  const [aiGeneratedAccepted, setAiGeneratedAccepted] = useState(false);
+  const [aiLabelAccepted, setAiLabelAccepted] = useState(false);
+
+  // All required consents must be actively accepted by the user
+  const isValid = isPromptPath
+    ? aiGeneratedAccepted && aiLabelAccepted
+    : faceRights && voiceRights && authorized;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || submitting) return;
 
-    // Statement contains required tokens ('own', 'permission', 'authorize') for backend verification
-    const consentPayload: ConsentPayload = {
-      authorized: true,
-      statement: 'I attest that I own or have permission to use this photo and voice sample, and authorize Memory Studio to render this video.',
-      face_rights_attested: true,
-      voice_rights_attested: true,
-    };
-
-    onSubmitJob(consentPayload);
+    if (isPromptPath) {
+      const consentPayload: ConsentPayload = {
+        authorized: true,
+        statement: 'I accept that this video is AI-generated and will display an AI label.',
+        ai_generated_accepted: true,
+        ai_label_accepted: true,
+      };
+      onSubmitJob(consentPayload);
+    } else {
+      const consentPayload: ConsentPayload = {
+        authorized: true,
+        statement: 'I attest that I own or have permission to use this photo and voice sample, and authorize Memory Studio to render this video.',
+        face_rights_attested: true,
+        voice_rights_attested: true,
+      };
+      onSubmitJob(consentPayload);
+    }
   };
 
   return (
@@ -141,135 +157,227 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          {/* Consent 1: Face Rights */}
-          <label
-            htmlFor="face-rights-checkbox"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minHeight: '44px',
-              padding: '4px 0',
-            }}
-          >
-            <input
-              id="face-rights-checkbox"
-              type="checkbox"
-              checked={faceRights}
-              onChange={(e) => {
-                setFaceRights(e.target.checked);
-                playStickerPopSound();
-              }}
-              style={{
-                width: '22px',
-                height: '22px',
-                minWidth: '22px',
-                minHeight: '22px',
-                marginTop: '2px',
-                accentColor: 'var(--ink-terracotta)',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            />
-            <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
-                I attest that I have permission to use the face image in this photograph
-              </p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                This is my own face, or I have explicit agreement from the person shown in the photo.
-              </p>
-            </div>
-          </label>
+          {isPromptPath ? (
+            <>
+              {/* Prompt Consent 1: AI Generated */}
+              <label
+                htmlFor="ai-generated-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="ai-generated-checkbox"
+                  type="checkbox"
+                  checked={aiGeneratedAccepted}
+                  onChange={(e) => {
+                    setAiGeneratedAccepted(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    minWidth: '22px',
+                    minHeight: '22px',
+                    marginTop: '2px',
+                    accentColor: 'var(--ink-terracotta)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                    I understand and accept that this video is AI-generated
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                    The video is created using studio preset character visuals and synthesized narration.
+                  </p>
+                </div>
+              </label>
 
-          <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
 
-          {/* Consent 2: Voice Rights */}
-          <label
-            htmlFor="voice-rights-checkbox"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minHeight: '44px',
-              padding: '4px 0',
-            }}
-          >
-            <input
-              id="voice-rights-checkbox"
-              type="checkbox"
-              checked={voiceRights}
-              onChange={(e) => {
-                setVoiceRights(e.target.checked);
-                playStickerPopSound();
-              }}
-              style={{
-                width: '22px',
-                height: '22px',
-                minWidth: '22px',
-                minHeight: '22px',
-                marginTop: '2px',
-                accentColor: 'var(--ink-terracotta)',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            />
-            <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
-                I attest that I have permission to use this voice recording sample
-              </p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                I am the speaker, or I have explicit agreement to synthesize speech matching this voice.
-              </p>
-            </div>
-          </label>
+              {/* Prompt Consent 2: AI Label Acceptance */}
+              <label
+                htmlFor="ai-label-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="ai-label-checkbox"
+                  type="checkbox"
+                  checked={aiLabelAccepted}
+                  onChange={(e) => {
+                    setAiLabelAccepted(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    minWidth: '22px',
+                    minHeight: '22px',
+                    marginTop: '2px',
+                    accentColor: 'var(--ink-terracotta)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                    I agree that the video will carry an AI transparency label
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                    A visible label ensures viewers know this animation was synthetically crafted.
+                  </p>
+                </div>
+              </label>
+            </>
+          ) : (
+            <>
+              {/* Consent 1: Face Rights */}
+              <label
+                htmlFor="face-rights-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="face-rights-checkbox"
+                  type="checkbox"
+                  checked={faceRights}
+                  onChange={(e) => {
+                    setFaceRights(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    minWidth: '22px',
+                    minHeight: '22px',
+                    marginTop: '2px',
+                    accentColor: 'var(--ink-terracotta)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                    I attest that I have permission to use the face image in this photograph
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                    This is my own face, or I have explicit agreement from the person shown in the photo.
+                  </p>
+                </div>
+              </label>
 
-          <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
 
-          {/* Consent 3: Authorization & AI Disclosure */}
-          <label
-            htmlFor="authorized-checkbox"
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              minHeight: '44px',
-              padding: '4px 0',
-            }}
-          >
-            <input
-              id="authorized-checkbox"
-              type="checkbox"
-              checked={authorized}
-              onChange={(e) => {
-                setAuthorized(e.target.checked);
-                playStickerPopSound();
-              }}
-              style={{
-                width: '22px',
-                height: '22px',
-                minWidth: '22px',
-                minHeight: '22px',
-                marginTop: '2px',
-                accentColor: 'var(--ink-terracotta)',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            />
-            <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
-                I acknowledge the AI generation label and authorize Memory Studio to render this film
-              </p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                I agree that this video is generated for respectful storytelling and carries an AI disclosure.
-              </p>
-            </div>
-          </label>
+              {/* Consent 2: Voice Rights */}
+              <label
+                htmlFor="voice-rights-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="voice-rights-checkbox"
+                  type="checkbox"
+                  checked={voiceRights}
+                  onChange={(e) => {
+                    setVoiceRights(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    minWidth: '22px',
+                    minHeight: '22px',
+                    marginTop: '2px',
+                    accentColor: 'var(--ink-terracotta)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                    I attest that I have permission to use this voice recording sample
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                    I am the speaker, or I have explicit agreement to synthesize speech matching this voice.
+                  </p>
+                </div>
+              </label>
+
+              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+
+              {/* Consent 3: Authorization & AI Disclosure */}
+              <label
+                htmlFor="authorized-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="authorized-checkbox"
+                  type="checkbox"
+                  checked={authorized}
+                  onChange={(e) => {
+                    setAuthorized(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    minWidth: '22px',
+                    minHeight: '22px',
+                    marginTop: '2px',
+                    accentColor: 'var(--ink-terracotta)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                    I acknowledge the AI generation label and authorize Memory Studio to render this film
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                    I agree that this video is generated for respectful storytelling and carries an AI disclosure.
+                  </p>
+                </div>
+              </label>
+            </>
+          )}
         </div>
 
         {/* Error Feedback Card after Job Creation - Fits 320px cleanly */}

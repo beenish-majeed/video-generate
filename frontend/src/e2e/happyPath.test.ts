@@ -109,4 +109,62 @@ describe('End-to-End Happy Path Workflow (Mocked Backend API)', () => {
       }
     });
   });
+
+  it('executes full prompt-first journey: presets -> script generation -> job creation with preset IDs', async () => {
+    // 1. Fetch Presets
+    const mockPresets = {
+      avatars: [{ id: 'avatar_default', name: 'Storyteller Portrait', thumbnail_url: '/v1/presets/avatars/default/thumb' }],
+      voices: [{ id: 'voice_piper_lessac', name: 'Lessac' }],
+    };
+    vi.spyOn(apiClient, 'getPresets').mockResolvedValue(mockPresets);
+
+    const presets = await apiClient.getPresets();
+    expect(presets.avatars).toHaveLength(1);
+    expect(presets.voices).toHaveLength(1);
+
+    // 2. Generate Script from Idea Prompt
+    const mockScriptResponse = {
+      script: 'This is a warm and gentle story about memories and quiet mornings.',
+      word_count: 12,
+      estimated_seconds: 5,
+      target_words: 12,
+    };
+    vi.spyOn(apiClient, 'generateScript').mockResolvedValue(mockScriptResponse);
+
+    const scriptRes = await apiClient.generateScript({
+      prompt: 'A gentle story about quiet mornings',
+      duration_preset: '5s',
+      target_duration_seconds: 5,
+      tone: 'storytelling',
+    });
+    expect(scriptRes.script).toContain('warm and gentle story');
+    expect(scriptRes.word_count).toBe(12);
+
+    // 3. Submit Job with Avatar and Voice Preset IDs and Prompt Consent
+    const mockCreatedJobRecord: JobRecord = {
+      job_id: 'job-prompt-456',
+      state: 'RECEIVED',
+      status: 'RECEIVED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      target_duration_seconds: 5,
+    };
+    vi.spyOn(apiClient, 'createJob').mockResolvedValue(mockCreatedJobRecord);
+
+    const createRes = await apiClient.createJob({
+      avatar_preset_id: presets.avatars[0].id,
+      voice_preset_id: presets.voices[0].id,
+      script: scriptRes.script,
+      prompt: 'A gentle story about quiet mornings',
+      duration_preset: '5s',
+      target_duration_seconds: 5,
+      consent: {
+        authorized: true,
+        statement: 'I accept that this video is AI-generated and will display an AI label.',
+        ai_generated_accepted: true,
+        ai_label_accepted: true,
+      },
+    });
+    expect(createRes.job_id).toBe('job-prompt-456');
+  });
 });
