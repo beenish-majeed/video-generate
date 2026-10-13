@@ -5,9 +5,11 @@ import SoundToggle from './SoundToggle';
 export type JourneyStepId =
   | 'hero'
   | 'choice'
+  | 'idea'
   | 'photo'
   | 'voice'
   | 'duration'
+  | 'look_voice'
   | 'script'
   | 'consent'
   | 'waiting'
@@ -33,11 +35,13 @@ export const CUSTOM_MEDIA_STEPS: StepDefinition[] = [
 ];
 
 export const PROMPT_FIRST_STEPS: StepDefinition[] = [
-  { id: 'duration', label: 'Duration', tabTitle: '01. Pace & Time' },
-  { id: 'script', label: 'Script', tabTitle: '02. Narrative' },
-  { id: 'consent', label: 'Consent', tabTitle: '03. Rights & Consent' },
-  { id: 'waiting', label: 'Creating', tabTitle: '04. Studio Render' },
-  { id: 'premiere', label: 'Premiere', tabTitle: '05. Final Film' },
+  { id: 'idea', label: 'Idea', tabTitle: '01. Idea' },
+  { id: 'duration', label: 'Length', tabTitle: '02. Length' },
+  { id: 'look_voice', label: 'Look & Voice', tabTitle: '03. Look & Voice' },
+  { id: 'script', label: 'Script', tabTitle: '04. Script' },
+  { id: 'consent', label: 'Consent', tabTitle: '05. Rights & Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '06. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '07. Final Film' },
 ];
 
 // Helper to get step definitions for a given flow mode

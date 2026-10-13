@@ -1,18 +1,24 @@
 import type { FlowMode, JourneyStepId } from '../components/PageTabs';
-import type { DurationPreset } from '../types/api';
+import type { DurationPreset, ScriptTone } from '../types/api';
 
 export const DEFAULT_PHOTO_ASSET_ID = 'default-studio-photo';
 export const DEFAULT_VOICE_ASSET_ID = 'default-studio-voice';
+export const DEFAULT_AVATAR_PRESET_ID = 'avatar_default';
+export const DEFAULT_VOICE_PRESET_ID = 'voice_piper_lessac';
 
 export interface StudioFlowState {
   flowMode: FlowMode;
   currentStep: JourneyStepId;
   photoAssetId: string;
   voiceAssetId: string;
+  avatarPresetId?: string;
+  voicePresetId?: string;
   durationPreset: DurationPreset;
   targetSeconds: number;
   script: string;
   prompt: string;
+  ideaText?: string;
+  tone?: ScriptTone;
   errorMessage: string | null;
 }
 
@@ -39,9 +45,12 @@ export function transitionFlowMode(
     return {
       ...prevState,
       flowMode: 'prompt_first',
-      currentStep: 'duration',
+      currentStep: 'idea',
+      avatarPresetId: prevState.avatarPresetId || DEFAULT_AVATAR_PRESET_ID,
+      voicePresetId: prevState.voicePresetId || DEFAULT_VOICE_PRESET_ID,
       photoAssetId: prevState.photoAssetId || DEFAULT_PHOTO_ASSET_ID,
       voiceAssetId: prevState.voiceAssetId || DEFAULT_VOICE_ASSET_ID,
+      tone: prevState.tone || 'friendly',
       errorMessage: null,
     };
   }
@@ -68,23 +77,43 @@ export function navigateBackStep(prevState: StudioFlowState): StudioFlowState {
   if (currentStep === 'choice') {
     return { ...prevState, currentStep: 'hero', errorMessage: null };
   }
-  if (currentStep === 'photo') {
-    return { ...prevState, currentStep: 'choice', errorMessage: null };
+
+  // Custom Media path backward steps
+  if (flowMode === 'custom_media') {
+    if (currentStep === 'photo') {
+      return { ...prevState, currentStep: 'choice', errorMessage: null };
+    }
+    if (currentStep === 'voice') {
+      return { ...prevState, currentStep: 'photo', errorMessage: null };
+    }
+    if (currentStep === 'duration') {
+      return { ...prevState, currentStep: 'voice', errorMessage: null };
+    }
+    if (currentStep === 'script') {
+      return { ...prevState, currentStep: 'duration', errorMessage: null };
+    }
+    if (currentStep === 'consent') {
+      return { ...prevState, currentStep: 'script', errorMessage: null };
+    }
   }
-  if (currentStep === 'duration' && flowMode === 'prompt_first') {
-    return { ...prevState, currentStep: 'choice', errorMessage: null };
-  }
-  if (currentStep === 'voice') {
-    return { ...prevState, currentStep: 'photo', errorMessage: null };
-  }
-  if (currentStep === 'duration' && flowMode === 'custom_media') {
-    return { ...prevState, currentStep: 'voice', errorMessage: null };
-  }
-  if (currentStep === 'script') {
-    return { ...prevState, currentStep: 'duration', errorMessage: null };
-  }
-  if (currentStep === 'consent') {
-    return { ...prevState, currentStep: 'script', errorMessage: null };
+
+  // Prompt First path backward steps (Idea -> Length -> Look and voice -> Script -> Consent)
+  if (flowMode === 'prompt_first') {
+    if (currentStep === 'idea') {
+      return { ...prevState, currentStep: 'choice', errorMessage: null };
+    }
+    if (currentStep === 'duration') {
+      return { ...prevState, currentStep: 'idea', errorMessage: null };
+    }
+    if (currentStep === 'look_voice') {
+      return { ...prevState, currentStep: 'duration', errorMessage: null };
+    }
+    if (currentStep === 'script') {
+      return { ...prevState, currentStep: 'look_voice', errorMessage: null };
+    }
+    if (currentStep === 'consent') {
+      return { ...prevState, currentStep: 'script', errorMessage: null };
+    }
   }
 
   return prevState;

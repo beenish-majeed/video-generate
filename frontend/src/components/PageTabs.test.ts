@@ -33,11 +33,13 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
   });
 
-  it('2. Prompt path (prompt_first): returns 5 steps in exact order (skipping photo & voice)', () => {
+  it('2. Prompt path (prompt_first): returns 7 steps in exact order (Idea, Length, Look & Voice, Script, Consent, Creating, Premiere)', () => {
     const steps = getStepListForMode('prompt_first');
-    expect(steps).toHaveLength(5);
+    expect(steps).toHaveLength(7);
     expect(steps.map((s) => s.id)).toEqual([
+      'idea',
       'duration',
+      'look_voice',
       'script',
       'consent',
       'waiting',
@@ -45,11 +47,13 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
 
     expect(steps.map((s) => s.tabTitle)).toEqual([
-      '01. Pace & Time',
-      '02. Narrative',
-      '03. Rights & Consent',
-      '04. Studio Render',
-      '05. Final Film',
+      '01. Idea',
+      '02. Length',
+      '03. Look & Voice',
+      '04. Script',
+      '05. Rights & Consent',
+      '06. Studio Render',
+      '07. Final Film',
     ]);
   });
 

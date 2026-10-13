@@ -25,7 +25,7 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     const nextState = transitionFlowMode(initialCustomState, 'prompt_first');
 
     expect(nextState.flowMode).toBe('prompt_first');
-    expect(nextState.currentStep).toBe('duration');
+    expect(nextState.currentStep).toBe('idea');
 
     // Shared data RETAINED
     expect(nextState.script).toBe('A calm mountain path with autumn leaves falling gently.');
@@ -116,16 +116,56 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     expect(backState.script).toBe(initialCustomState.script);
   });
 
-  it('8. Back navigation from first step of prompt path (duration) returns to choice screen keeping data', () => {
-    const promptDurationState: StudioFlowState = {
+  it('8. Back navigation from first step of prompt path (idea) returns to choice screen keeping data', () => {
+    const promptIdeaState: StudioFlowState = {
       ...initialCustomState,
-      currentStep: 'duration',
+      currentStep: 'idea',
       flowMode: 'prompt_first',
       script: 'Written idea text',
     };
-    const backState = navigateBackStep(promptDurationState);
+    const backState = navigateBackStep(promptIdeaState);
     expect(backState.currentStep).toBe('choice');
     expect(backState.script).toBe('Written idea text');
+  });
+
+  it('9. Prompt path back navigation preserves data: consent -> script -> look_voice -> duration -> idea -> choice', () => {
+    const fullPromptState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'consent',
+      flowMode: 'prompt_first',
+      script: 'Generated voice script',
+      ideaText: 'Walk in autumn woods',
+      avatarPresetId: 'avatar_default',
+      voicePresetId: 'voice_piper_lessac',
+      durationPreset: '1m',
+      targetSeconds: 60,
+    };
+
+    // consent -> script
+    const s1 = navigateBackStep(fullPromptState);
+    expect(s1.currentStep).toBe('script');
+    expect(s1.script).toBe('Generated voice script');
+
+    // script -> look_voice
+    const s2 = navigateBackStep(s1);
+    expect(s2.currentStep).toBe('look_voice');
+    expect(s2.avatarPresetId).toBe('avatar_default');
+
+    // look_voice -> duration
+    const s3 = navigateBackStep(s2);
+    expect(s3.currentStep).toBe('duration');
+    expect(s3.durationPreset).toBe('1m');
+
+    // duration -> idea
+    const s4 = navigateBackStep(s3);
+    expect(s4.currentStep).toBe('idea');
+    expect(s4.ideaText).toBe('Walk in autumn woods');
+
+    // idea -> choice
+    const s5 = navigateBackStep(s4);
+    expect(s5.currentStep).toBe('choice');
+    expect(s5.ideaText).toBe('Walk in autumn woods');
+    expect(s5.script).toBe('Generated voice script');
   });
 });
 
