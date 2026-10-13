@@ -38,8 +38,10 @@ class AspectRatio(str, Enum):
 class ConsentRequest(BaseModel):
     authorized: bool
     statement: str
-    face_rights_attested: bool
-    voice_rights_attested: bool
+    face_rights_attested: Optional[bool] = None
+    voice_rights_attested: Optional[bool] = None
+    ai_generated_accepted: Optional[bool] = None
+    ai_label_accepted: Optional[bool] = None
 
 
 class ConsentRecord(BaseModel):
@@ -214,14 +216,49 @@ DURATION_PRESETS: dict[str, float] = {
 
 
 class JobCreate(BaseModel):
-    photo_asset_id: str
-    voice_asset_id: str
+    photo_asset_id: Optional[str] = None
+    voice_asset_id: Optional[str] = None
+    avatar_preset_id: Optional[str] = None
+    voice_preset_id: Optional[str] = None
     script: str
-    prompt: str
+    prompt: Optional[str] = ""
     consent: ConsentRequest
     target_duration_seconds: Optional[float] = None
     duration_preset: Optional[str] = None
     overrides: dict = Field(default_factory=dict)
+
+    @field_validator("avatar_preset_id")
+    @classmethod
+    def validate_avatar_preset_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip()
+        from src.services.presets import is_valid_avatar_preset_id, get_allowed_avatar_preset_ids
+        if not is_valid_avatar_preset_id(v_clean):
+            raise ValueError(f"Unknown avatar_preset_id '{v}'. Allowed presets: {sorted(get_allowed_avatar_preset_ids())}")
+        return v_clean
+
+    @field_validator("voice_preset_id")
+    @classmethod
+    def validate_voice_preset_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip()
+        from src.services.presets import is_valid_voice_preset_id, get_allowed_voice_preset_ids
+        if not is_valid_voice_preset_id(v_clean):
+            raise ValueError(f"Unknown voice_preset_id '{v}'. Allowed presets: {sorted(get_allowed_voice_preset_ids())}")
+        return v_clean
+
+    @model_validator(mode="after")
+    def validate_asset_sources(self) -> "JobCreate":
+        has_uploads = bool(self.photo_asset_id and self.voice_asset_id)
+        has_presets = bool(self.avatar_preset_id and self.voice_preset_id)
+        if not has_uploads and not has_presets:
+            raise ValueError(
+                "Either (photo_asset_id, voice_asset_id) for upload path or "
+                "(avatar_preset_id, voice_preset_id) for preset path must be provided."
+            )
+        return self
 
     @field_validator("duration_preset")
     @classmethod
