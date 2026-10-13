@@ -114,7 +114,46 @@ def get_duration_options():
     }
 
 
+@app.get("/v1/presets", dependencies=[Depends(verify_api_key)])
+def get_presets():
+    from src.services.presets import get_all_presets
+    data = get_all_presets()
+    avatars = [
+        {
+            "id": a["id"],
+            "name": a.get("name", a["id"]),
+            "thumbnail_url": f"/v1/presets/avatars/{a['id']}/thumbnail",
+        }
+        for a in data.get("avatars", [])
+        if "id" in a
+    ]
+    voices = [
+        {
+            "id": v["id"],
+            "name": v.get("name", v["id"]),
+        }
+        for v in data.get("voices", [])
+        if "id" in v
+    ]
+    return {"avatars": avatars, "voices": voices}
 
+
+@app.get("/v1/presets/avatars/{avatar_id}/thumbnail", dependencies=[Depends(verify_api_key)])
+def get_avatar_thumbnail(avatar_id: str):
+    from src.services.presets import get_avatar_file_path, is_valid_avatar_preset_id
+    if not is_valid_avatar_preset_id(avatar_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Avatar preset '{avatar_id}' not found.",
+        )
+    file_path = get_avatar_file_path(avatar_id)
+    if not file_path or not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Avatar thumbnail file not found for '{avatar_id}'.",
+        )
+    media_type = "image/png" if file_path.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(path=str(file_path), media_type=media_type)
 SCRIPT_RATE_LIMIT_MAX_REQUESTS = 10
 SCRIPT_RATE_LIMIT_WINDOW_SECONDS = 60.0
 _script_rate_limit_history: dict[str, list[float]] = defaultdict(list)
