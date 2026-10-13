@@ -67,6 +67,7 @@ describe('Path-Based Step List Unit Tests', () => {
   it('4. Default flowMode falls back to custom_media step list', () => {
     const steps = getStepListForMode();
     expect(steps).toEqual(CUSTOM_MEDIA_STEPS);
+    expect(getStepListForMode('prompt_first')).toEqual(PROMPT_FIRST_STEPS);
   });
 
   it('5. PageTabs returns null (hidden tabs) on welcome (hero) and choice screens', () => {
