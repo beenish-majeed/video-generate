@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     max_segment_seconds: float = 5.0
     sample_rate: int = 22050
     allow_burn_subtitles: bool = True
-    words_per_minute: float = 150.0
+    words_per_minute: float = 148.0
     failed_job_retention_hours: float = 24.0
     allow_insecure_dev: bool = False
     api_key: str | None = None

@@ -61,12 +61,12 @@ class TestScriptCleaning:
 
 class TestScriptLengthBounds:
     def test_script_bounds_30s_target(self):
-        # 30s @ 150 WPM = 75 words. 90%-110% bounds = [67, 83] words.
+        # 30s @ 148 WPM = 74 words. 90%-110% bounds = [67, 81] words.
         target_words = round(30 / 60 * settings.words_per_minute)
-        assert target_words == 75
+        assert target_words == 74
 
-        # Provide exactly 75 words
-        sample_words = "word " * 74 + "final."
+        # Provide exactly 74 words
+        sample_words = "word " * 73 + "final."
         provider = FakeLLMProvider(canned_response=sample_words)
 
         result = generate_script(
@@ -75,16 +75,16 @@ class TestScriptLengthBounds:
             llm_provider=provider,
         )
 
-        assert 67 <= result.word_count <= 83
-        assert result.target_words == 75
+        assert 66 <= result.word_count <= 82
+        assert result.target_words == 74
         assert result.estimated_seconds == pytest.approx(30.0, abs=4.0)
 
     def test_script_bounds_1m_target(self):
-        # 60s @ 150 WPM = 150 words. 90%-110% bounds = [135, 165] words.
+        # 60s @ 148 WPM = 148 words. 90%-110% bounds = [133, 163] words.
         target_words = round(60 / 60 * settings.words_per_minute)
-        assert target_words == 150
+        assert target_words == 148
 
-        sample_words = "word " * 149 + "final."
+        sample_words = "word " * 147 + "final."
         provider = FakeLLMProvider(canned_response=sample_words)
 
         result = generate_script(
@@ -93,13 +93,13 @@ class TestScriptLengthBounds:
             llm_provider=provider,
         )
 
-        assert 135 <= result.word_count <= 165
-        assert result.target_words == 150
+        assert 133 <= result.word_count <= 163
+        assert result.target_words == 148
 
     def test_script_bounds_10m_target(self):
-        # 600s @ 150 WPM = 1500 words. 90%-110% bounds = [1350, 1650] words.
+        # 600s @ 148 WPM = 1480 words. 90%-110% bounds = [1332, 1628] words.
         target_words = round(600 / 60 * settings.words_per_minute)
-        assert target_words == 1500
+        assert target_words == 1480
 
         # Multi-section generation: outline first, then 6 sections of 250 words
         def _dynamic_gen(system: str, user: str, max_tokens: int) -> str:
@@ -116,14 +116,14 @@ class TestScriptLengthBounds:
             llm_provider=provider,
         )
 
-        assert 1350 <= result.word_count <= 1650
-        assert result.target_words == 1500
+        assert 1332 <= result.word_count <= 1628
+        assert result.target_words == 1480
 
 
 class TestLengthCorrectionPasses:
     def test_under_length_correction_expands_script(self):
-        # Target 75 words. Initial response has only 40 words (< 98%).
-        # Second call (expansion pass) returns 75 words.
+        # Target 74 words. Initial response has only 40 words (< 98%).
+        # Second call (expansion pass) returns 74 words.
         call_count = 0
 
         def _adaptive_gen(system: str, user: str, max_tokens: int) -> str:
@@ -132,26 +132,26 @@ class TestLengthCorrectionPasses:
             if call_count == 1:
                 # Under target: 40 words
                 return "I stepped out into the crisp morning air and looked at the valley. " * 3
-            # Expanded response: 75 words
+            # Expanded response: 72 words
             return "I stepped out into the crisp morning air and looked at the valley. " * 6
 
         provider = FakeLLMProvider(response_generator=_adaptive_gen)
         result = generate_script(prompt="Morning air", duration_seconds=30.0, llm_provider=provider)
 
         assert call_count >= 2
-        assert 67 <= result.word_count <= 83
+        assert 66 <= result.word_count <= 82
 
     def test_over_length_correction_trims_at_sentence_boundaries(self):
-        # Target 75 words. Initial response has 120 words (> 102%).
-        # Each sentence is 15 words. 5 sentences = 75 words.
+        # Target 74 words. Initial response has 112 words (> 102%).
+        # Each sentence is 14 words. 5 sentences = 70 words.
         sentence = "I watched the golden sunset slowly sink behind the distant tall dark blue mountains."
         long_script = " ".join([sentence] * 8)  # 8 * 14 = 112 words
 
         provider = FakeLLMProvider(canned_response=long_script)
         result = generate_script(prompt="Golden sunset", duration_seconds=30.0, llm_provider=provider)
 
-        # Trimming cuts sentences cleanly to approach 75 words
-        assert 67 <= result.word_count <= 83
+        # Trimming cuts sentences cleanly to approach 74 words
+        assert 66 <= result.word_count <= 82
         assert result.script.endswith(".")
 
     def test_irrecoverable_out_of_bounds_raises_error(self):
@@ -206,7 +206,7 @@ class TestScriptGenerateAPIEndpoint:
             script=script_text,
             word_count=len(script_text.split()),
             estimated_seconds=29.2,
-            target_words=75,
+            target_words=74,
         )
         monkeypatch.setattr("src.main.generate_script", lambda **kwargs: mock_result)
 
@@ -226,8 +226,8 @@ class TestScriptGenerateAPIEndpoint:
         assert resp.status_code == 200
         data = resp.json()
         assert "script" in data
-        assert data["target_words"] == 75
-        assert 67 <= data["word_count"] <= 83
+        assert data["target_words"] == 74
+        assert 66 <= data["word_count"] <= 82
         assert data["estimated_seconds"] > 0
 
     def test_successful_script_generate_with_target_seconds(self, client):
@@ -242,7 +242,7 @@ class TestScriptGenerateAPIEndpoint:
             headers={"X-API-Key": "test_secret_api_key_123"},
         )
         assert resp.status_code == 200
-        assert resp.json()["target_words"] == 75
+        assert resp.json()["target_words"] == 74
 
     def test_prompt_exceeding_1000_chars_returns_422(self, client):
         long_prompt = "a" * 1001
