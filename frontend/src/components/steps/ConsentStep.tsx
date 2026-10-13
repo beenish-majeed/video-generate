@@ -75,19 +75,21 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       {/* Header Copy */}
       <header>
         <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
-          Keeping creativity safe, honest & respectful...
+          {isPromptPath ? 'AI Transparency & Attribution...' : 'Keeping creativity safe, honest & respectful...'}
         </p>
         <h2 className="editorial-title" style={{ marginTop: '4px' }}>
-          Rights & Consent Confirmation
+          {isPromptPath ? 'AI Generation & Transparency Consent' : 'Rights & Consent Confirmation'}
         </h2>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
-          Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.
+          {isPromptPath
+            ? 'Before we render your film, please confirm acceptance that this video is AI-generated and will display an AI transparency label.'
+            : 'Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.'}
         </p>
       </header>
 
       {/* Plain Language Summary Card */}
       <section
-        aria-label="What happens with your media"
+        aria-label={isPromptPath ? 'AI generation transparency overview' : 'What happens with your media'}
         style={{
           padding: 'clamp(14px, 3vw, 20px)',
           borderRadius: '12px',
@@ -104,41 +106,75 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Info size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
           <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
-            What Happens with Your Media
+            {isPromptPath ? 'AI Generation Details' : 'What Happens with Your Media'}
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Photograph</p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                Used strictly to synthesize natural facial animation for this video.
-              </p>
+        {isPromptPath ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Studio Character Avatar</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  Uses a curated studio portrait preset to synthesize facial animation.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Voice Recording</p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                Used to clone speech tone and pronounce your script narrative.
-              </p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Synthesized Voice Narration</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  Uses a standard studio voice preset to pronounce your generated narrative.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
-                The rendered film carries a discrete AI label so viewers know it was synthetically crafted.
-              </p>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  The rendered film carries a visible AI label so viewers know it was synthetically crafted.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Photograph</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  Used strictly to synthesize natural facial animation for this video.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Voice Recording</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  Used to clone speech tone and pronounce your script narrative.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
+                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  The rendered film carries a discrete AI label so viewers know it was synthetically crafted.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Active Acceptance Form (No Pre-checked Boxes; 44px+ Touch Targets) */}
