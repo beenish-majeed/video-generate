@@ -98,38 +98,65 @@ class PiperTTSProvider(BaseTTSProvider):
             )
 
         if event.type == "speech" and event.text:
-            length_scale = 1.0 / max(0.1, plan.voice.speed)
-
-            cmd = [
-                "piper",
-                "--model",
-                str(self.model_path),
-                "--config",
-                str(self.config_path),
-                "--output_file",
-                str(output_path),
-                "--length_scale",
-                str(length_scale),
-                "--quiet",
-            ]
+            expected_duration = max(0.1, event.end_s - event.start_s)
+            words = len(event.text.split())
+            base_wpm = 205.0
+            natural_dur = words / (base_wpm / 60.0) if words > 0 else expected_duration
+            speed_mult = max(0.1, plan.voice.speed)
+            length_scale = max(0.5, min(2.5, (expected_duration / natural_dur) / speed_mult))
 
             piper_success = False
-            try:
-                process = subprocess.Popen(
-                    cmd,
-                    stdin=subprocess.PIPE,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.PIPE,
-                )
-                _, err = process.communicate(input=event.text.encode("utf-8"))
-                if process.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
-                    piper_success = True
-                else:
-                    err_msg = err.decode("utf-8", errors="ignore")
-                    logger.warning(f"Piper execution warning (code {process.returncode}): {err_msg}")
-            except Exception as exc:
-                logger.warning(f"Piper binary execution warning ({exc}). Generating clean acoustic audio.")
 
+            # 1. Try fast in-process PiperVoice
+            try:
+                if not hasattr(self, "_voice") or self._voice is None:
+                    from piper import PiperVoice
+                    self._voice = PiperVoice.load(str(self.model_path))
+                from piper import SynthesisConfig
+                syn_cfg = SynthesisConfig(length_scale=length_scale)
+                with wave.open(str(output_path), "wb") as wf:
+                    params_set = False
+                    for chunk in self._voice.synthesize(event.text, syn_cfg):
+                        if not params_set:
+                            wf.setframerate(chunk.sample_rate)
+                            wf.setsampwidth(chunk.sample_width)
+                            wf.setnchannels(chunk.sample_channels)
+                            params_set = True
+                        wf.writeframes(chunk.audio_int16_bytes)
+                if output_path.exists() and output_path.stat().st_size > 0:
+                    piper_success = True
+            except Exception as exc:
+                logger.warning(f"In-process Piper synthesis error ({exc}). Trying CLI fallback.")
+
+            # 2. Fallback to piper CLI (without unknown --quiet flag and with trailing newline)
+            if not piper_success:
+                cmd = [
+                    "piper",
+                    "--model",
+                    str(self.model_path),
+                    "--config",
+                    str(self.config_path),
+                    "--output_file",
+                    str(output_path),
+                    "--length_scale",
+                    str(length_scale),
+                ]
+
+                try:
+                    process = subprocess.Popen(
+                        cmd,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE,
+                    )
+                    _, err = process.communicate(input=(event.text.strip() + "\n").encode("utf-8"))
+                    if process.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
+                        piper_success = True
+                    else:
+                        err_msg = err.decode("utf-8", errors="ignore")
+                        logger.warning(f"Piper execution warning (code {process.returncode}): {err_msg}")
+                except Exception as exc:
+                    logger.warning(f"Piper binary execution warning ({exc}). Generating clean acoustic audio.")
 
             if not piper_success:
                 from src.utils.ffmpeg import make_tone_wav
