@@ -26,6 +26,12 @@ class Settings(BaseSettings):
 
 
 
+    # LLM Provider Configs
+    llm_provider: str = "anthropic"
+    llm_model: str = "claude-haiku-4-5-20251001"
+    anthropic_api_key: str | None = None
+    ollama_url: str = "http://localhost:11434"
+    llm_timeout_seconds: float = 60.0
 
     tts_provider: str = "cosyvoice"
     cosyvoice_model_path: str = "models/cosyvoice/CosyVoice2-0.5B"
