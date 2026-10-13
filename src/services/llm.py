@@ -61,7 +61,17 @@ class FakeLLMProvider(LLMProvider):
         if self.canned_response is not None:
             return self.canned_response
 
-        # Default deterministic response
+        # Default deterministic response: if a target length is requested in prompt, generate natural text
+        import re
+        target_match = re.search(r"around (\d+) words", user)
+        if target_match:
+            needed = int(target_match.group(1))
+            sentence = "I remember walking along the quiet morning trail with peaceful thoughts in the gentle sunlight."
+            words = []
+            while len(words) < needed:
+                words.extend(sentence.split())
+            return (" ".join(words[:needed])).strip() + "."
+
         return f"[fake-llm] System: {system[:30]} | User: {user[:50]} (max_tokens: {max_tokens})"
 
 
