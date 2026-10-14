@@ -220,7 +220,7 @@ class JobCreate(BaseModel):
     voice_asset_id: Optional[str] = None
     avatar_preset_id: Optional[str] = None
     voice_preset_id: Optional[str] = None
-    script: str
+    script: Optional[str] = ""
     prompt: Optional[str] = ""
     consent: ConsentRequest
     target_duration_seconds: Optional[float] = None
@@ -232,6 +232,13 @@ class JobCreate(BaseModel):
     bg_music_asset_id: Optional[str] = None
     bg_music_volume: float = 0.2
     image_style: Optional[str] = "cinematic"
+
+    # "My own images and audio" mode fields
+    uploaded_image_asset_ids: list[str] = Field(default_factory=list)
+    image_durations: Optional[list[float]] = None
+    uploaded_audio_asset_id: Optional[str] = None
+    prefer_lip_sync: bool = False
+    auto_subtitles: bool = False
 
     @field_validator("visual_mode")
     @classmethod
@@ -269,11 +276,38 @@ class JobCreate(BaseModel):
     def validate_asset_sources(self) -> "JobCreate":
         has_uploads = bool(self.photo_asset_id and self.voice_asset_id)
         has_presets = bool(self.avatar_preset_id and self.voice_preset_id)
+
         if not has_uploads and not has_presets:
-            raise ValueError(
-                "Either (photo_asset_id, voice_asset_id) for upload path or "
-                "(avatar_preset_id, voice_preset_id) for preset path must be provided."
-            )
+            n_images = len(self.uploaded_image_asset_ids) if self.uploaded_image_asset_ids is not None else 0
+            if n_images < 1 or n_images > 30:
+                raise ValueError(
+                    f"uploaded_image_asset_ids must contain between 1 and 30 images (got {n_images})."
+                )
+
+        has_my_own = bool(self.uploaded_image_asset_ids)
+        if has_my_own:
+            n_images = len(self.uploaded_image_asset_ids)
+            if n_images < 1 or n_images > 30:
+                raise ValueError(
+                    f"uploaded_image_asset_ids must contain between 1 and 30 images (got {n_images})."
+                )
+
+            if self.image_durations is not None:
+                if len(self.image_durations) != n_images:
+                    raise ValueError(
+                        f"image_durations count ({len(self.image_durations)}) must match uploaded_image_asset_ids count ({n_images})."
+                    )
+                for i, d in enumerate(self.image_durations):
+                    if d < 2.0:
+                        raise ValueError(
+                            f"Per-image duration must be at least 2.0s (image {i} got {d:.2f}s)."
+                        )
+
+            if not self.uploaded_audio_asset_id and not (self.script and self.script.strip()):
+                raise ValueError(
+                    "Either uploaded_audio_asset_id or a typed script must be provided for my own images mode."
+                )
+
         return self
 
     @field_validator("duration_preset")
@@ -316,11 +350,16 @@ class JobCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_script_length_against_duration(self) -> "JobCreate":
+        # If user uploaded audio, audio length is the timeline authority; skip script check
+        if self.uploaded_audio_asset_id:
+            return self
+
         target_seconds = self.resolve_target_duration_seconds()
         if target_seconds is None:
             return self
 
-        words = len(self.script.split())
+        script_text = self.script or ""
+        words = len(script_text.split())
         wpm = settings.words_per_minute
         est_duration = (words / wpm) * 60.0 if words > 0 else 0.0
         min_required_duration = target_seconds * 0.90
@@ -343,8 +382,8 @@ class JobRecord(BaseModel):
     updated_at: datetime = Field(default_factory=utcnow)
 
     request: JobCreate
-    photo_path: str
-    voice_path: str
+    photo_path: Optional[str] = ""
+    voice_path: Optional[str] = ""
 
     consent: Optional[ConsentRecord] = None
     plan: Optional[CompiledPlan] = None
@@ -353,6 +392,9 @@ class JobRecord(BaseModel):
 
     identity_pack: Optional[dict] = None
     voice_pack: Optional[dict] = None
+
+    visual_mode_used: Optional[str] = None
+    visual_mode_reason: Optional[str] = None
 
     output_path: Optional[str] = None
     subtitle_path: Optional[str] = None

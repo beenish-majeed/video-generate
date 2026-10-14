@@ -15,7 +15,9 @@ def verify_consent(
     if not consent.authorized:
         raise ValueError("Authorization is required before generation.")
 
-    if not is_preset_path:
+    use_ai_consent = is_preset_path or bool(consent.ai_generated_accepted or consent.ai_label_accepted)
+
+    if not use_ai_consent:
         if not consent.face_rights_attested:
             raise ValueError("Face rights attestation is required.")
 
@@ -41,7 +43,7 @@ def verify_consent(
                 "Consent statement must confirm ownership or explicit permission."
             )
     else:
-        # Prompt path: user does not upload own face/voice; only accepts AI-generated content & label
+        # Prompt path / AI path: accepts AI-generated content & label
         if not (consent.ai_generated_accepted or consent.ai_label_accepted):
             raise ValueError(
                 "Acceptance that the video is AI-generated and carries the AI label is required."

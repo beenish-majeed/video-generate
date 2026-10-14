@@ -197,8 +197,49 @@ def _cleanup_intermediate_job_files(
 def create_job(request: JobCreate) -> JobRecord:
     job_id = f"job_{uuid4().hex[:12]}"
 
+    is_my_own = bool(request.uploaded_image_asset_ids)
     is_preset_path = bool(request.avatar_preset_id and request.voice_preset_id)
-    if is_preset_path:
+
+    if is_my_own:
+        image_paths = []
+        for img_id in request.uploaded_image_asset_ids:
+            p = get_asset_path(img_id)
+            if p is None or not p.exists():
+                raise ValueError(f"Uploaded image asset '{img_id}' not found.")
+            image_paths.append(p)
+        photo_path = image_paths[0]
+
+        if request.uploaded_audio_asset_id:
+            voice_path = get_asset_path(request.uploaded_audio_asset_id)
+            if voice_path is None or not voice_path.exists():
+                raise ValueError(f"Uploaded audio asset '{request.uploaded_audio_asset_id}' not found.")
+            audio_dur = probe_duration(voice_path)
+            explicit_dur = audio_dur
+            if request.image_durations:
+                if abs(sum(request.image_durations) - audio_dur) > 0.5:
+                    raise ValueError(
+                        f"Image durations sum ({sum(request.image_durations):.2f}s) must match audio length ({audio_dur:.2f}s)."
+                    )
+        else:
+            from src.services.presets import get_allowed_voice_preset_ids, get_voice_sample_path
+            if request.voice_preset_id:
+                voice_path = get_voice_sample_path(request.voice_preset_id)
+            else:
+                voice_ids = get_allowed_voice_preset_ids()
+                voice_path = get_voice_sample_path(voice_ids[0]) if voice_ids else None
+            if voice_path is None or not voice_path.exists():
+                raise ValueError("Default voice sample for Piper synthesis not found.")
+            explicit_dur = request.resolve_target_duration_seconds()
+            if explicit_dur is None:
+                words = len(request.script.split()) if request.script else 0
+                explicit_dur = (words / settings.words_per_minute) * 60.0 if words > 0 else 5.0
+            if request.image_durations:
+                if abs(sum(request.image_durations) - explicit_dur) > 0.5:
+                    raise ValueError(
+                        f"Image durations sum ({sum(request.image_durations):.2f}s) must match target duration ({explicit_dur:.2f}s)."
+                    )
+
+    elif is_preset_path:
         from src.services.presets import get_avatar_file_path, get_voice_sample_path
         photo_path = get_avatar_file_path(request.avatar_preset_id)
         voice_path = get_voice_sample_path(request.voice_preset_id)
@@ -206,6 +247,7 @@ def create_job(request: JobCreate) -> JobRecord:
             raise ValueError(f"Avatar preset '{request.avatar_preset_id}' file not found.")
         if voice_path is None:
             raise ValueError(f"Voice preset '{request.voice_preset_id}' file not found.")
+        explicit_dur = request.resolve_target_duration_seconds()
     else:
         photo_path = get_asset_path(request.photo_asset_id)
         voice_path = get_asset_path(request.voice_asset_id)
@@ -215,6 +257,7 @@ def create_job(request: JobCreate) -> JobRecord:
 
         if voice_path is None:
             raise ValueError("Voice asset not found.")
+        explicit_dur = request.resolve_target_duration_seconds()
 
     consent = verify_consent(
         consent=request.consent,
@@ -224,25 +267,23 @@ def create_job(request: JobCreate) -> JobRecord:
         is_preset_path=is_preset_path,
     )
 
-    explicit_dur = request.resolve_target_duration_seconds()
-
     overrides = dict(request.overrides or {})
     if request.burn_subtitles is not None:
         overrides["subtitles.burn_in"] = request.burn_subtitles
     if request.subtitles_enabled is not None:
         overrides["subtitles.enabled"] = request.subtitles_enabled
 
+    script_text = request.script or ""
     plan = compile_plan(
         job_id=job_id,
-        script=request.script,
+        script=script_text,
         prompt=request.prompt,
         explicit_duration_seconds=explicit_dur,
         overrides=overrides,
         max_duration_policy_seconds=settings.max_duration_policy_seconds,
     )
 
-
-    timeline = build_timeline(request.script, plan)
+    timeline = build_timeline(script_text, plan)
 
     job = JobRecord(
         job_id=job_id,
@@ -276,10 +317,185 @@ def run_job(job_id: str) -> None:
 
     job_path = job_dir(job_id)
 
+    is_my_own = bool(getattr(job.request, "uploaded_image_asset_ids", None))
     visual_mode = getattr(job.request, "visual_mode", "talking_head")
 
     try:
-        if visual_mode == "slideshow":
+        if is_my_own:
+            image_paths = [get_asset_path(img_id) for img_id in job.request.uploaded_image_asset_ids]
+
+            # 1. Resolve speech audio
+            if job.request.uploaded_audio_asset_id:
+                speech_audio_path = Path(job.voice_path)
+            else:
+                job.state = JobState.SYNTHESIZING_AUDIO
+                save_job_record(job)
+                tts_provider = PiperTTSProvider()
+                from src.models.schemas import TimelineEvent
+                ev = TimelineEvent(
+                    event_id="piper_speech",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=float(job.plan.target_duration_seconds),
+                    text=job.plan.script,
+                )
+                tts_res = tts_provider.synthesize_event(
+                    event=ev,
+                    plan=job.plan,
+                    job_path=job_path,
+                    voice_sample_path=job.voice_path,
+                )
+                speech_audio_path = Path(tts_res.audio_path)
+
+            audio_dur = probe_duration(speech_audio_path)
+
+            # 2. Evaluate visual mode (lip sync vs Ken Burns)
+            from src.services.face_detector import evaluate_visual_mode
+            prefer_lip_sync = getattr(job.request, "prefer_lip_sync", False)
+            mode_used, mode_reason, face_image_path = evaluate_visual_mode(
+                image_paths=image_paths,
+                prefer_lip_sync=prefer_lip_sync,
+            )
+            job.visual_mode_used = mode_used
+            job.visual_mode_reason = mode_reason
+            save_job_record(job)
+
+            # 3. Subtitles (auto-subtitles or plan subtitles)
+            subtitle_path = None
+            if getattr(job.request, "auto_subtitles", False) or job.plan.subtitles.enabled:
+                from src.services.speech_to_text import is_whisper_available, transcribe_audio_to_webvtt
+                if is_whisper_available():
+                    sub_p = job_path / "subtitles.vtt"
+                    subtitle_path = transcribe_audio_to_webvtt(speech_audio_path, sub_p)
+                elif job.plan.subtitles.enabled and job.plan.script:
+                    from src.services.subtitles import generate_webvtt
+                    from src.models.schemas import Timeline, TimelineEvent, TTSSegment
+                    sub_p = job_path / "subtitles.vtt"
+                    ev = TimelineEvent(
+                        event_id="speech_0000",
+                        type="speech",
+                        start_s=0.0,
+                        end_s=round(audio_dur, 2),
+                        text=job.plan.script,
+                    )
+                    sub_tl = Timeline(events=[ev], total_duration_seconds=round(audio_dur, 2))
+                    tts_map = {"speech_0000": TTSSegment(event_id="speech_0000", audio_path=str(speech_audio_path), duration_seconds=round(audio_dur, 2))}
+                    generate_webvtt(sub_tl, tts_map, sub_p)
+                    subtitle_path = sub_p
+
+            label_path = job_path / "ai_label.png"
+            if job.plan.safety.visible_label:
+                from src.utils.images import create_ai_label_png
+                create_ai_label_png(label_path, job.plan.safety.label_text)
+            else:
+                label_path = None
+
+            if mode_used == "talking_head" and face_image_path is not None:
+                # Talking head lip-sync branch (Wav2Lip)
+                job.state = JobState.PREPARING_IDENTITY
+                save_job_record(job)
+                id_builder = RealIdentityBuilder()
+                job.identity_pack = id_builder.build_identity_pack(face_image_path, job_path)
+
+                voice_pack = build_voice_pack(speech_audio_path, job_path)
+                job.voice_pack = voice_pack
+
+                job.state = JobState.GENERATING_SEGMENTS
+                save_job_record(job)
+
+                audio_dir = job_path / "audio"
+                audio_dir.mkdir(parents=True, exist_ok=True)
+                seg_audio_dest = audio_dir / "my_own_speech.wav"
+                shutil.copyfile(speech_audio_path, seg_audio_dest)
+
+                from src.models.schemas import SegmentSpec, TimelineEvent
+                seg_ev = TimelineEvent(
+                    event_id="my_own_speech",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=round(audio_dur, 2),
+                    text=job.plan.script or "Uploaded audio",
+                )
+                segment = SegmentSpec(
+                    segment_id="segment_0000",
+                    start_s=0.0,
+                    duration_s=audio_dur,
+                    events=[seg_ev],
+                )
+
+                anim_provider = RealWav2LipProvider()
+                video_path = anim_provider.generate_segment(
+                    segment=segment,
+                    plan=job.plan,
+                    job_path=job_path,
+                    identity_pack=job.identity_pack,
+                    voice_pack=job.voice_pack,
+                )
+                segment.video_path = str(video_path)
+                job.segments = [segment]
+
+                job.state = JobState.ASSEMBLING
+                save_job_record(job)
+
+                output_path = job_path / "final_video.mp4"
+                from src.utils.ffmpeg import finalize_video
+                finalize_video(
+                    video_path=video_path,
+                    audio_path=speech_audio_path,
+                    watermark_path=label_path,
+                    output_path=output_path,
+                    duration=audio_dur,
+                    subtitle_path=subtitle_path,
+                    burn_subtitles=job.plan.subtitles.burn_in,
+                )
+
+            else:
+                # Slideshow Ken Burns branch
+                job.state = JobState.GENERATING_SEGMENTS
+                save_job_record(job)
+
+                if job.request.image_durations:
+                    durations = [float(d) for d in job.request.image_durations]
+                else:
+                    n_imgs = len(image_paths)
+                    durations = [audio_dur / n_imgs] * n_imgs
+
+                job.state = JobState.ASSEMBLING
+                save_job_record(job)
+
+                bg_music_path = None
+                if job.request.bg_music_asset_id:
+                    bg_music_path = get_asset_path(job.request.bg_music_asset_id)
+
+                from src.services.slideshow_compositor import SlideshowCompositor
+                output_path = SlideshowCompositor.compose_user_slideshow(
+                    job_path=job_path,
+                    image_paths=image_paths,
+                    image_durations=durations,
+                    audio_path=speech_audio_path,
+                    bg_music_path=bg_music_path,
+                    bg_music_volume=getattr(job.request, "bg_music_volume", 0.2),
+                    subtitle_path=subtitle_path,
+                    burn_subtitles=job.plan.subtitles.burn_in,
+                    watermark_path=label_path,
+                )
+
+            # Final QA
+            expected_final_dur = audio_dur
+            tolerance = max(0.5, expected_final_dur * 0.10)
+            final_qa = check_final(
+                video_path=output_path,
+                expected_duration=expected_final_dur,
+                tolerance=tolerance,
+            )
+            if not final_qa.get("passed"):
+                raise RuntimeError(f"Final QA failed: {final_qa}")
+
+            job.output_path = str(output_path)
+            job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            job.state = JobState.COMPLETED
+
+        elif visual_mode == "slideshow":
             # 1. Voice Pack
             voice_pack = build_voice_pack(Path(job.voice_path), job_path)
             job.voice_pack = voice_pack

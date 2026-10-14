@@ -87,21 +87,33 @@ def verify_api_key(
 
 @app.get("/health")
 def health():
+    from src.services.speech_to_text import is_whisper_available
     return {
         "ok": True,
         "mock_mode": settings.mock_mode,
         "storage_dir": str(settings.storage_dir),
         "max_duration_policy_seconds": settings.max_duration_policy_seconds,
         "max_segment_seconds": settings.max_segment_seconds,
+        "auto_subtitles_available": is_whisper_available(),
+    }
+
+
+@app.get("/v1/capabilities", dependencies=[Depends(verify_api_key)])
+def get_capabilities():
+    from src.services.speech_to_text import is_whisper_available
+    return {
+        "auto_subtitles": is_whisper_available(),
     }
 
 
 @app.get("/v1/durations")
 def get_duration_options():
+    from src.services.speech_to_text import is_whisper_available
     return {
         "words_per_minute": settings.words_per_minute,
         "min_duration_seconds": settings.min_duration_seconds,
         "max_duration_policy_seconds": settings.max_duration_policy_seconds,
+        "auto_subtitles_available": is_whisper_available(),
         "allowed_presets": [
             {"label": "5 seconds", "value": "5s", "seconds": 5.0},
             {"label": "30 seconds", "value": "30s", "seconds": 30.0},

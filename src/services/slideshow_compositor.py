@@ -516,3 +516,85 @@ class SlideshowCompositor:
         )
 
         return final_video_path, subtitle_path
+
+    @classmethod
+    def compose_user_slideshow(
+        cls,
+        job_path: Path,
+        image_paths: list[Path],
+        image_durations: list[float],
+        audio_path: Path,
+        bg_music_path: Optional[Path] = None,
+        bg_music_volume: float = 0.2,
+        subtitle_path: Optional[Path] = None,
+        burn_subtitles: bool = False,
+        watermark_path: Optional[Path] = None,
+    ) -> Path:
+        """
+        Orchestrator for 'my own images' slideshow mode:
+        1. Renders Ken Burns clips for uploaded images with user-specified or evenly distributed durations.
+        2. Crossfades clips (xfade 0.5s).
+        3. Ducks background music if provided.
+        4. Multiplexes final video with speech audio and optional subtitles/watermark.
+        """
+        job_path.mkdir(parents=True, exist_ok=True)
+        n = len(image_paths)
+        if n == 0:
+            raise ValueError("No images provided for slideshow composition.")
+
+        scene_clips: list[Path] = []
+        clip_durations: list[float] = []
+
+        for i in range(n):
+            img_p = image_paths[i]
+            d = image_durations[i]
+            # When crossfading, all clips except the last need an extra crossfade tail
+            clip_dur = d + (cls.CROSSFADE_SECONDS if (n > 1 and i < n - 1) else 0.0)
+
+            clip_path = job_path / f"user_clip_{i:04d}.mp4"
+            cls.render_scene_clip(
+                image_path=img_p,
+                duration_s=clip_dur,
+                motion_idx=i,
+                output_path=clip_path,
+                fps=cls.FPS,
+            )
+            scene_clips.append(clip_path)
+            clip_durations.append(clip_dur)
+
+        # Crossfade clips
+        joined_video = job_path / "joined_user_slideshow.mp4"
+        cls.build_crossfade_video(
+            scene_clips=scene_clips,
+            scene_durations=clip_durations,
+            crossfade_s=cls.CROSSFADE_SECONDS,
+            output_path=joined_video,
+        )
+
+        # Background music ducking if provided
+        if bg_music_path and Path(bg_music_path).exists():
+            mixed_audio = job_path / "final_mixed_audio.wav"
+            cls.duck_background_music(
+                speech_audio_path=audio_path,
+                bg_music_path=Path(bg_music_path),
+                volume=bg_music_volume,
+                output_path=mixed_audio,
+            )
+            final_audio_path = mixed_audio
+        else:
+            final_audio_path = audio_path
+
+        # Multiplex final
+        final_video_path = job_path / "final_video.mp4"
+        target_dur = sum(image_durations)
+        cls.multiplex_final(
+            video_path=joined_video,
+            audio_path=final_audio_path,
+            output_path=final_video_path,
+            target_duration=target_dur,
+            subtitle_path=subtitle_path,
+            burn_subtitles=burn_subtitles,
+            watermark_path=watermark_path,
+        )
+
+        return final_video_path
