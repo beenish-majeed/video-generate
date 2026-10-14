@@ -165,6 +165,23 @@ class TemplateLLMProvider(LLMProvider):
             12: "Looking forward, I carry the joy and inspiration of this journey always.",
         }
 
+        if target_words <= 20:
+            core_topic = topic
+            topic_words = topic.split()
+            if len(topic_words) > 4:
+                core_topic = " ".join(topic_words[:4])
+            short_templates = [
+                f"I remember {core_topic} with peace.",
+                f"Thinking about {core_topic} brings peace to my heart.",
+                f"I truly treasure every moment with {core_topic}.",
+                f"Reflecting on {core_topic} brings lasting joy and peace.",
+                f"I hold memories of {core_topic} close to my heart.",
+                f"I will always cherish {core_topic} with genuine gratitude.",
+                f"Looking back on {core_topic} fills me with profound warmth and quiet gratitude.",
+            ]
+            best_short = min(short_templates, key=lambda s: abs(len(s.split()) - target_words))
+            return best_short
+
         chosen_sentences: list[str] = [openings[0]]
         current_words = len(chosen_sentences[0].split())
 
