@@ -61,6 +61,7 @@ export interface ScriptGenerateResponse {
   word_count: number;
   estimated_seconds: number;
   target_words: number;
+  script_source?: string;
 }
 
 export interface ConsentPayload {

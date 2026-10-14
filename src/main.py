@@ -213,6 +213,7 @@ def generate_script_endpoint(
         word_count=result.word_count,
         estimated_seconds=result.estimated_seconds,
         target_words=result.target_words,
+        script_source=result.script_source,
     )
 
 

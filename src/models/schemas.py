@@ -420,4 +420,5 @@ class ScriptGenerateResponse(BaseModel):
     script: str
     word_count: int
     estimated_seconds: float
-    target_words: int
+    target_words: int
+    script_source: str = "template"

@@ -305,3 +305,65 @@ class TestScriptGenerateAPIEndpoint:
         )
         assert resp.status_code == 502
         assert "LLM generation failed" in resp.json()["detail"]
+
+
+class TestOllamaFallbackAndScriptSource:
+    def test_template_provider_direct(self):
+        from src.services.llm import TemplateLLMProvider
+        provider = TemplateLLMProvider()
+        result = generate_script(
+            prompt="A peaceful morning stroll in the garden",
+            duration_seconds=30.0,
+            llm_provider=provider,
+        )
+        assert result.script_source == "template"
+        assert 66 <= result.word_count <= 82
+        assert result.target_words == 74
+
+    def test_ollama_fallback_when_unreachable(self, monkeypatch):
+        monkeypatch.setattr(settings, "llm_provider", "ollama")
+        monkeypatch.setattr("src.services.script_writer.is_ollama_reachable", lambda *args, **kwargs: False)
+
+        result = generate_script(
+            prompt="Memories of our summer road trip",
+            duration_seconds=30.0,
+            llm_provider=None,
+        )
+        assert result.script_source == "template"
+        assert 66 <= result.word_count <= 82
+        assert "summer road trip" in result.script
+
+    def test_ollama_used_when_reachable(self, monkeypatch):
+        from src.services.llm import FakeLLMProvider
+        monkeypatch.setattr(settings, "llm_provider", "ollama")
+        monkeypatch.setattr("src.services.script_writer.is_ollama_reachable", lambda *args, **kwargs: True)
+
+        fake_ollama = FakeLLMProvider(canned_response="word " * 73 + "final.")
+        fake_ollama.provider_name = "ollama"
+        monkeypatch.setattr("src.services.script_writer.get_llm_provider", lambda name: fake_ollama)
+
+        result = generate_script(
+            prompt="Stargazing at midnight",
+            duration_seconds=30.0,
+            llm_provider=None,
+        )
+        assert result.script_source == "ollama"
+        assert result.word_count == 74
+
+    def test_endpoint_returns_script_source(self, monkeypatch):
+        _script_rate_limit_history.clear()
+        monkeypatch.setattr(settings, "llm_provider", "template")
+
+        client = TestClient(app)
+        payload = {"prompt": "Sunset over the lake", "duration_preset": "30s"}
+        resp = client.post(
+            "/v1/scripts/generate",
+            json=payload,
+            headers={"X-API-Key": "test_secret_api_key_123"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "script_source" in data
+        assert data["script_source"] == "template"
+        assert data["word_count"] > 0
+

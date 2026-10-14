@@ -5,7 +5,7 @@ import re
 from typing import Optional
 
 from src.config import settings
-from src.services.llm import LLMProvider, generate, get_llm_provider
+from src.services.llm import LLMError, LLMProvider, generate, get_llm_provider, is_ollama_reachable
 
 
 class ScriptWriterError(Exception):
@@ -32,6 +32,7 @@ class ScriptResult:
     word_count: int
     estimated_seconds: float
     target_words: int
+    script_source: str = "template"
 
 
 def clean_script_text(text: str) -> str:
@@ -148,7 +149,35 @@ def generate_script(
     if selected_tone not in ALLOWED_TONES:
         raise ScriptWriterError(f"Invalid tone '{tone}'. Allowed tones: {sorted(ALLOWED_TONES)}")
 
-    provider = llm_provider or get_llm_provider()
+    if llm_provider is not None:
+        provider = llm_provider
+        script_source = getattr(llm_provider, "provider_name", "custom")
+    else:
+        configured_name = (settings.llm_provider or "ollama").strip().lower()
+        if configured_name == "ollama":
+            if is_ollama_reachable():
+                provider = get_llm_provider("ollama")
+                script_source = "ollama"
+            else:
+                provider = get_llm_provider("template")
+                script_source = "template"
+        elif configured_name == "fake":
+            provider = get_llm_provider("fake")
+            script_source = "fake"
+        else:
+            provider = get_llm_provider(configured_name)
+            script_source = getattr(provider, "provider_name", configured_name)
+
+    def _call_generate(system: str, user: str, max_tokens: int = 1024) -> str:
+        nonlocal provider, script_source
+        try:
+            return provider.generate(system=system, user=user, max_tokens=max_tokens)
+        except LLMError:
+            if script_source == "ollama":
+                provider = get_llm_provider("template")
+                script_source = "template"
+                return provider.generate(system=system, user=user, max_tokens=max_tokens)
+            raise
 
     # 2. Target Word Count Calculation
     wpm = settings.words_per_minute
@@ -173,7 +202,7 @@ def generate_script(
             f"Please write a spoken first-person narrative script on this topic.\n"
             f"Target length: exactly around {section_targets[0]} words."
         )
-        raw_script = provider.generate(system=system_prompt, user=user_prompt, max_tokens=1024)
+        raw_script = _call_generate(system=system_prompt, user=user_prompt, max_tokens=1024)
         assembled_text = clean_script_text(raw_script)
     else:
         # Generate brief outline of section topics
@@ -182,7 +211,7 @@ def generate_script(
             f"Create a brief {num_sections}-part narrative outline for a spoken memory video. "
             f"List exactly {num_sections} numbered points, one line per point."
         )
-        raw_outline = provider.generate(system=system_prompt, user=outline_prompt, max_tokens=512)
+        raw_outline = _call_generate(system=system_prompt, user=outline_prompt, max_tokens=512)
         outline_points = [
             line.strip() for line in raw_outline.splitlines() if line.strip() and line[0].isdigit()
         ]
@@ -200,7 +229,7 @@ def generate_script(
                 f"Target length: exactly around {target} words. "
                 f"Ensure it flows naturally as part of the continuous spoken script."
             )
-            raw = provider.generate(system=system_prompt, user=section_user_prompt, max_tokens=1024)
+            raw = _call_generate(system=system_prompt, user=section_user_prompt, max_tokens=1024)
             return clean_script_text(raw)
 
         # Run up to 4 concurrent section generation calls
@@ -233,7 +262,7 @@ def generate_script(
                 f"(add approximately {words_needed} words). Continue or elaborate naturally with vivid spoken details. "
                 f"Return the complete updated narrative."
             )
-            expanded_raw = provider.generate(system=system_prompt, user=expand_prompt, max_tokens=2048)
+            expanded_raw = _call_generate(system=system_prompt, user=expand_prompt, max_tokens=2048)
             cleaned_expanded = clean_script_text(expanded_raw)
             if len(cleaned_expanded.split()) > current_words:
                 current_text = cleaned_expanded
@@ -266,4 +295,5 @@ def generate_script(
         word_count=final_word_count,
         estimated_seconds=estimated_seconds,
         target_words=target_words,
+        script_source=script_source,
     )
