@@ -3,13 +3,14 @@ import httpx
 import pytest
 
 from src.services.llm import (
-    AnthropicLLMProvider,
     FakeLLMProvider,
     LLMError,
     OllamaLLMProvider,
+    TemplateLLMProvider,
     _sanitize_message,
     generate,
     get_llm_provider,
+    is_ollama_reachable,
 )
 
 
@@ -56,144 +57,63 @@ class TestLLMFactory:
     def test_get_fake_provider(self):
         provider = get_llm_provider("fake")
         assert isinstance(provider, FakeLLMProvider)
+        assert provider.provider_name == "fake"
 
-    def test_get_anthropic_provider(self):
-        provider = get_llm_provider("anthropic", api_key="test-key", model="claude-3-haiku")
-        assert isinstance(provider, AnthropicLLMProvider)
-        assert provider.model == "claude-3-haiku"
+    def test_get_template_provider(self):
+        provider = get_llm_provider("template")
+        assert isinstance(provider, TemplateLLMProvider)
+        assert provider.provider_name == "template"
 
     def test_get_ollama_provider(self):
         provider = get_llm_provider("ollama", ollama_url="http://127.0.0.1:11434")
         assert isinstance(provider, OllamaLLMProvider)
         assert provider.base_url == "http://127.0.0.1:11434"
+        assert provider.provider_name == "ollama"
 
     def test_unsupported_provider_raises_llm_error(self):
+        with pytest.raises(LLMError, match="Unsupported LLM provider: 'anthropic'"):
+            get_llm_provider("anthropic")
         with pytest.raises(LLMError, match="Unsupported LLM provider: 'unknown'"):
             get_llm_provider("unknown")
 
 
-class TestAnthropicProviderMocked:
-    def test_missing_api_key_raises_llm_error(self):
-        provider = AnthropicLLMProvider(api_key=None)
-        # Ensure setting has no key for this test
-        provider.api_key = ""
-        with pytest.raises(LLMError, match="Anthropic API key is not configured"):
-            provider.generate(system="sys", user="user")
+class TestTemplateProvider:
+    def test_generate_narrative_with_target_words(self):
+        provider = TemplateLLMProvider()
+        user_prompt = "Topic: A quiet walk through autumn woods\nTarget length: exactly around 74 words."
+        result = provider.generate(system="You are a first-person narrator", user=user_prompt)
 
-    def test_successful_generation(self):
-        mock_client = MagicMock()
-        mock_block = MagicMock()
-        mock_block.type = "text"
-        mock_block.text = "Golden sunlight filtered softly through the pine needles."
-        mock_response = MagicMock()
-        mock_response.content = [mock_block]
-        mock_client.messages.create.return_value = mock_response
+        words = result.split()
+        assert 70 <= len(words) <= 78
+        assert "walk through autumn woods" in result
+        assert "#" not in result
+        assert "[" not in result
+        assert "]" not in result
 
-        provider = AnthropicLLMProvider(
-            api_key="test-key-123",
-            model="claude-haiku-4-5-20251001",
-            client=mock_client,
-        )
+    def test_generate_narrative_with_longer_target(self):
+        provider = TemplateLLMProvider()
+        user_prompt = "Topic: Building a treehouse with my family\nTarget length: exactly around 148 words."
+        result = provider.generate(system="System instructions", user=user_prompt)
 
-        result = provider.generate(
-            system="Write a memory scene.",
-            user="Pine forest in the morning.",
-            max_tokens=500,
-        )
+        words = result.split()
+        assert 140 <= len(words) <= 156
+        assert "Building a treehouse with my family" in result or "treehouse" in result
 
-        assert result == "Golden sunlight filtered softly through the pine needles."
-        mock_client.messages.create.assert_called_once_with(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=500,
-            system="Write a memory scene.",
-            messages=[{"role": "user", "content": "Pine forest in the morning."}],
-        )
+    def test_generate_outline(self):
+        provider = TemplateLLMProvider()
+        user_prompt = "Topic: My childhood hometown\nCreate a brief 3-part narrative outline for a spoken memory video."
+        result = provider.generate(system="System", user=user_prompt)
 
-    def test_rate_limit_transient_retry_and_success(self):
-        import anthropic
+        lines = [line.strip() for line in result.splitlines() if line.strip()]
+        assert len(lines) == 3
+        assert lines[0].startswith("1.")
+        assert lines[1].startswith("2.")
+        assert lines[2].startswith("3.")
+        assert "childhood hometown" in result
 
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_block = MagicMock()
-        mock_block.type = "text"
-        mock_block.text = "Recovered response after rate limit backoff."
-        mock_response.content = [mock_block]
-
-        # RateLimitError requires a message, response, and body
-        fake_http_response = httpx.Response(status_code=429, request=httpx.Request("POST", "https://api.anthropic.com"))
-        rate_limit_err = anthropic.RateLimitError(
-            message="Rate limit exceeded",
-            response=fake_http_response,
-            body={"error": {"message": "Rate limit exceeded"}},
-        )
-
-        # Fail once with rate limit, then succeed
-        mock_client.messages.create.side_effect = [rate_limit_err, mock_response]
-
-        sleep_calls = []
-        provider = AnthropicLLMProvider(
-            api_key="test-key-123",
-            client=mock_client,
-            backoff_factor=0.1,
-            sleep_fn=sleep_calls.append,
-        )
-
-        result = provider.generate(system="sys", user="user")
-        assert result == "Recovered response after rate limit backoff."
-        assert mock_client.messages.create.call_count == 2
-        assert len(sleep_calls) == 1
-
-    def test_timeout_exhaustion_raises_llm_error(self):
-        import anthropic
-
-        mock_client = MagicMock()
-        fake_req = httpx.Request("POST", "https://api.anthropic.com")
-        timeout_err = anthropic.APITimeoutError(request=fake_req)
-
-        mock_client.messages.create.side_effect = timeout_err
-
-        sleep_calls = []
-        provider = AnthropicLLMProvider(
-            api_key="test-key-123",
-            max_retries=2,
-            client=mock_client,
-            backoff_factor=0.1,
-            sleep_fn=sleep_calls.append,
-        )
-
-        with pytest.raises(LLMError, match="Anthropic transient failure after 2 retries"):
-            provider.generate(system="sys", user="user")
-
-        # Initial attempt + 2 retries = 3 attempts total
-        assert mock_client.messages.create.call_count == 3
-        assert len(sleep_calls) == 2
-
-    def test_non_transient_auth_error_fails_immediately_without_retry(self):
-        import anthropic
-
-        mock_client = MagicMock()
-        fake_http_resp = httpx.Response(status_code=401, request=httpx.Request("POST", "https://api.anthropic.com"))
-        auth_err = anthropic.AuthenticationError(
-            message="Invalid API Key provided",
-            response=fake_http_resp,
-            body={"error": {"message": "Invalid API Key provided"}},
-        )
-
-        mock_client.messages.create.side_effect = auth_err
-
-        sleep_calls = []
-        provider = AnthropicLLMProvider(
-            api_key="test-key-invalid",
-            client=mock_client,
-            sleep_fn=sleep_calls.append,
-        )
-
-        with pytest.raises(LLMError, match="status 401"):
-            provider.generate(system="sys", user="user")
-
-        # Fails on first attempt without retrying
-        assert mock_client.messages.create.call_count == 1
-        assert len(sleep_calls) == 0
+    def test_template_repr(self):
+        provider = TemplateLLMProvider()
+        assert repr(provider) == "TemplateLLMProvider()"
 
 
 class TestOllamaProviderMocked:
@@ -261,40 +181,29 @@ class TestOllamaProviderMocked:
         assert mock_http.post.call_count == 3
         assert len(sleep_calls) == 2
 
+    def test_is_ollama_reachable_true(self):
+        mock_http = MagicMock()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.is_success = True
+        mock_http.get.return_value = mock_resp
+
+        assert is_ollama_reachable("http://127.0.0.1:11434", http_client=mock_http) is True
+        mock_http.get.assert_called_once_with("http://127.0.0.1:11434/api/tags")
+
+    def test_is_ollama_reachable_false_on_connection_error(self):
+        mock_http = MagicMock()
+        mock_http.get.side_effect = httpx.ConnectError("Connection refused")
+
+        assert is_ollama_reachable("http://127.0.0.1:11434", http_client=mock_http) is False
+
 
 class TestSecurityAndKeySanitization:
-    def test_api_key_is_scrubbed_from_error_messages(self):
-        secret = "sk-ant-api03-my-super-secret-key-1234567890"
-        leak_attempt = f"Failed calling provider with key={secret} and auth Bearer eyJhbGciOi"
+    def test_bearer_token_and_secret_scrubbed_from_error_messages(self):
+        secret = "super-secret-key-1234567890"
+        leak_attempt = f"Failed calling provider with key={secret} and auth Bearer eyJhbGciOi12345"
         sanitized = _sanitize_message(leak_attempt, secret_key=secret)
 
         assert secret not in sanitized
+        assert "eyJhbGciOi12345" not in sanitized
         assert "[REDACTED_API_KEY]" in sanitized
-
-    def test_anthropic_error_never_exposes_key(self):
-        import anthropic
-
-        mock_client = MagicMock()
-        secret = "sk-ant-api03-super-secret-key-abcdef"
-        fake_http_resp = httpx.Response(status_code=400, request=httpx.Request("POST", "https://api.anthropic.com"))
-        err_with_secret = anthropic.BadRequestError(
-            message=f"Invalid payload for key {secret}",
-            response=fake_http_resp,
-            body={"error": {"message": f"Bad key {secret}"}},
-        )
-        mock_client.messages.create.side_effect = err_with_secret
-
-        provider = AnthropicLLMProvider(api_key=secret, client=mock_client)
-
-        with pytest.raises(LLMError) as exc_info:
-            provider.generate(system="sys", user="user")
-
-        error_str = str(exc_info.value)
-        assert secret not in error_str
-        assert "[REDACTED_API_KEY]" in error_str
-
-    def test_repr_does_not_reveal_key(self):
-        provider = AnthropicLLMProvider(api_key="sk-ant-api03-super-secret-key-abcdef")
-        rep = repr(provider)
-        assert "sk-ant" not in rep
-        assert "super-secret" not in rep
