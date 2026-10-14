@@ -2,7 +2,7 @@ import shutil
 import uuid
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 from src.config import settings
 from src.utils.hash import sha256_file
@@ -23,7 +23,7 @@ ALLOWED_VOICE_EXTS = {".wav", ".mp3", ".ogg", ".flac", ".m4a"}
 def validate_upload(file: UploadFile, kind: str) -> None:
     ext = Path(file.filename or "").suffix.lower()
 
-    if kind == "photo":
+    if kind in {"photo", "image"}:
         if ext not in ALLOWED_PHOTO_EXTS:
             raise HTTPException(
                 status_code=400,
@@ -55,7 +55,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
                 status_code=400, detail=f"Invalid image file format or corrupt image: {exc}"
             ) from exc
 
-    elif kind == "voice":
+    elif kind in {"voice", "audio"}:
         if ext not in ALLOWED_VOICE_EXTS:
             raise HTTPException(
                 status_code=400,
@@ -111,7 +111,6 @@ def validate_upload(file: UploadFile, kind: str) -> None:
             ) from exc
 
 
-
 def save_upload(file: UploadFile, kind: str) -> dict:
     validate_upload(file, kind)
 
@@ -121,6 +120,16 @@ def save_upload(file: UploadFile, kind: str) -> dict:
 
     with path.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
+    # Fix EXIF rotation for images
+    if kind in {"photo", "image"}:
+        try:
+            with Image.open(path) as img:
+                transposed = ImageOps.exif_transpose(img)
+                if transposed is not None:
+                    transposed.save(path)
+        except Exception:
+            pass
 
     return {
         "asset_id": asset_id,

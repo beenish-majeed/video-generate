@@ -43,3 +43,22 @@ def test_upload_validation_empty_file():
         validate_upload(fake_file, kind="photo")
     assert exc_info.value.status_code == 400
     assert "empty" in exc_info.value.detail.lower()
+
+
+def test_upload_image_and_audio_kinds_and_exif(tmp_path, monkeypatch):
+    from PIL import Image
+    monkeypatch.setattr("src.services.store.ASSETS_DIR", tmp_path)
+
+    # Valid PNG image upload with kind 'image'
+    buf = io.BytesIO()
+    img = Image.new("RGB", (100, 200), (200, 100, 50))
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    upload_file = UploadFile(filename="photo.png", file=buf)
+    res = save_upload(upload_file, kind="image")
+    assert res["kind"] == "image"
+    assert Path(res["path"]).exists()
+
+    with Image.open(res["path"]) as saved:
+        assert saved.size == (100, 200)

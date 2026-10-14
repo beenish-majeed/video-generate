@@ -222,10 +222,10 @@ async def upload_asset(
     kind: str = Form(...),
     file: UploadFile = File(...),
 ):
-    if kind not in {"photo", "voice"}:
+    if kind not in {"photo", "voice", "image", "audio"}:
         raise HTTPException(
             status_code=400,
-            detail="kind must be 'photo' or 'voice'.",
+            detail="kind must be 'photo', 'voice', 'image', or 'audio'.",
         )
 
     return save_upload(file=file, kind=kind)
