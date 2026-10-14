@@ -226,12 +226,18 @@ def create_job(request: JobCreate) -> JobRecord:
 
     explicit_dur = request.resolve_target_duration_seconds()
 
+    overrides = dict(request.overrides or {})
+    if request.burn_subtitles is not None:
+        overrides["subtitles.burn_in"] = request.burn_subtitles
+    if request.subtitles_enabled is not None:
+        overrides["subtitles.enabled"] = request.subtitles_enabled
+
     plan = compile_plan(
         job_id=job_id,
         script=request.script,
         prompt=request.prompt,
         explicit_duration_seconds=explicit_dur,
-        overrides=request.overrides,
+        overrides=overrides,
         max_duration_policy_seconds=settings.max_duration_policy_seconds,
     )
 
@@ -270,125 +276,250 @@ def run_job(job_id: str) -> None:
 
     job_path = job_dir(job_id)
 
+    visual_mode = getattr(job.request, "visual_mode", "talking_head")
+
     try:
-        # 1. Identity Pack
-        job.state = JobState.PREPARING_IDENTITY
-        save_job_record(job)
+        if visual_mode == "slideshow":
+            # 1. Voice Pack
+            voice_pack = build_voice_pack(Path(job.voice_path), job_path)
+            job.voice_pack = voice_pack
 
-        id_builder = RealIdentityBuilder()
-        job.identity_pack = id_builder.build_identity_pack(Path(job.photo_path), job_path)
+            # 2. Scene Planning
+            job.state = JobState.SCHEDULING_SEGMENTS
+            save_job_record(job)
 
-        # 2. Voice Pack
-        voice_pack = build_voice_pack(Path(job.voice_path), job_path)
-        job.voice_pack = voice_pack
+            from src.services.scene_planner import plan_scenes
+            from src.services.image_provider import get_image_provider
+            from src.services.slideshow_compositor import SlideshowCompositor
+            from src.utils.images import create_ai_label_png
 
-        # 3. TTS Synthesis
-        job.state = JobState.SYNTHESIZING_AUDIO
-        save_job_record(job)
+            style = getattr(job.request, "image_style", settings.image_style) or settings.image_style
+            scene_plan = plan_scenes(
+                script=job.plan.script,
+                style=style,
+                words_per_minute=settings.words_per_minute,
+            )
 
-        if settings.tts_provider.lower() == "cosyvoice":
-            from src.services.tts_cosyvoice import CosyVoiceTTSProvider
-            tts_provider = CosyVoiceTTSProvider()
+            # 3. TTS Synthesis per Scene
+            job.state = JobState.SYNTHESIZING_AUDIO
+            save_job_record(job)
+
+            if settings.tts_provider.lower() == "cosyvoice":
+                from src.services.tts_cosyvoice import CosyVoiceTTSProvider
+                tts_provider = CosyVoiceTTSProvider()
+            else:
+                tts_provider = PiperTTSProvider()
+
+            scene_audio_paths = []
+            for i, scene in enumerate(scene_plan.scenes):
+                from src.models.schemas import TimelineEvent
+                ev = TimelineEvent(
+                    event_id=f"scene_event_{i:04d}",
+                    type="speech",
+                    start_s=scene.start_time,
+                    end_s=scene.end_time,
+                    text=scene.text,
+                )
+                tts_res = tts_provider.synthesize_event(
+                    event=ev,
+                    plan=job.plan,
+                    job_path=job_path,
+                    voice_sample_path=job.voice_path,
+                )
+                scene_audio_paths.append(Path(tts_res.audio_path))
+
+            # Validate synthesized speech duration against target duration within 10%
+            total_raw_speech = sum(probe_duration(p) for p in scene_audio_paths)
+            target_dur = float(job.plan.target_duration_seconds)
+            min_allowed = target_dur * 0.90
+            max_allowed = target_dur * 1.10
+
+            if total_raw_speech < min_allowed or total_raw_speech > max_allowed:
+                raise RuntimeError(
+                    f"TTS speech audio duration ({total_raw_speech:.2f}s) is outside 10% tolerance "
+                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+                )
+
+            # 4. Generate Images for each scene
+            job.state = JobState.GENERATING_SEGMENTS
+            save_job_record(job)
+
+            image_provider = get_image_provider(
+                provider_name=settings.image_provider,
+                source_image_path=Path(job.photo_path) if job.photo_path and Path(job.photo_path).exists() else None,
+            )
+
+            scene_images = []
+            for scene in scene_plan.scenes:
+                img_res = image_provider.generate(
+                    prompt=scene.image_prompt,
+                    style=scene.style,
+                    seed=job.plan.seed + scene.scene_index,
+                    key_phrase=scene.key_phrase,
+                )
+                scene_images.append(img_res.path)
+
+            # 5. Assembly
+            job.state = JobState.ASSEMBLING
+            save_job_record(job)
+
+            label_path = job_path / "ai_label.png"
+            if job.plan.safety.visible_label:
+                create_ai_label_png(label_path, job.plan.safety.label_text)
+            else:
+                label_path = None
+
+            bg_music_path = None
+            if job.request.bg_music_asset_id:
+                bg_music_path = get_asset_path(job.request.bg_music_asset_id)
+
+            output_path, subtitle_path = SlideshowCompositor.compose_slideshow_job(
+                job_path=job_path,
+                plan=job.plan,
+                scenes=scene_plan.scenes,
+                scene_audio_paths=scene_audio_paths,
+                scene_images=scene_images,
+                bg_music_path=bg_music_path,
+                bg_music_volume=getattr(job.request, "bg_music_volume", 0.2),
+                burn_subtitles=job.plan.subtitles.burn_in,
+                subtitles_enabled=job.plan.subtitles.enabled,
+                watermark_path=label_path,
+            )
+
+            expected_final_dur = float(job.plan.target_duration_seconds)
+            tolerance = expected_final_dur * 0.10
+
+            final_qa = check_final(
+                video_path=output_path,
+                expected_duration=expected_final_dur,
+                tolerance=tolerance,
+            )
+
+            if not final_qa.get("passed"):
+                raise RuntimeError(f"Final QA failed: {final_qa}")
+
+            job.output_path = str(output_path)
+            job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            job.state = JobState.COMPLETED
+
         else:
-            tts_provider = PiperTTSProvider()
+            # 1. Identity Pack (Talking head mode)
+            job.state = JobState.PREPARING_IDENTITY
+            save_job_record(job)
 
-        tts_map = {}
-        for event in job.timeline.events:
-            tts_map[event.event_id] = tts_provider.synthesize_event(
-                event=event,
-                plan=job.plan,
+            id_builder = RealIdentityBuilder()
+            job.identity_pack = id_builder.build_identity_pack(Path(job.photo_path), job_path)
+
+            # 2. Voice Pack
+            voice_pack = build_voice_pack(Path(job.voice_path), job_path)
+            job.voice_pack = voice_pack
+
+            # 3. TTS Synthesis
+            job.state = JobState.SYNTHESIZING_AUDIO
+            save_job_record(job)
+
+            if settings.tts_provider.lower() == "cosyvoice":
+                from src.services.tts_cosyvoice import CosyVoiceTTSProvider
+                tts_provider = CosyVoiceTTSProvider()
+            else:
+                tts_provider = PiperTTSProvider()
+
+            tts_map = {}
+            for event in job.timeline.events:
+                tts_map[event.event_id] = tts_provider.synthesize_event(
+                    event=event,
+                    plan=job.plan,
+                    job_path=job_path,
+                    voice_sample_path=job.voice_path,
+                )
+
+            # Validate synthesized speech audio duration right after TTS completes
+            from src.utils.ffmpeg import concat_wavs
+            audio_paths = []
+            for event in job.timeline.events:
+                tts_seg = tts_map.get(event.event_id)
+                if tts_seg and Path(tts_seg.audio_path).exists():
+                    audio_paths.append(tts_seg.audio_path)
+
+            temp_audio = job_path / "tts_raw_speech.wav"
+            concat_wavs(audio_paths, temp_audio)
+
+            raw_tts_dur = probe_duration(temp_audio) if temp_audio.exists() else 0.0
+            target_dur = float(job.plan.target_duration_seconds)
+            min_allowed = target_dur * 0.90
+            max_allowed = target_dur * 1.10
+
+            if raw_tts_dur < min_allowed or raw_tts_dur > max_allowed:
+                raise RuntimeError(
+                    f"TTS speech audio duration ({raw_tts_dur:.2f}s) is outside 10% tolerance "
+                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+                )
+
+            # 4. Segment Scheduling
+            job.state = JobState.SCHEDULING_SEGMENTS
+            save_job_record(job)
+
+            segments = split_timeline(
+                timeline=job.timeline,
+                max_segment_seconds=settings.max_segment_seconds,
+            )
+
+            # 5. Animation Generation
+            job.state = JobState.GENERATING_SEGMENTS
+            save_job_record(job)
+
+            anim_provider = RealWav2LipProvider()
+
+            for segment in segments:
+                logger.info(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
+                video_path = anim_provider.generate_segment(
+                    segment=segment,
+                    plan=job.plan,
+                    job_path=job_path,
+                    identity_pack=job.identity_pack,
+                    voice_pack=job.voice_pack,
+                )
+                segment.video_path = str(video_path)
+
+                segment_audio = job_path / f"{segment.segment_id}_merged.wav"
+                expected_seg_dur = probe_duration(segment_audio) if segment_audio.exists() else segment.duration_s
+
+                qa_result = check_segment(
+                    video_path=segment.video_path,
+                    expected_duration=expected_seg_dur,
+                )
+                if not qa_result.get("passed"):
+                    raise RuntimeError(f"Segment QA failed for {segment.segment_id}: {qa_result}")
+
+            job.segments = segments
+
+            # 6. Assembly
+            job.state = JobState.ASSEMBLING
+            save_job_record(job)
+
+            output_path, subtitle_path = assemble(
                 job_path=job_path,
-                voice_sample_path=job.voice_path,
-            )
-
-        # Validate synthesized speech audio duration right after TTS completes
-        from src.utils.ffmpeg import concat_wavs
-        audio_paths = []
-        for event in job.timeline.events:
-            tts_seg = tts_map.get(event.event_id)
-            if tts_seg and Path(tts_seg.audio_path).exists():
-                audio_paths.append(tts_seg.audio_path)
-
-        temp_audio = job_path / "tts_raw_speech.wav"
-        concat_wavs(audio_paths, temp_audio)
-
-        raw_tts_dur = probe_duration(temp_audio) if temp_audio.exists() else 0.0
-        target_dur = float(job.plan.target_duration_seconds)
-        min_allowed = target_dur * 0.90
-        max_allowed = target_dur * 1.10
-
-        if raw_tts_dur < min_allowed or raw_tts_dur > max_allowed:
-            raise RuntimeError(
-                f"TTS speech audio duration ({raw_tts_dur:.2f}s) is outside 10% tolerance "
-                f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
-            )
-
-        # 4. Segment Scheduling
-        job.state = JobState.SCHEDULING_SEGMENTS
-        save_job_record(job)
-
-        segments = split_timeline(
-            timeline=job.timeline,
-            max_segment_seconds=settings.max_segment_seconds,
-        )
-
-        # 5. Animation Generation
-        job.state = JobState.GENERATING_SEGMENTS
-        save_job_record(job)
-
-        anim_provider = RealWav2LipProvider()
-
-        for segment in segments:
-            logger.info(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
-            video_path = anim_provider.generate_segment(
-                segment=segment,
                 plan=job.plan,
-                job_path=job_path,
-                identity_pack=job.identity_pack,
-                voice_pack=job.voice_pack,
+                timeline=job.timeline,
+                segments=segments,
+                tts_segments_by_event_id=tts_map,
             )
-            segment.video_path = str(video_path)
 
-            segment_audio = job_path / f"{segment.segment_id}_merged.wav"
-            expected_seg_dur = probe_duration(segment_audio) if segment_audio.exists() else segment.duration_s
+            expected_final_dur = float(job.plan.target_duration_seconds)
+            tolerance = expected_final_dur * 0.10
 
-            qa_result = check_segment(
-                video_path=segment.video_path,
-                expected_duration=expected_seg_dur,
+            final_qa = check_final(
+                video_path=output_path,
+                expected_duration=expected_final_dur,
+                tolerance=tolerance,
             )
-            if not qa_result.get("passed"):
-                raise RuntimeError(f"Segment QA failed for {segment.segment_id}: {qa_result}")
 
+            if not final_qa.get("passed"):
+                raise RuntimeError(f"Final QA failed: {final_qa}")
 
-        job.segments = segments
-
-        # 6. Assembly
-        job.state = JobState.ASSEMBLING
-        save_job_record(job)
-
-        output_path, subtitle_path = assemble(
-            job_path=job_path,
-            plan=job.plan,
-            timeline=job.timeline,
-            segments=segments,
-            tts_segments_by_event_id=tts_map,
-        )
-
-        expected_final_dur = float(job.plan.target_duration_seconds)
-        tolerance = expected_final_dur * 0.10
-
-        final_qa = check_final(
-            video_path=output_path,
-            expected_duration=expected_final_dur,
-            tolerance=tolerance,
-        )
-
-        if not final_qa.get("passed"):
-            raise RuntimeError(f"Final QA failed: {final_qa}")
-
-        job.output_path = str(output_path)
-        job.subtitle_path = str(subtitle_path) if subtitle_path else None
-        job.state = JobState.COMPLETED
+            job.output_path = str(output_path)
+            job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            job.state = JobState.COMPLETED
 
     except Exception as exc:
         logger.exception(f"Job execution failed for {job_id}: {exc}")

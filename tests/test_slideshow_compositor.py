@@ -289,3 +289,113 @@ class TestSlideshowCompositor:
         assert video_stream["width"] == 1280
         assert video_stream["height"] == 720
         assert video_stream["pix_fmt"] == "yuv420p"
+
+    def test_job_schema_visual_mode_options(self):
+        from src.models.schemas import ConsentRequest, JobCreate
+
+        consent = ConsentRequest(
+            authorized=True,
+            statement="I consent to AI generation.",
+            ai_generated_accepted=True,
+            ai_label_accepted=True,
+        )
+
+        script = "This is a longer test script with plenty of words to easily fulfill the duration requirement for five seconds."
+        # Default is talking_head
+        job_default = JobCreate(
+            avatar_preset_id="avatar_default",
+            voice_preset_id="voice_piper_lessac",
+            script=script,
+            consent=consent,
+            target_duration_seconds=5.0,
+        )
+        assert job_default.visual_mode == "talking_head"
+
+        # Explicit slideshow
+        job_slide = JobCreate(
+            avatar_preset_id="avatar_default",
+            voice_preset_id="voice_piper_lessac",
+            script=script,
+            consent=consent,
+            target_duration_seconds=5.0,
+            visual_mode="slideshow",
+            burn_subtitles=True,
+        )
+        assert job_slide.visual_mode == "slideshow"
+        assert job_slide.burn_subtitles is True
+
+        # Invalid mode rejected
+        with pytest.raises(Exception):
+            JobCreate(
+                avatar_preset_id="avatar_default",
+                voice_preset_id="voice_piper_lessac",
+                script=script,
+                consent=consent,
+                target_duration_seconds=5.0,
+                visual_mode="invalid_mode",
+            )
+
+    def test_compose_slideshow_job_end_to_end(self, work_dir):
+        from src.models.schemas import CompiledPlan
+        from src.services.scene_planner import Scene
+
+        # Create 2 scenes
+        scenes = [
+            Scene(
+                scene_index=0,
+                text="The morning light breaks over the quiet forest.",
+                start_time=0.0,
+                end_time=3.0,
+                duration_seconds=3.0,
+                image_prompt="morning light forest",
+                key_phrase="Morning Light",
+                style="cinematic",
+            ),
+            Scene(
+                scene_index=1,
+                text="A crystal stream whispers along ancient rocks.",
+                start_time=3.0,
+                end_time=6.0,
+                duration_seconds=3.0,
+                image_prompt="crystal stream rocks",
+                key_phrase="Crystal Stream",
+                style="cinematic",
+            ),
+        ]
+
+        audios = []
+        images = []
+        for i, sc in enumerate(scenes):
+            ap = work_dir / f"orch_audio_{i}.wav"
+            make_tiny_wav(ap, duration_seconds=2.8)
+            audios.append(ap)
+
+            ip = work_dir / f"orch_img_{i}.png"
+            make_tiny_image(ip, color=(50 + i * 50, 100, 150))
+            images.append(ip)
+
+        plan = CompiledPlan(
+            job_id="test_orchestrator",
+            target_duration_seconds=6.1,  # 2.8 + 2.8 + 0.5 = 6.1s
+            duration_source="user_override",
+            language="en-US",
+            script="Full test script for orchestrator.",
+            prompt_original="orchestrator test",
+        )
+
+        out_video, out_sub = SlideshowCompositor.compose_slideshow_job(
+            job_path=work_dir,
+            plan=plan,
+            scenes=scenes,
+            scene_audio_paths=audios,
+            scene_images=images,
+            burn_subtitles=True,
+            subtitles_enabled=True,
+        )
+
+        assert out_video.exists()
+        assert out_sub is not None and out_sub.exists()
+
+        v_dur, a_dur, sync_error_ms = SlideshowCompositor.probe_av_sync_error(out_video)
+        assert abs(v_dur - 6.1) < 0.25
+        assert sync_error_ms < 100.0
