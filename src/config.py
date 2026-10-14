@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     tts_provider: str = "cosyvoice"
     cosyvoice_model_path: str = "models/cosyvoice/CosyVoice2-0.5B"
 
+    # Image Provider Configs
+    image_provider: str = "diffusers"
+    image_style: str = "cinematic"
+    sd_turbo_model_path: str = "models/sd-turbo"
+    image_cache_dir: Path = Path("./storage/cache/images")
+
     # Model Configs
     piper_model_path: str = "src/models/piper/en_US-lessac-medium.onnx"
     piper_config_path: str = "src/models/piper/en_US-lessac-medium.onnx.json"
