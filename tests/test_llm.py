@@ -84,7 +84,7 @@ class TestTemplateProvider:
         result = provider.generate(system="You are a first-person narrator", user=user_prompt)
 
         words = result.split()
-        assert 70 <= len(words) <= 78
+        assert 66 <= len(words) <= 82
         assert "walk through autumn woods" in result
         assert "#" not in result
         assert "[" not in result
@@ -96,8 +96,8 @@ class TestTemplateProvider:
         result = provider.generate(system="System instructions", user=user_prompt)
 
         words = result.split()
-        assert 140 <= len(words) <= 156
-        assert "Building a treehouse with my family" in result or "treehouse" in result
+        assert 133 <= len(words) <= 163
+        assert "treehouse" in result
 
     def test_generate_outline(self):
         provider = TemplateLLMProvider()

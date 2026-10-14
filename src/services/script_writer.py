@@ -183,6 +183,24 @@ def generate_script(
     wpm = settings.words_per_minute
     target_words = max(1, round((duration_seconds / 60.0) * wpm))
 
+    if script_source == "template":
+        from src.services.template_script_writer import build_template_script
+        script_text = build_template_script(
+            idea=clean_prompt,
+            duration_seconds=duration_seconds,
+            tone=selected_tone,
+        )
+        final_cleaned = clean_script_text(script_text)
+        final_word_count = len(final_cleaned.split())
+        estimated_seconds = round((final_word_count / wpm) * 60.0, 1)
+        return ScriptResult(
+            script=final_cleaned,
+            word_count=final_word_count,
+            estimated_seconds=estimated_seconds,
+            target_words=target_words,
+            script_source="template",
+        )
+
     # 3. Section Planning (about 250 words per section)
     num_sections = max(1, round(target_words / 250.0))
     base_words = target_words // num_sections

@@ -101,6 +101,12 @@ class TemplateLLMProvider(LLMProvider):
             return int(m.group(1))
         return 74
 
+    def _extract_tone(self, system: str) -> str:
+        m = re.search(r"Tone of voice:\s*([a-zA-Z]+)", system, re.IGNORECASE)
+        if m:
+            return m.group(1).strip().lower()
+        return "friendly"
+
     def generate(self, system: str, user: str, max_tokens: int = 1024) -> str:
         outline_match = re.search(r"(\d+)-part narrative outline", user, re.IGNORECASE)
         if outline_match:
@@ -116,106 +122,12 @@ class TemplateLLMProvider(LLMProvider):
                     lines.append(f"{i}. Memorable moments and meaningful lessons from {topic}")
             return "\n".join(lines)
 
+        from src.services.template_script_writer import build_template_script
         target_words = self._extract_target_words(user)
         topic = self._extract_topic(user)
-        return self._generate_template_narrative(topic=topic, target_words=target_words)
-
-    def _generate_template_narrative(self, topic: str, target_words: int) -> str:
-        openings = [
-            f"Whenever I pause to reflect on {topic}, a warm sense of gratitude and calm comes over me.",
-            f"Looking back on {topic}, every single detail feels remarkably vivid, personal, and full of meaning.",
-            f"I wanted to share a few quiet thoughts about {topic} and celebrate what it truly represents to me.",
-            f"There is something truly unforgettable about {topic} that stays with me through every passing season.",
-        ]
-
-        body_pool = [
-            f"From the very beginning, each moment on this path brought new lessons and unforgettable perspective.",
-            f"We often move quickly through our days, but pausing to appreciate {topic} reminds me of what really matters.",
-            f"The laughter, the quiet hours of focus, and the small victories along the way made every effort worthwhile.",
-            f"It is the simple, heartfelt details that I cherish the most whenever I look back on this journey.",
-            f"I remember feeling a profound sense of peace and joy as everything began coming together so naturally.",
-            f"Every conversation, every little milestone, and every shared smile added a unique layer to the experience.",
-            f"Standing here today, I can see how much personal growth and happiness came out of this chapter.",
-            f"These moments are woven deeply into who I am, guiding me forward with genuine hope and purpose.",
-            f"Taking the time to revisit {topic} gives me renewed energy and a deeper appreciation for the people around me.",
-            f"The connections made and the hurdles overcome have left an indelible impression on my life.",
-            f"Through every twist and turn, the authenticity and warmth of this experience remained constant and true.",
-            f"I hold onto these lessons, knowing that each small step helped shape who I am today.",
-            f"Life often surprises us in the most unexpected ways, and this experience was truly one of those moments.",
-            f"The peaceful atmosphere and the quiet determination we shared still resonate within me every single day.",
-            f"Looking closely at how things unfolded, I realize just how fortunate I was to experience every minute.",
-        ]
-
-        closings = [
-            f"I am deeply thankful for every second of it, and I will carry these memories with me always.",
-            f"Thank you for taking a moment to listen, and may these reflections bring warmth to your day.",
-            f"As this chapter gently closes, the lessons and love from it will stay bright in my heart forever.",
-            f"I will always treasure these memories and look forward to the future with an open heart.",
-        ]
-
-        finishers = {
-            4: "I treasure this always.",
-            5: "These memories will remain forever.",
-            6: "I am grateful for every moment.",
-            7: "These lessons will guide me forward always.",
-            8: "I carry these heartfelt reflections with me daily.",
-            9: "I am deeply thankful for every single moment shared.",
-            10: "As this chapter closes, these memories will stay bright forever.",
-            11: "Thank you for listening, and may these reflections bring warmth today.",
-            12: "Looking forward, I carry the joy and inspiration of this journey always.",
-        }
-
-        if target_words <= 20:
-            core_topic = topic
-            topic_words = topic.split()
-            if len(topic_words) > 4:
-                core_topic = " ".join(topic_words[:4])
-            short_templates = [
-                f"I remember {core_topic} with peace.",
-                f"Thinking about {core_topic} brings peace to my heart.",
-                f"I truly treasure every moment with {core_topic}.",
-                f"Reflecting on {core_topic} brings lasting joy and peace.",
-                f"I hold memories of {core_topic} close to my heart.",
-                f"I will always cherish {core_topic} with genuine gratitude.",
-                f"Looking back on {core_topic} fills me with profound warmth and quiet gratitude.",
-            ]
-            best_short = min(short_templates, key=lambda s: abs(len(s.split()) - target_words))
-            return best_short
-
-        chosen_sentences: list[str] = [openings[0]]
-        current_words = len(chosen_sentences[0].split())
-
-        if current_words >= target_words:
-            return chosen_sentences[0]
-
-        body_idx = 0
-        min_close_words = 16
-        while body_idx < len(body_pool) and (current_words + len(body_pool[body_idx].split()) + min_close_words <= target_words):
-            chosen_sentences.append(body_pool[body_idx])
-            current_words += len(body_pool[body_idx].split())
-            body_idx += 1
-
-        while current_words + 16 + min_close_words <= target_words:
-            s = body_pool[body_idx % len(body_pool)]
-            chosen_sentences.append(s)
-            current_words += len(s.split())
-            body_idx += 1
-
-        remaining = target_words - current_words
-        if remaining in finishers:
-            chosen_sentences.append(finishers[remaining])
-        elif remaining >= 15:
-            best_closing = min(closings, key=lambda c: abs(len(c.split()) - remaining))
-            chosen_sentences.append(best_closing)
-            current_words += len(best_closing.split())
-            remaining = target_words - current_words
-            if remaining in finishers:
-                chosen_sentences.append(finishers[remaining])
-        elif remaining >= 4:
-            closest_k = min(finishers.keys(), key=lambda k: abs(k - remaining))
-            chosen_sentences.append(finishers[closest_k])
-
-        return " ".join(chosen_sentences)
+        tone = self._extract_tone(system)
+        duration_seconds = (target_words / settings.words_per_minute) * 60.0
+        return build_template_script(idea=topic, duration_seconds=duration_seconds, tone=tone)
 
     def __repr__(self) -> str:
         return "TemplateLLMProvider()"
