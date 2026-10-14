@@ -23,6 +23,7 @@ export interface ScriptStepProps {
   isPromptPath?: boolean;
   initialLoading?: boolean;
   initialError?: string | null;
+  initialScriptSource?: string | null;
   onNext: () => void;
   onBack: () => void;
 }
@@ -40,6 +41,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
   isPromptPath = false,
   initialLoading,
   initialError = null,
+  initialScriptSource = null,
   onNext,
   onBack,
 }) => {
@@ -50,6 +52,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
     initialLoading !== undefined ? initialLoading : (shouldAutoGenerate && !initialError)
   );
   const [generationError, setGenerationError] = useState<string | null>(initialError);
+  const [scriptSource, setScriptSource] = useState<string | null>(initialScriptSource || null);
   const [lastGeneratedScript, setLastGeneratedScript] = useState<string>(script);
   const [hasGeneratedOnce, setHasGeneratedOnce] = useState<boolean>(
     Boolean(script && script !== DEFAULT_SCRIPT)
@@ -93,6 +96,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         onScriptChange(res.script);
         setLastGeneratedScript(res.script);
         setHasGeneratedOnce(true);
+        if (res.script_source) {
+          setScriptSource(res.script_source);
+        }
       }
     } catch (err: unknown) {
       const mapped = mapAPIError(err);
@@ -431,6 +437,30 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Honest Notice for Template Script */}
+          {scriptSource === 'template' && (
+            <div
+              role="note"
+              data-testid="template-script-notice"
+              style={{
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--paper-cream-alt)',
+                border: '1.5px solid var(--paper-border)',
+                color: 'var(--ink-muted)',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <AlertCircle size={16} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
+              <span>
+                Basic script (no AI model installed). Edit it freely, or install Ollama for better scripts.
+              </span>
+            </div>
+          )}
 
           {/* Textarea - Auto-scrolls into view on mobile keyboard focus */}
           <textarea

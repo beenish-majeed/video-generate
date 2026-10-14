@@ -153,4 +153,28 @@ describe('ScriptStep component tests', () => {
 
     expect(markup).not.toContain('Write it again');
   });
+
+  it('7. Displays honest notice when basic template script is used', () => {
+    const validScript = Array.from({ length: 74 }, (_, i) => `word${i}`).join(' ');
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ScriptStep, {
+        script: validScript,
+        onScriptChange: () => {},
+        prompt: 'Morning stroll',
+        onPromptChange: () => {},
+        targetSeconds: 30,
+        wordsPerMinute: 148,
+        isPromptPath: true,
+        initialScriptSource: 'template',
+        onNext: () => {},
+        onBack: () => {},
+      })
+    );
+
+    expect(markup).toContain(
+      'Basic script (no AI model installed). Edit it freely, or install Ollama for better scripts.'
+    );
+    expect(markup).toContain('data-testid="template-script-notice"');
+  });
 });
