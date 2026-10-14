@@ -226,6 +226,22 @@ class JobCreate(BaseModel):
     target_duration_seconds: Optional[float] = None
     duration_preset: Optional[str] = None
     overrides: dict = Field(default_factory=dict)
+    visual_mode: Literal["talking_head", "slideshow"] = "talking_head"
+    burn_subtitles: Optional[bool] = None
+    subtitles_enabled: Optional[bool] = None
+    bg_music_asset_id: Optional[str] = None
+    bg_music_volume: float = 0.2
+    image_style: Optional[str] = "cinematic"
+
+    @field_validator("visual_mode")
+    @classmethod
+    def validate_visual_mode(cls, v: str) -> str:
+        if not v:
+            return "talking_head"
+        norm = v.strip().lower().replace(" ", "_")
+        if norm not in ("talking_head", "slideshow"):
+            raise ValueError(f"Invalid visual_mode '{v}'. Allowed modes: 'talking_head', 'slideshow'")
+        return norm
 
     @field_validator("avatar_preset_id")
     @classmethod
