@@ -24,6 +24,7 @@ export interface ScriptStepProps {
   initialLoading?: boolean;
   initialError?: string | null;
   initialScriptSource?: string | null;
+  onScriptSourceChange?: (source: string) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -42,6 +43,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
   initialLoading,
   initialError = null,
   initialScriptSource = null,
+  onScriptSourceChange,
   onNext,
   onBack,
 }) => {
@@ -98,6 +100,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         setHasGeneratedOnce(true);
         if (res.script_source) {
           setScriptSource(res.script_source);
+          onScriptSourceChange?.(res.script_source);
         }
       }
     } catch (err: unknown) {
@@ -435,6 +438,22 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               >
                 {analysis.wordCount} words
               </span>
+              {scriptSource && (
+                <span
+                  data-testid="script-source-badge"
+                  style={{
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-hand)',
+                    padding: '3px 8px',
+                    borderRadius: '8px',
+                    backgroundColor: scriptSource === 'template' ? 'rgba(240, 160, 75, 0.15)' : 'rgba(110, 140, 115, 0.15)',
+                    color: scriptSource === 'template' ? 'var(--ink-amber)' : 'var(--ink-sage)',
+                    border: '1px solid var(--paper-border)',
+                  }}
+                >
+                  source: {scriptSource}
+                </span>
+              )}
             </div>
           </div>
 

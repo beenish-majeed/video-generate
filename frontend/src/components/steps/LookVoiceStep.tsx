@@ -4,13 +4,21 @@ import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { ArrowRight, ArrowLeft, Mic, Check, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Mic, Check, Loader2, AlertCircle, Film, User, Palette } from 'lucide-react';
 import type { AvatarPreset, VoicePreset } from '../../types/api';
+import ComputerCapabilitiesPanel from '../ComputerCapabilitiesPanel';
 
 export interface LookVoiceStepProps {
+  initialVisualMode?: 'slideshow' | 'talking_head';
+  initialImageStyle?: string;
   initialAvatarId?: string;
   initialVoiceId?: string;
-  onNext: (avatarId: string, voiceId: string) => void;
+  onNext: (
+    avatarId: string,
+    voiceId: string,
+    visualMode?: 'slideshow' | 'talking_head',
+    imageStyle?: string
+  ) => void;
   onBack: () => void;
 }
 
@@ -29,12 +37,30 @@ const FALLBACK_VOICES: VoicePreset[] = [
   },
 ];
 
+export interface VisualStyleOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export const VISUAL_STYLES: VisualStyleOption[] = [
+  { id: 'cinematic', label: 'Cinematic', description: 'Dramatic lighting, 35mm film atmosphere' },
+  { id: 'watercolor', label: 'Watercolor', description: 'Soft pigments on textured sketchbook paper' },
+  { id: 'flat illustration', label: 'Flat illustration', description: 'Clean graphic shapes and minimal lines' },
+  { id: 'photo', label: 'Photo', description: 'Natural realism and authentic perspective' },
+  { id: 'cards', label: 'Simple cards', description: 'Title cards with gradient backgrounds' },
+];
+
 export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
+  initialVisualMode = 'slideshow',
+  initialImageStyle = 'cinematic',
   initialAvatarId,
   initialVoiceId,
   onNext,
   onBack,
 }) => {
+  const [visualMode, setVisualMode] = useState<'slideshow' | 'talking_head'>(initialVisualMode);
+  const [imageStyle, setImageStyle] = useState<string>(initialImageStyle);
   const [avatars, setAvatars] = useState<AvatarPreset[]>(FALLBACK_AVATARS);
   const [voices, setVoices] = useState<VoicePreset[]>(FALLBACK_VOICES);
   const [selectedAvatar, setSelectedAvatar] = useState<string>(initialAvatarId || FALLBACK_AVATARS[0].id);
@@ -73,6 +99,16 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
     };
   }, [initialAvatarId, initialVoiceId]);
 
+  const handleSelectPresentation = (mode: 'slideshow' | 'talking_head') => {
+    playStickerPopSound();
+    setVisualMode(mode);
+  };
+
+  const handleSelectStyle = (styleId: string) => {
+    playStickerPopSound();
+    setImageStyle(styleId);
+  };
+
   const handleSelectAvatar = (id: string) => {
     playStickerPopSound();
     setSelectedAvatar(id);
@@ -84,19 +120,19 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
   };
 
   const handleContinue = () => {
-    onNext(selectedAvatar, selectedVoice);
+    onNext(selectedAvatar, selectedVoice, visualMode, imageStyle);
   };
 
   return (
     <div
       className="step-container"
       style={{
-        padding: '28px 24px',
+        padding: '24px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '24px',
+        gap: '22px',
         position: 'relative',
-        maxWidth: '840px',
+        maxWidth: '860px',
         margin: '0 auto',
       }}
     >
@@ -137,20 +173,330 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
       {/* Title & Description */}
       <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <p className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-sage)', margin: 0 }}>
-          Cast your animated narrator...
+          Visual style &amp; narrator...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: '30px', lineHeight: 1.2, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: '28px', lineHeight: 1.2, margin: 0 }}>
           Choose your look and voice
         </h1>
         <p style={{ color: 'var(--ink-muted)', fontSize: '15px', lineHeight: 1.5, margin: 0 }}>
-          Select a character portrait and voice narrator from the studio preset collection.
+          Select how your video should look: animated scenes with camera moves, or a talking character portrait.
         </p>
       </header>
 
+      {/* Section 0: Presentation Mode Selection */}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <label
+          style={{
+            fontFamily: 'var(--font-hand)',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: 'var(--ink-primary)',
+          }}
+        >
+          Presentation style
+        </label>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '14px',
+            width: '100%',
+          }}
+        >
+          {/* Option A: Scenes with camera moves */}
+          <button
+            type="button"
+            onClick={() => handleSelectPresentation('slideshow')}
+            aria-pressed={visualMode === 'slideshow'}
+            style={{
+              padding: '14px 16px',
+              borderRadius: 'var(--radius-paper)',
+              border: visualMode === 'slideshow' ? '2px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
+              backgroundColor: visualMode === 'slideshow' ? 'rgba(196, 98, 77, 0.08)' : 'var(--paper-cream)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxSizing: 'border-box',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Film size={18} color="var(--ink-terracotta)" />
+                <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--ink-primary)' }}>
+                  Visual style: scenes with camera moves
+                </span>
+              </div>
+              {visualMode === 'slideshow' && (
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--ink-terracotta)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Check size={12} strokeWidth={3} />
+                </span>
+              )}
+            </div>
+            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>
+              Cinematic scenes panning and zooming seamlessly along with the speech.
+            </p>
+          </button>
+
+          {/* Option B: A talking face */}
+          <button
+            type="button"
+            onClick={() => handleSelectPresentation('talking_head')}
+            aria-pressed={visualMode === 'talking_head'}
+            style={{
+              padding: '14px 16px',
+              borderRadius: 'var(--radius-paper)',
+              border: visualMode === 'talking_head' ? '2px solid var(--ink-sage)' : '1px solid var(--paper-border)',
+              backgroundColor: visualMode === 'talking_head' ? 'rgba(110, 140, 115, 0.08)' : 'var(--paper-cream)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              boxSizing: 'border-box',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={18} color="var(--ink-sage)" />
+                <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--ink-primary)' }}>
+                  A talking face
+                </span>
+              </div>
+              {visualMode === 'talking_head' && (
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--ink-sage)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Check size={12} strokeWidth={3} />
+                </span>
+              )}
+            </div>
+            <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>
+              A character portrait brought to life with synchronized lip movements.
+            </p>
+          </button>
+        </div>
+      </section>
+
+      {/* Section 1A: Visual Style for scenes with camera moves */}
+      {visualMode === 'slideshow' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Palette size={18} color="var(--ink-terracotta)" />
+            <h2
+              style={{
+                fontFamily: 'var(--font-hand)',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: 'var(--ink-primary)',
+                margin: 0,
+              }}
+            >
+              Art &amp; Visual Style
+            </h2>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '10px',
+              width: '100%',
+            }}
+          >
+            {VISUAL_STYLES.map((style) => {
+              const isSelected = imageStyle === style.id;
+              return (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() => handleSelectStyle(style.id)}
+                  aria-pressed={isSelected}
+                  style={{
+                    padding: '12px',
+                    borderRadius: 'var(--radius-paper)',
+                    border: isSelected ? '2px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
+                    backgroundColor: isSelected ? 'rgba(196, 98, 77, 0.08)' : 'var(--paper-cream)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-hand)',
+                        fontSize: '16px',
+                        fontWeight: isSelected ? 'bold' : '600',
+                        color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
+                      }}
+                    >
+                      {style.label}
+                    </span>
+                    {isSelected && <Check size={14} color="var(--ink-terracotta)" strokeWidth={3} />}
+                  </div>
+                  <span style={{ fontSize: '11.5px', color: 'var(--ink-muted)', lineHeight: 1.35 }}>
+                    {style.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Section 1B: Character Look (Taped Polaroids) for talking face */}
+      {visualMode === 'talking_head' && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <h2
+            style={{
+              fontFamily: 'var(--font-hand)',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: 'var(--ink-primary)',
+              margin: 0,
+            }}
+          >
+            Character Look
+          </h2>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '20px',
+              width: '100%',
+            }}
+          >
+            {avatars.map((avatar, idx) => {
+              const isSelected = selectedAvatar === avatar.id;
+              const rotation = idx % 2 === 0 ? '-1.5deg' : '1.5deg';
+
+              return (
+                <button
+                  key={avatar.id}
+                  type="button"
+                  onClick={() => handleSelectAvatar(avatar.id)}
+                  aria-pressed={isSelected}
+                  style={{
+                    position: 'relative',
+                    backgroundColor: 'var(--paper-cream)',
+                    border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
+                    borderRadius: '4px',
+                    padding: '12px 12px 18px 12px',
+                    boxShadow: isSelected
+                      ? '0 6px 16px rgba(196, 98, 77, 0.25)'
+                      : 'var(--shadow-card)',
+                    transform: `rotate(${rotation})`,
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    boxSizing: 'border-box',
+                    transition: 'all 0.15s ease',
+                    outline: 'none',
+                  }}
+                >
+                  <Tape
+                    rotation={idx % 2 === 0 ? '2deg' : '-2deg'}
+                    style={{
+                      position: 'absolute',
+                      top: '-10px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 2,
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      width: '100%',
+                      aspectRatio: '1 / 1',
+                      borderRadius: '2px',
+                      overflow: 'hidden',
+                      backgroundColor: '#ded7cb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <img
+                      src={avatar.thumbnail_url}
+                      alt={avatar.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-hand)',
+                        fontSize: '16px',
+                        color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
+                        fontWeight: isSelected ? 'bold' : 'normal',
+                      }}
+                    >
+                      {avatar.name}
+                    </span>
+                    {isSelected && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--ink-terracotta)',
+                          color: '#fff',
+                        }}
+                      >
+                        <Check size={12} strokeWidth={3} />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 0', color: 'var(--ink-muted)' }}>
-          <Loader2 size={20} className="animate-spin" />
-          <span>Loading studio presets...</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0', color: 'var(--ink-muted)' }}>
+          <Loader2 size={18} className="animate-spin" />
+          <span style={{ fontSize: '14px' }}>Loading presets...</span>
         </div>
       )}
 
@@ -161,144 +507,21 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '12px 16px',
+            padding: '10px 14px',
             borderRadius: '8px',
             backgroundColor: '#fff4f2',
             border: '1px solid var(--ink-terracotta)',
             color: 'var(--ink-terracotta)',
-            fontSize: '14px',
+            fontSize: '13px',
           }}
         >
-          <AlertCircle size={18} flex-shrink={0} />
+          <AlertCircle size={16} flex-shrink={0} />
           <span>{error.message} (Using default studio presets)</span>
         </div>
       )}
 
-      {/* Section 1: Character Look (Taped Polaroids) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        <h2
-          style={{
-            fontFamily: 'var(--font-hand)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: 'var(--ink-primary)',
-            margin: 0,
-          }}
-        >
-          Character Look
-        </h2>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '20px',
-            width: '100%',
-          }}
-        >
-          {avatars.map((avatar, idx) => {
-            const isSelected = selectedAvatar === avatar.id;
-            const rotation = idx % 2 === 0 ? '-1.5deg' : '1.5deg';
-
-            return (
-              <button
-                key={avatar.id}
-                type="button"
-                onClick={() => handleSelectAvatar(avatar.id)}
-                aria-pressed={isSelected}
-                style={{
-                  position: 'relative',
-                  backgroundColor: 'var(--paper-cream)',
-                  border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
-                  borderRadius: '4px',
-                  padding: '12px 12px 18px 12px',
-                  boxShadow: isSelected
-                    ? '0 6px 16px rgba(196, 98, 77, 0.25)'
-                    : 'var(--shadow-card)',
-                  transform: `rotate(${rotation})`,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.15s ease',
-                  outline: 'none',
-                }}
-              >
-                {/* Tape at top of polaroid */}
-                <Tape
-                  rotation={idx % 2 === 0 ? '2deg' : '-2deg'}
-                  style={{
-                    position: 'absolute',
-                    top: '-10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 2,
-                  }}
-                />
-
-                {/* Inner Photo Frame */}
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: '1 / 1',
-                    borderRadius: '2px',
-                    overflow: 'hidden',
-                    backgroundColor: '#ded7cb',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <img
-                    src={avatar.thumbnail_url}
-                    alt={avatar.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      // Fallback placeholder if image fails to load
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-
-                {/* Polaroid Label */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-hand)',
-                      fontSize: '16px',
-                      color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
-                      fontWeight: isSelected ? 'bold' : 'normal',
-                    }}
-                  >
-                    {avatar.name}
-                  </span>
-                  {isSelected && (
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--ink-terracotta)',
-                        color: '#fff',
-                      }}
-                    >
-                      <Check size={12} strokeWidth={3} />
-                    </span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Section 2: Narrator Voice */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '6px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
         <h2
           style={{
             fontFamily: 'var(--font-hand)',
@@ -332,8 +555,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '14px 18px',
-                  minHeight: '52px',
+                  padding: '12px 16px',
+                  minHeight: '50px',
                   borderRadius: 'var(--radius-paper)',
                   border: isSelected ? '2px solid var(--ink-sage)' : '1px solid var(--paper-border)',
                   backgroundColor: isSelected ? 'rgba(110, 140, 115, 0.08)' : 'var(--paper-cream)',
@@ -347,8 +570,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div
                     style={{
-                      width: '32px',
-                      height: '32px',
+                      width: '30px',
+                      height: '30px',
                       borderRadius: '50%',
                       backgroundColor: isSelected ? 'var(--ink-sage)' : 'rgba(110, 140, 115, 0.15)',
                       color: isSelected ? '#fff' : 'var(--ink-sage)',
@@ -358,27 +581,26 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                       flexShrink: 0,
                     }}
                   >
-                    <Mic size={16} />
+                    <Mic size={15} />
                   </div>
                   <div>
                     <span
                       style={{
                         display: 'block',
                         fontFamily: 'var(--font-hand)',
-                        fontSize: '17px',
+                        fontSize: '16px',
                         fontWeight: isSelected ? 'bold' : 'normal',
                         color: isSelected ? 'var(--ink-sage)' : 'var(--ink-primary)',
                       }}
                     >
                       {voice.name}
                     </span>
-                    <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                    <span style={{ fontSize: '11.5px', color: 'var(--ink-muted)' }}>
                       Preset voice profile
                     </span>
                   </div>
                 </div>
 
-                {/* Preview audio only if sample_url provided */}
                 {voice.sample_url && (
                   <audio src={voice.sample_url} controls style={{ display: 'none' }} />
                 )}
@@ -389,14 +611,14 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '20px',
-                      height: '20px',
+                      width: '18px',
+                      height: '18px',
                       borderRadius: '50%',
                       backgroundColor: 'var(--ink-sage)',
                       color: '#fff',
                     }}
                   >
-                    <Check size={12} strokeWidth={3} />
+                    <Check size={11} strokeWidth={3} />
                   </span>
                 ) : null}
               </button>
@@ -405,13 +627,18 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         </div>
       </section>
 
+      {/* Limitations and capabilities note */}
+      <div style={{ marginTop: '4px' }}>
+        <ComputerCapabilitiesPanel mode={visualMode} durationSeconds={30} showLimitations={true} />
+      </div>
+
       {/* Navigation Buttons */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '8px',
+          marginTop: '6px',
           paddingTop: '16px',
           borderTop: '1px solid var(--paper-border)',
         }}

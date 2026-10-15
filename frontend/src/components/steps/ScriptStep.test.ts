@@ -176,5 +176,7 @@ describe('ScriptStep component tests', () => {
       'Basic script (no AI model installed). Edit it freely, or install Ollama for better scripts.'
     );
     expect(markup).toContain('data-testid="template-script-notice"');
+    expect(markup).toContain('data-testid="script-source-badge"');
+    expect(markup).toContain('source: template');
   });
 });
