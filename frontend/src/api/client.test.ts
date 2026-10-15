@@ -123,4 +123,54 @@ describe('MemoryStudioAPIClient.createJob', () => {
     );
     expect(result.script).toBe('A lovely morning walk in the forest.');
   });
+
+  it('queries GET /v1/capabilities with query parameters', async () => {
+    const mockCaps = {
+      gpu: { available: true, device_name: 'NVIDIA RTX 4090' },
+      providers: { ollama: true, diffusers: true, whisper: true, piper: true, cards: true },
+      auto_subtitles: true,
+      image_provider_configured: 'diffusers',
+      llm_provider_configured: 'ollama',
+      estimate: {
+        estimated_seconds: 18,
+        display_text: '~18 seconds (GPU accelerated)',
+        device: 'gpu',
+      },
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockCaps,
+    } as any);
+
+    const result = await apiClient.getCapabilities('slideshow', 30);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/capabilities?mode=slideshow&duration_seconds=30',
+      expect.objectContaining({ headers: expect.any(Object) })
+    );
+    expect(result.gpu.available).toBe(true);
+    expect(result.estimate?.estimated_seconds).toBe(18);
+  });
+
+  it('cancels job via POST /v1/jobs/{id}/cancel', async () => {
+    const mockCancelledJob = {
+      job_id: 'job-999',
+      state: 'CANCELLED',
+      status: 'CANCELLED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockCancelledJob,
+    } as any);
+
+    const result = await apiClient.cancelJob('job-999');
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/jobs/job-999/cancel',
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(result.state).toBe('CANCELLED');
+  });
 });

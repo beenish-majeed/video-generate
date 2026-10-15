@@ -17,7 +17,7 @@ export interface DurationsResponse {
   allowed_presets: DurationOption[];
 }
 
-export type AssetKind = 'photo' | 'voice';
+export type AssetKind = 'photo' | 'voice' | 'image' | 'audio';
 
 export interface AssetUploadResponse {
   asset_id: string;
@@ -47,6 +47,31 @@ export interface PresetsResponse {
 }
 
 export type ScriptTone = 'friendly' | 'professional' | 'storytelling' | 'educational';
+
+export type VisualPresentationMode = 'slideshow' | 'talking_head';
+export type VisualStyle = 'cinematic' | 'watercolor' | 'flat illustration' | 'photo' | 'cards';
+
+export interface CapabilitiesResponse {
+  gpu: {
+    available: boolean;
+    device_name: string;
+  };
+  providers: {
+    ollama: boolean;
+    diffusers: boolean;
+    whisper: boolean;
+    piper: boolean;
+    cards: boolean;
+  };
+  auto_subtitles: boolean;
+  image_provider_configured: string;
+  llm_provider_configured: string;
+  estimate?: {
+    estimated_seconds: number;
+    display_text: string;
+    device: 'gpu' | 'cpu';
+  };
+}
 
 export interface ScriptGeneratePayload {
   prompt: string;
@@ -78,11 +103,21 @@ export interface JobCreatePayload {
   voice_asset_id?: string;
   avatar_preset_id?: string;
   voice_preset_id?: string;
-  script: string;
+  script?: string;
   prompt?: string;
   consent: ConsentPayload;
   duration_preset?: DurationPreset;
   target_duration_seconds?: number;
+  visual_mode?: 'slideshow' | 'talking_head';
+  image_style?: string;
+  uploaded_image_asset_ids?: string[];
+  image_durations?: number[];
+  uploaded_audio_asset_id?: string;
+  prefer_lip_sync?: boolean;
+  auto_subtitles?: boolean;
+  burn_subtitles?: boolean;
+  bg_music_asset_id?: string;
+  bg_music_volume?: number;
   overrides?: Record<string, unknown>;
 }
 
@@ -99,6 +134,7 @@ export type JobState =
   | 'QA_CHECKING'
   | 'ASSEMBLING'
   | 'COMPLETED'
+  | 'CANCELLED'
   | 'FAILED';
 
 export interface SegmentProgress {
@@ -120,6 +156,9 @@ export interface JobRecord {
   target_duration_seconds?: number;
   audio_duration_seconds?: number;
   final_video_duration_seconds?: number;
+  visual_mode?: string;
+  image_style?: string;
+  mode_reason?: string;
   segments?: SegmentProgress[];
   consent?: ConsentPayload;
   script?: string;

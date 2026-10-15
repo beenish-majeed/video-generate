@@ -19,6 +19,7 @@ export const ALL_JOB_STATES: JobState[] = [
   'QA_CHECKING',
   'ASSEMBLING',
   'COMPLETED',
+  'CANCELLED',
   'FAILED',
 ];
 
@@ -97,6 +98,12 @@ export function mapJobStateToStory(state: string | JobState): JobStateStory {
         title: 'Premiere Ready',
         storyLine: 'Your memory film is ready to watch!',
         doodleKind: 'star',
+      };
+    case 'CANCELLED':
+      return {
+        title: 'Job Cancelled',
+        storyLine: 'The video job was cancelled. Temporary files were cleaned up.',
+        doodleKind: 'spiral',
       };
     case 'FAILED':
       return {

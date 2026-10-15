@@ -45,9 +45,10 @@ describe('pollingStrategy', () => {
     expect(getPollingInterval(20)).toBe(BACKOFF_POLL_INTERVAL_MS); // 10000
   });
 
-  it('identifies terminal states COMPLETED and FAILED', () => {
+  it('identifies terminal states COMPLETED, FAILED, and CANCELLED', () => {
     expect(isTerminalState('COMPLETED')).toBe(true);
     expect(isTerminalState('FAILED')).toBe(true);
+    expect(isTerminalState('CANCELLED')).toBe(true);
     expect(isTerminalState('SYNTHESIZING_AUDIO')).toBe(false);
     expect(isTerminalState('GENERATING_SEGMENTS')).toBe(false);
   });

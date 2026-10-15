@@ -18,9 +18,9 @@ export function getPollingInterval(pollCount: number): number {
 }
 
 /**
- * Checks if a given job state is terminal (COMPLETED or FAILED).
+ * Checks if a given job state is terminal (COMPLETED, FAILED, or CANCELLED).
  */
 export function isTerminalState(state: string): boolean {
   const upper = (state || '').toUpperCase();
-  return upper === 'COMPLETED' || upper === 'FAILED';
+  return upper === 'COMPLETED' || upper === 'FAILED' || upper === 'CANCELLED';
 }

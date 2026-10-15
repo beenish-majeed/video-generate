@@ -7,6 +7,7 @@ import type {
   PresetsResponse,
   ScriptGeneratePayload,
   ScriptGenerateResponse,
+  CapabilitiesResponse,
 } from '../types/api';
 
 /**
@@ -173,6 +174,28 @@ class MemoryStudioAPIClient {
     return this.request<ScriptGenerateResponse>('/v1/scripts/generate', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  /**
+   * GET /v1/capabilities
+   * Retrieves host machine capabilities (GPU, providers, honest time estimate).
+   */
+  async getCapabilities(mode?: string, durationSeconds?: number): Promise<CapabilitiesResponse> {
+    const params = new URLSearchParams();
+    if (mode) params.append('mode', mode);
+    if (durationSeconds !== undefined) params.append('duration_seconds', String(durationSeconds));
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return this.request<CapabilitiesResponse>(`/v1/capabilities${qs}`);
+  }
+
+  /**
+   * POST /v1/jobs/{id}/cancel
+   * Signals backend to stop job between scenes and clean up intermediate files.
+   */
+  async cancelJob(jobId: string): Promise<JobRecord> {
+    return this.request<JobRecord>(`/v1/jobs/${jobId}/cancel`, {
+      method: 'POST',
     });
   }
 
