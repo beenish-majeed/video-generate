@@ -131,12 +131,21 @@ def save_upload(file: UploadFile, kind: str) -> dict:
         except Exception:
             pass
 
-    return {
+    ret = {
         "asset_id": asset_id,
         "kind": kind,
         "path": str(path),
         "sha256": sha256_file(path),
     }
+
+    if kind in {"photo", "image"}:
+        try:
+            from src.services.face_detector import count_faces_in_image
+            ret["faces_detected"] = count_faces_in_image(path)
+        except Exception:
+            ret["faces_detected"] = 0
+
+    return ret
 
 
 def get_asset_path(asset_id: str) -> Path | None:
