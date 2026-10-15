@@ -15,22 +15,26 @@ import {
 import Tape from '../Tape';
 import Sticker from '../Sticker';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Loader2, Film, Clock, WifiOff } from 'lucide-react';
+import { Loader2, Film, Clock, WifiOff, XCircle } from 'lucide-react';
 
 interface WaitingStepProps {
   jobId: string;
   onCompleted: (job: JobRecord) => void;
   onFailed: (job: JobRecord) => void;
+  onCancelled?: (job: JobRecord) => void;
 }
 
 export const WaitingStep: React.FC<WaitingStepProps> = ({
   jobId,
   onCompleted,
   onFailed,
+  onCancelled,
 }) => {
   const [job, setJob] = useState<JobRecord | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const [connectionLost, setConnectionLost] = useState<boolean>(false);
+  const [cancelling, setCancelling] = useState<boolean>(false);
+  const [isCancelled, setIsCancelled] = useState<boolean>(false);
 
   const shouldReduceMotion = useReducedMotion();
 
@@ -49,7 +53,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     let pollCount = 0;
 
     const fetchJob = async () => {
-      // Pause polling if browser tab is hidden
+      // Pause polling if browser tab is hidden or job is already cancelled
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
         return;
       }
@@ -66,6 +70,9 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         if (isTerminalState(currentState)) {
           if (currentState === 'COMPLETED') {
             onCompleted(record);
+          } else if (currentState === 'CANCELLED') {
+            setIsCancelled(true);
+            onCancelled?.(record);
           } else if (currentState === 'FAILED') {
             onFailed(record);
           }
@@ -79,7 +86,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         if (!isSubscribed) return;
 
         const errStr = err instanceof Error ? err.message : String(err);
-        
+
         // Handle 404 / Expired or Unknown Job ID
         if (errStr.includes('404') || errStr.toLowerCase().includes('not found')) {
           try {
@@ -127,7 +134,21 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     };
   }, [jobId]);
 
-  const currentState = job?.state || job?.status || 'RECEIVED';
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      const record = await apiClient.cancelJob(jobId);
+      setIsCancelled(true);
+      setJob(record);
+      onCancelled?.(record);
+    } catch {
+      // Keep state if cancel API fails
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const currentState = job?.state || job?.status || (isCancelled ? 'CANCELLED' : 'RECEIVED');
   const story = mapJobStateToStory(currentState);
 
   // Honest estimated total render time (3.7x target duration)
@@ -175,7 +196,18 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
   };
 
   return (
-    <div className="step-container" style={{ padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        position: 'relative',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="STUDIO WAITING ROOM" rotation="3deg" variant="blue" />
 
@@ -225,127 +257,309 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
 
       {/* Header Copy */}
       <header style={{ width: '100%' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(20px, 4vw, 24px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word' }}>
-          Please take a gentle breath while we craft...
+        <p
+          className="handwritten"
+          style={{
+            fontSize: 'clamp(20px, 4vw, 24px)',
+            color: 'var(--ink-terracotta)',
+            wordBreak: 'break-word',
+          }}
+        >
+          {isCancelled ? 'Render cancelled' : 'Please take a gentle breath while we craft...'}
         </p>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(22px, 4.5vw, 28px)', marginTop: '4px', wordBreak: 'break-word' }}>
-          Rendering your memory film
+        <h2
+          className="editorial-title"
+          style={{
+            fontSize: 'clamp(22px, 4.5vw, 28px)',
+            marginTop: '4px',
+            wordBreak: 'break-word',
+          }}
+        >
+          {isCancelled ? 'Job stopped' : 'Rendering your memory film'}
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px', wordBreak: 'break-word' }}>
-          Job ID: <code style={{ backgroundColor: 'var(--paper-cream-alt)', color: 'var(--ink-primary)', padding: '2px 8px', borderRadius: '4px', wordBreak: 'break-all', display: 'inline-block', maxWidth: '100%' }}>{jobId}</code>
+        <p
+          style={{
+            color: 'var(--ink-muted)',
+            fontSize: '15px',
+            marginTop: '4px',
+            wordBreak: 'break-word',
+          }}
+        >
+          Job ID:{' '}
+          <code
+            style={{
+              backgroundColor: 'var(--paper-cream-alt)',
+              color: 'var(--ink-primary)',
+              padding: '2px 8px',
+              borderRadius: '4px',
+              wordBreak: 'break-all',
+              display: 'inline-block',
+              maxWidth: '100%',
+            }}
+          >
+            {jobId}
+          </code>
         </p>
       </header>
 
-      {/* Main Ambient Frame */}
-      <div
-        role="region"
-        aria-label="Studio rendering stage"
-        style={{
-          padding: 'clamp(18px, 4vw, 28px) clamp(12px, 3vw, 24px)',
-          borderRadius: '12px',
-          backgroundColor: '#ffffff',
-          border: '1.5px dashed var(--paper-border)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '22px',
-          boxShadow: 'var(--shadow-card)',
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        {/* Slow Ambient Breathing Container */}
-        <motion.div
-          animate={
-            shouldReduceMotion
-              ? {}
-              : {
-                  scale: [1, 1.02, 1],
-                }
-          }
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: 'easeInOut',
+      {/* Cancelled State Display */}
+      {isCancelled ? (
+        <div
+          role="status"
+          data-testid="job-cancelled-banner"
+          style={{
+            padding: '28px 20px',
+            borderRadius: 'var(--radius-paper)',
+            backgroundColor: 'var(--paper-cream-alt)',
+            border: '1.5px dashed var(--ink-terracotta)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: '12px',
           }}
-          style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '16px', textAlign: 'center', width: '100%' }}
         >
-          <Loader2 size={36} className="animate-spin" style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
-          <div style={{ maxWidth: '100%' }}>
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(18px, 4vw, 22px)', color: 'var(--ink-primary)', wordBreak: 'break-word' }}>
-              {story.title}
-            </h3>
-            <p className="handwritten" style={{ fontSize: 'clamp(17px, 3.5vw, 21px)', color: '#9c3f1d', marginTop: '2px', wordBreak: 'break-word' }}>
-              "{story.storyLine}"
-            </p>
-          </div>
-        </motion.div>
-
-        {/* Real Progress Only Section: NEVER fake a percentage! */}
-        {hasRealSegmentProgress ? (
-          /* API Provided Real Segment Progress */
-          <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '6px', fontSize: '13px', fontWeight: 600 }}>
-              <span style={{ color: 'var(--ink-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Film size={14} /> Real Segment Progress
-              </span>
-              <span style={{ color: 'var(--ink-terracotta)' }}>
-                {completedSegments} / {totalSegments} segments ({realSegmentPercent}%)
-              </span>
-            </div>
-            <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--paper-border)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${realSegmentPercent}%`,
-                  height: '100%',
-                  backgroundColor: 'var(--ink-sage)',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          /* Honest Stage & Elapsed Time Info (No Faked Percentage!) */
-          <div
+          <DoodleSpiral count={5} />
+          <h3
+            className="editorial-title"
+            style={{ fontSize: '22px', margin: 0, color: 'var(--ink-terracotta)' }}
+          >
+            Job Cancelled
+          </h3>
+          <p
             style={{
-              padding: '12px 16px',
-              borderRadius: '10px',
-              backgroundColor: 'var(--paper-cream-alt)',
-              border: '1px border var(--paper-border)',
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '8px',
-              width: '100%',
-              maxWidth: '440px',
-              boxSizing: 'border-box',
               fontSize: '14px',
-              color: 'var(--ink-primary)',
+              color: 'var(--ink-muted)',
+              margin: 0,
+              maxWidth: '460px',
+              lineHeight: 1.5,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
-              <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{formatMinSec(elapsedSeconds)} elapsed</span>
-            </div>
-
-            <div style={{ fontSize: '13px', color: 'var(--ink-primary)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
-              ~{formatMinSec(estimatedRenderSeconds)} estimated render
-            </div>
-          </div>
-        )}
-
-        {/* Story Doodle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '6px' }}>
-          {renderStoryDoodle()}
+            The video job was stopped cleanly between scenes. All intermediate files were cleaned up.
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              onFailed(
+                job || {
+                  job_id: jobId,
+                  state: 'CANCELLED',
+                  status: 'CANCELLED',
+                  created_at: '',
+                  updated_at: '',
+                }
+              )
+            }
+            className="btn-terracotta"
+            style={{ marginTop: '10px', padding: '10px 22px', cursor: 'pointer' }}
+          >
+            Start a new creation
+          </button>
         </div>
+      ) : (
+        /* Main Ambient Frame */
+        <div
+          style={{
+            position: 'relative',
+            backgroundColor: 'var(--paper-cream)',
+            border: '1.5px solid var(--paper-border)',
+            borderRadius: 'var(--radius-paper)',
+            padding: 'clamp(24px, 4vw, 36px) clamp(16px, 3vw, 28px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '20px',
+            boxShadow: 'var(--shadow-card)',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Animated Spinner & Current Stage Story Label */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: '10px',
+              maxWidth: '560px',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(196, 98, 77, 0.1)',
+                color: 'var(--ink-terracotta)',
+              }}
+            >
+              <Loader2 size={32} className="animate-spin" />
+            </div>
 
-        <p className="handwritten" style={{ fontSize: 'clamp(15px, 3vw, 17px)', color: 'var(--ink-primary)', marginTop: '4px', textAlign: 'center', wordBreak: 'break-word' }}>
-          Taking care with every frame... your memory is taking shape.
-        </p>
-      </div>
+            <h3
+              className="editorial-title"
+              style={{
+                fontSize: 'clamp(20px, 3.5vw, 24px)',
+                margin: '4px 0 0 0',
+                color: 'var(--ink-primary)',
+                wordBreak: 'break-word',
+              }}
+            >
+              {story.title}
+            </h3>
+
+            <p
+              style={{
+                fontSize: 'clamp(14px, 2.5vw, 15px)',
+                color: 'var(--ink-muted)',
+                lineHeight: 1.5,
+                margin: 0,
+                wordBreak: 'break-word',
+              }}
+            >
+              {story.storyLine}
+            </p>
+          </div>
+
+          {/* Progress / Time Status */}
+          {hasRealSegmentProgress ? (
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '440px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '13px',
+                  color: 'var(--ink-muted)',
+                }}
+              >
+                <span>
+                  Segment {completedSegments} of {totalSegments}
+                </span>
+                <span>{realSegmentPercent}%</span>
+              </div>
+              <div
+                style={{
+                  width: '100%',
+                  height: '8px',
+                  borderRadius: '4px',
+                  backgroundColor: 'rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${realSegmentPercent}%`,
+                    height: '100%',
+                    backgroundColor: 'var(--ink-sage)',
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--paper-cream-alt)',
+                border: '1px solid var(--paper-border)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                width: '100%',
+                maxWidth: '440px',
+                boxSizing: 'border-box',
+                fontSize: '14px',
+                color: 'var(--ink-primary)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {formatMinSec(elapsedSeconds)} elapsed
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: 'var(--ink-primary)',
+                  fontStyle: 'italic',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                ~{formatMinSec(estimatedRenderSeconds)} estimated render
+              </div>
+            </div>
+          )}
+
+          {/* Story Doodle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '4px' }}>
+            {renderStoryDoodle()}
+          </div>
+
+          <p
+            className="handwritten"
+            style={{
+              fontSize: 'clamp(15px, 3vw, 17px)',
+              color: 'var(--ink-primary)',
+              marginTop: '2px',
+              textAlign: 'center',
+              wordBreak: 'break-word',
+            }}
+          >
+            Taking care with every frame... your memory is taking shape.
+          </p>
+
+          {/* Cancel Job Action Button */}
+          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              data-testid="cancel-job-btn"
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13.5px',
+                padding: '7px 16px',
+                color: 'var(--ink-terracotta)',
+                cursor: cancelling ? 'default' : 'pointer',
+                opacity: cancelling ? 0.7 : 1,
+              }}
+            >
+              {cancelling ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Cancelling job...</span>
+                </>
+              ) : (
+                <>
+                  <XCircle size={15} />
+                  <span>Cancel job</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
