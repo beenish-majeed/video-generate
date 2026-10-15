@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
-from typing import Optional
+from typing import Callable, Optional
 
 from src.config import settings
 from src.utils.ffmpeg import concat_wavs, make_silence_wav, probe_duration
@@ -403,6 +403,7 @@ class SlideshowCompositor:
         burn_subtitles: bool = False,
         subtitles_enabled: bool = True,
         watermark_path: Optional[Path] = None,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> tuple[Path, Optional[Path]]:
         """
         Full orchestrator for a slideshow job:
@@ -423,6 +424,8 @@ class SlideshowCompositor:
         clip_durations: list[float] = []
 
         for i in range(n):
+            if cancel_check and cancel_check():
+                raise RuntimeError("Job cancelled by user.")
             audio_p = scene_audio_paths[i]
             img_p = scene_images[i]
             speech_dur = probe_duration(audio_p)
@@ -529,6 +532,7 @@ class SlideshowCompositor:
         subtitle_path: Optional[Path] = None,
         burn_subtitles: bool = False,
         watermark_path: Optional[Path] = None,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> Path:
         """
         Orchestrator for 'my own images' slideshow mode:
@@ -546,6 +550,8 @@ class SlideshowCompositor:
         clip_durations: list[float] = []
 
         for i in range(n):
+            if cancel_check and cancel_check():
+                raise RuntimeError("Job cancelled by user.")
             img_p = image_paths[i]
             d = image_durations[i]
             # When crossfading, all clips except the last need an extra crossfade tail

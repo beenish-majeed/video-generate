@@ -140,8 +140,8 @@ def recover_interrupted_jobs() -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.execute(
-                "SELECT data FROM jobs WHERE state NOT IN (?, ?)",
-                (JobState.COMPLETED.value, JobState.FAILED.value),
+                "SELECT data FROM jobs WHERE state NOT IN (?, ?, ?)",
+                (JobState.COMPLETED.value, JobState.FAILED.value, JobState.CANCELLED.value),
             )
             rows = cursor.fetchall()
             for row in rows:
@@ -192,6 +192,32 @@ def _cleanup_intermediate_job_files(
         logger.warning(f"Error during intermediate file cleanup for {job_path}: {exc}")
 
 
+CANCELLED_JOB_IDS: set[str] = set()
+
+
+def is_job_cancelled(job_id: str) -> bool:
+    if job_id in CANCELLED_JOB_IDS:
+        return True
+    job = load_job_record(job_id)
+    return job is not None and job.state == JobState.CANCELLED
+
+
+def cancel_job(job_id: str) -> Optional[JobRecord]:
+    job = load_job_record(job_id)
+    if job is None:
+        return None
+
+    if job.state in {JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED}:
+        return job
+
+    CANCELLED_JOB_IDS.add(job_id)
+    job.state = JobState.CANCELLED
+    job.error = "Job was cancelled by the user."
+    save_job_record(job)
+
+    job_path = job_dir(job_id)
+    _cleanup_intermediate_job_files(job_path, is_failed=True, updated_at=utcnow())
+    return job
 
 
 def create_job(request: JobCreate) -> JobRecord:
@@ -316,6 +342,9 @@ def run_job(job_id: str) -> None:
         return
 
     job_path = job_dir(job_id)
+
+    if is_job_cancelled(job_id):
+        return
 
     is_my_own = bool(getattr(job.request, "uploaded_image_asset_ids", None))
     visual_mode = getattr(job.request, "visual_mode", "talking_head")
@@ -478,6 +507,7 @@ def run_job(job_id: str) -> None:
                     subtitle_path=subtitle_path,
                     burn_subtitles=job.plan.subtitles.burn_in,
                     watermark_path=label_path,
+                    cancel_check=lambda: is_job_cancelled(job_id),
                 )
 
             # Final QA
@@ -567,6 +597,8 @@ def run_job(job_id: str) -> None:
 
             scene_images = []
             for scene in scene_plan.scenes:
+                if is_job_cancelled(job_id):
+                    return
                 img_res = image_provider.generate(
                     prompt=scene.image_prompt,
                     style=scene.style,
@@ -574,6 +606,9 @@ def run_job(job_id: str) -> None:
                     key_phrase=scene.key_phrase,
                 )
                 scene_images.append(img_res.path)
+
+            if is_job_cancelled(job_id):
+                return
 
             # 5. Assembly
             job.state = JobState.ASSEMBLING
@@ -600,6 +635,7 @@ def run_job(job_id: str) -> None:
                 burn_subtitles=job.plan.subtitles.burn_in,
                 subtitles_enabled=job.plan.subtitles.enabled,
                 watermark_path=label_path,
+                cancel_check=lambda: is_job_cancelled(job_id),
             )
 
             expected_final_dur = float(job.plan.target_duration_seconds)
@@ -687,6 +723,8 @@ def run_job(job_id: str) -> None:
             anim_provider = RealWav2LipProvider()
 
             for segment in segments:
+                if is_job_cancelled(job_id):
+                    return
                 logger.info(f"Generating segment {segment.segment_id} ({segment.duration_s}s)...")
                 video_path = anim_provider.generate_segment(
                     segment=segment,
@@ -706,6 +744,9 @@ def run_job(job_id: str) -> None:
                 )
                 if not qa_result.get("passed"):
                     raise RuntimeError(f"Segment QA failed for {segment.segment_id}: {qa_result}")
+
+            if is_job_cancelled(job_id):
+                return
 
             job.segments = segments
 
@@ -738,9 +779,14 @@ def run_job(job_id: str) -> None:
             job.state = JobState.COMPLETED
 
     except Exception as exc:
-        logger.exception(f"Job execution failed for {job_id}: {exc}")
-        job.state = JobState.FAILED
-        job.error = f"{type(exc).__name__}: {exc}"
+        if is_job_cancelled(job_id) or "cancelled by user" in str(exc).lower():
+            logger.info(f"Job execution stopped due to cancellation: {job_id}")
+            job.state = JobState.CANCELLED
+            job.error = "Job was cancelled by the user."
+        else:
+            logger.exception(f"Job execution failed for {job_id}: {exc}")
+            job.state = JobState.FAILED
+            job.error = f"{type(exc).__name__}: {exc}"
 
     finally:
         save_job_record(job)
@@ -754,6 +800,6 @@ def run_job(job_id: str) -> None:
             pass
         _cleanup_intermediate_job_files(
             job_path,
-            is_failed=(job.state == JobState.FAILED),
+            is_failed=(job.state in {JobState.FAILED, JobState.CANCELLED}),
             updated_at=job.updated_at,
         )

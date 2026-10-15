@@ -99,11 +99,12 @@ def health():
 
 
 @app.get("/v1/capabilities", dependencies=[Depends(verify_api_key)])
-def get_capabilities():
-    from src.services.speech_to_text import is_whisper_available
-    return {
-        "auto_subtitles": is_whisper_available(),
-    }
+def get_capabilities(
+    mode: Optional[str] = Query(None),
+    duration_seconds: Optional[float] = Query(None),
+):
+    from src.services.capabilities import get_system_capabilities
+    return get_system_capabilities(mode=mode, duration_seconds=duration_seconds)
 
 
 @app.get("/v1/durations")
@@ -266,6 +267,15 @@ def read_job(job_id: str):
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found.")
 
+    return job
+
+
+@app.post("/v1/jobs/{job_id}/cancel", dependencies=[Depends(verify_api_key)])
+def cancel_video_job(job_id: str):
+    from src.services.jobs import cancel_job
+    job = cancel_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
     return job
 
 

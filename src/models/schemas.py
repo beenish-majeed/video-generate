@@ -25,6 +25,7 @@ class JobState(str, Enum):
     ASSEMBLING = "ASSEMBLING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class AspectRatio(str, Enum):
