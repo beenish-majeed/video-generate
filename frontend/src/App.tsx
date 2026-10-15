@@ -7,12 +7,14 @@ import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
 import { playPageTurnSound } from './utils/soundEffects';
 import { Loader2 } from 'lucide-react';
+import type { UploadedImageItem } from './components/steps/ImagesAudioStep';
 
 const HeroStep = lazy(() => import('./components/steps/HeroStep'));
 const ChoiceStep = lazy(() => import('./components/steps/ChoiceStep'));
 const IdeaStep = lazy(() => import('./components/steps/IdeaStep'));
 const PhotoStep = lazy(() => import('./components/steps/PhotoStep'));
 const VoiceStep = lazy(() => import('./components/steps/VoiceStep'));
+const ImagesAudioStep = lazy(() => import('./components/steps/ImagesAudioStep'));
 const DurationStep = lazy(() => import('./components/steps/DurationStep'));
 const LookVoiceStep = lazy(() => import('./components/steps/LookVoiceStep'));
 const ScriptStep = lazy(() => import('./components/steps/ScriptStep'));
@@ -58,6 +60,8 @@ export const App: React.FC = () => {
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
   const [ideaText, setIdeaText] = useState<string>('');
   const [tone, setTone] = useState<ScriptTone>('storytelling');
+  const [visualMode, setVisualMode] = useState<'slideshow' | 'talking_head'>('slideshow');
+  const [imageStyle, setImageStyle] = useState<string>('cinematic');
   const [avatarPresetId, setAvatarPresetId] = useState<string>('');
   const [voicePresetId, setVoicePresetId] = useState<string>('');
   const [durationPreset, setDurationPreset] = useState<DurationPreset>('30s');
@@ -65,7 +69,17 @@ export const App: React.FC = () => {
   const [script, setScript] = useState<string>(
     'A peaceful sunny morning in a quiet valley surrounded by tall whispering pine trees.'
   );
+  const [scriptSource, setScriptSource] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>('Warm cinematic light, soft watercolor texture');
+
+  // Images + Audio mode state
+  const [uploadedImages, setUploadedImages] = useState<UploadedImageItem[]>([]);
+  const [audioAssetId, setAudioAssetId] = useState<string>('');
+  const [audioDuration, setAudioDuration] = useState<number>(0);
+  const [preferLipSync, setPreferLipSync] = useState<boolean>(false);
+  const [burnSubtitles, setBurnSubtitles] = useState<boolean>(true);
+  const [bgMusicAssetId, setBgMusicAssetId] = useState<string>('');
+  const [bgMusicVolume, setBgMusicVolume] = useState<number>(0.2);
 
   // Active Job State
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -89,12 +103,20 @@ export const App: React.FC = () => {
 
   const handleSelectPromptFlow = () => {
     setFlowMode('prompt_first');
+    setVisualMode('slideshow');
     setScript('');
     changeStep('idea');
   };
 
+  const handleSelectImagesAudioFlow = () => {
+    setFlowMode('images_audio');
+    setVisualMode('slideshow');
+    changeStep('images_audio');
+  };
+
   const handleSelectCustomMediaFlow = () => {
     setFlowMode('custom_media');
+    setVisualMode('talking_head');
     changeStep('photo');
   };
 
@@ -105,26 +127,46 @@ export const App: React.FC = () => {
     setSubmitting(true);
     setErrorMessage(null);
 
-    const isPrompt = flowMode === 'prompt_first';
-    const payload: JobCreatePayload = isPrompt
-      ? {
-          avatar_preset_id: avatarPresetId || 'avatar_default',
-          voice_preset_id: voicePresetId || 'voice_piper_lessac',
-          script: script.trim(),
-          prompt: ideaText.trim() || prompt.trim() || 'Warm cinematic light, soft watercolor texture',
-          duration_preset: durationPreset,
-          target_duration_seconds: targetSeconds,
-          consent,
-        }
-      : {
-          photo_asset_id: photoAssetId || DEFAULT_PHOTO_ASSET_ID,
-          voice_asset_id: voiceAssetId || DEFAULT_VOICE_ASSET_ID,
-          script: script.trim(),
-          prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
-          duration_preset: durationPreset,
-          target_duration_seconds: targetSeconds,
-          consent,
-        };
+    let payload: JobCreatePayload;
+
+    if (flowMode === 'prompt_first') {
+      payload = {
+        visual_mode: visualMode,
+        image_style: imageStyle,
+        avatar_preset_id: visualMode === 'talking_head' ? (avatarPresetId || 'avatar_default') : undefined,
+        voice_preset_id: voicePresetId || 'voice_piper_lessac',
+        script: script.trim(),
+        prompt: ideaText.trim() || prompt.trim() || 'Warm cinematic light, soft watercolor texture',
+        duration_preset: durationPreset,
+        target_duration_seconds: targetSeconds,
+        burn_subtitles: burnSubtitles,
+        consent,
+      };
+    } else if (flowMode === 'images_audio') {
+      payload = {
+        visual_mode: preferLipSync ? 'talking_head' : 'slideshow',
+        uploaded_image_asset_ids: uploadedImages.map((img) => img.assetId),
+        image_durations: uploadedImages.map((img) => img.duration),
+        uploaded_audio_asset_id: audioAssetId || undefined,
+        prefer_lip_sync: preferLipSync,
+        burn_subtitles: burnSubtitles,
+        bg_music_asset_id: bgMusicAssetId || undefined,
+        bg_music_volume: bgMusicVolume,
+        script: script.trim() || undefined,
+        consent,
+      };
+    } else {
+      payload = {
+        visual_mode: 'talking_head',
+        photo_asset_id: photoAssetId || DEFAULT_PHOTO_ASSET_ID,
+        voice_asset_id: voiceAssetId || DEFAULT_VOICE_ASSET_ID,
+        script: script.trim(),
+        prompt: prompt.trim() || 'Warm cinematic light, soft watercolor texture',
+        duration_preset: durationPreset,
+        target_duration_seconds: targetSeconds,
+        consent,
+      };
+    }
 
     try {
       const res = await apiClient.createJob(payload);
@@ -195,6 +237,7 @@ export const App: React.FC = () => {
             {currentStep === 'choice' && (
               <ChoiceStep
                 onSelectPromptFlow={handleSelectPromptFlow}
+                onSelectImagesAudioFlow={handleSelectImagesAudioFlow}
                 onSelectCustomMediaFlow={handleSelectCustomMediaFlow}
                 onBack={() => changeStep('hero')}
               />
@@ -232,6 +275,40 @@ export const App: React.FC = () => {
               />
             )}
 
+            {currentStep === 'images_audio' && (
+              <ImagesAudioStep
+                initialImages={uploadedImages}
+                initialAudioId={audioAssetId}
+                initialAudioDuration={audioDuration}
+                initialScript={script}
+                initialPreferLipSync={preferLipSync}
+                initialBurnSubtitles={burnSubtitles}
+                initialBgMusicId={bgMusicAssetId}
+                initialBgMusicVolume={bgMusicVolume}
+                onNext={({
+                  images,
+                  audioAssetId: aId,
+                  audioDuration: aDur,
+                  script: sText,
+                  preferLipSync: pls,
+                  burnSubtitles: bs,
+                  bgMusicAssetId: bgId,
+                  bgMusicVolume: bgVol,
+                }) => {
+                  setUploadedImages(images);
+                  if (aId) setAudioAssetId(aId);
+                  if (aDur) setAudioDuration(aDur);
+                  if (sText) setScript(sText);
+                  setPreferLipSync(pls);
+                  setBurnSubtitles(bs);
+                  if (bgId) setBgMusicAssetId(bgId);
+                  setBgMusicVolume(bgVol);
+                  changeStep('consent');
+                }}
+                onBack={() => changeStep('choice')}
+              />
+            )}
+
             {currentStep === 'duration' && (
               <DurationStep
                 selectedPreset={durationPreset}
@@ -246,11 +323,15 @@ export const App: React.FC = () => {
 
             {currentStep === 'look_voice' && (
               <LookVoiceStep
+                initialVisualMode={visualMode}
+                initialImageStyle={imageStyle}
                 initialAvatarId={avatarPresetId}
                 initialVoiceId={voicePresetId}
-                onNext={(avatarId, voiceId) => {
+                onNext={(avatarId, voiceId, nextMode, nextStyle) => {
                   setAvatarPresetId(avatarId);
                   setVoicePresetId(voiceId);
+                  if (nextMode) setVisualMode(nextMode);
+                  if (nextStyle) setImageStyle(nextStyle);
                   changeStep('script');
                 }}
                 onBack={() => changeStep('duration')}
@@ -268,6 +349,8 @@ export const App: React.FC = () => {
                 ideaText={ideaText}
                 tone={tone}
                 isPromptPath={flowMode === 'prompt_first'}
+                initialScriptSource={scriptSource}
+                onScriptSourceChange={(src) => setScriptSource(src)}
                 onNext={() => changeStep('consent')}
                 onBack={() => changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration')}
               />
@@ -276,7 +359,7 @@ export const App: React.FC = () => {
             {currentStep === 'consent' && (
               <ConsentStep
                 onSubmitJob={handleCreateJob}
-                onBack={() => changeStep('script')}
+                onBack={() => changeStep(flowMode === 'images_audio' ? 'images_audio' : 'script')}
                 submitting={submitting}
                 error={errorMessage}
                 isPromptPath={flowMode === 'prompt_first'}
@@ -289,6 +372,14 @@ export const App: React.FC = () => {
                 onCompleted={(job) => {
                   setCompletedJob(job);
                   changeStep('premiere');
+                }}
+                onCancelled={(job) => {
+                  setActiveJobId(null);
+                  setFailedJob(job);
+                  try {
+                    localStorage.removeItem('memory_studio_active_job_id');
+                  } catch {}
+                  changeStep('choice');
                 }}
                 onFailed={(job) => {
                   setFailedJob(job);

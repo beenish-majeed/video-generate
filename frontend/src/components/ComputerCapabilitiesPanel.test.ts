@@ -1,6 +1,6 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ComputerCapabilitiesPanel } from './ComputerCapabilitiesPanel';
 
 describe('ComputerCapabilitiesPanel', () => {

@@ -21,7 +21,6 @@ import {
   Music,
   Check,
   AlertCircle,
-  FileText,
 } from 'lucide-react';
 
 export interface UploadedImageItem {
@@ -258,7 +257,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       setMappedError({
         title: 'Microphone Permission Needed',
         message: 'Could not access microphone. Please allow microphone permissions or upload an audio file.',
-        kind: 'hardware_permission',
+        kind: 'validation',
       });
     }
   };

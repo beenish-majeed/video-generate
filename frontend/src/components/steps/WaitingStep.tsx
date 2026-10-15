@@ -14,8 +14,7 @@ import {
 } from '../Doodles';
 import Tape from '../Tape';
 import Sticker from '../Sticker';
-import { motion, useReducedMotion } from 'framer-motion';
-import { Loader2, Film, Clock, WifiOff, XCircle } from 'lucide-react';
+import { Loader2, Clock, WifiOff, XCircle } from 'lucide-react';
 
 interface WaitingStepProps {
   jobId: string;
@@ -35,8 +34,6 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
   const [connectionLost, setConnectionLost] = useState<boolean>(false);
   const [cancelling, setCancelling] = useState<boolean>(false);
   const [isCancelled, setIsCancelled] = useState<boolean>(false);
-
-  const shouldReduceMotion = useReducedMotion();
 
   // Real-time elapsed time counter (seconds)
   useEffect(() => {

@@ -167,4 +167,90 @@ describe('End-to-End Happy Path Workflow (Mocked Backend API)', () => {
     });
     expect(createRes.job_id).toBe('job-prompt-456');
   });
+
+  it('executes full images+audio journey: image uploads -> audio upload -> job creation -> job cancellation', async () => {
+    // 1. Upload multiple image assets
+    const img1Res: AssetUploadResponse = {
+      asset_id: 'image_1',
+      kind: 'image',
+      filename: 'photo1.jpg',
+      mime_type: 'image/jpeg',
+      size_bytes: 1024,
+      path: '/storage/assets/image_1.jpg',
+      sha256: 'hash-img1',
+      faces_detected: 1,
+    };
+    const img2Res: AssetUploadResponse = {
+      asset_id: 'image_2',
+      kind: 'image',
+      filename: 'photo2.jpg',
+      mime_type: 'image/jpeg',
+      size_bytes: 1024,
+      path: '/storage/assets/image_2.jpg',
+      sha256: 'hash-img2',
+      faces_detected: 0,
+    };
+    const audioRes: AssetUploadResponse = {
+      asset_id: 'audio_1',
+      kind: 'audio',
+      filename: 'narrative.wav',
+      mime_type: 'audio/wav',
+      size_bytes: 4096,
+      path: '/storage/assets/audio_1.wav',
+      sha256: 'hash-aud1',
+    };
+
+    vi.spyOn(apiClient, 'uploadAsset')
+      .mockResolvedValueOnce(img1Res)
+      .mockResolvedValueOnce(img2Res)
+      .mockResolvedValueOnce(audioRes);
+
+    const uploaded1 = await apiClient.uploadAsset('image', {} as any);
+    const uploaded2 = await apiClient.uploadAsset('image', {} as any);
+    const uploadedAudio = await apiClient.uploadAsset('audio', {} as any);
+
+    expect(uploaded1.faces_detected).toBe(1);
+    expect(uploaded2.faces_detected).toBe(0);
+
+    // 2. Submit Images + Audio Job
+    const mockCreatedJob: JobRecord = {
+      job_id: 'job-images-audio-101',
+      state: 'RECEIVED',
+      status: 'RECEIVED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    vi.spyOn(apiClient, 'createJob').mockResolvedValue(mockCreatedJob);
+
+    const created = await apiClient.createJob({
+      visual_mode: 'slideshow',
+      uploaded_image_asset_ids: [uploaded1.asset_id, uploaded2.asset_id],
+      image_durations: [3.5, 4.0],
+      uploaded_audio_asset_id: uploadedAudio.asset_id,
+      prefer_lip_sync: true,
+      burn_subtitles: true,
+      consent: {
+        authorized: true,
+        statement: 'Consent confirmed.',
+        face_rights_attested: true,
+        voice_rights_attested: true,
+      },
+    });
+
+    expect(created.job_id).toBe('job-images-audio-101');
+
+    // 3. Cancel Job while in progress
+    const mockCancelledJob: JobRecord = {
+      job_id: 'job-images-audio-101',
+      state: 'CANCELLED',
+      status: 'CANCELLED',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    vi.spyOn(apiClient, 'cancelJob').mockResolvedValue(mockCancelledJob);
+
+    const cancelled = await apiClient.cancelJob('job-images-audio-101');
+    expect(cancelled.state).toBe('CANCELLED');
+    expect(isTerminalState(cancelled.state)).toBe(true);
+  });
 });
