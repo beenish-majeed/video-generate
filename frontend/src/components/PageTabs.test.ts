@@ -57,6 +57,23 @@ describe('Path-Based Step List Unit Tests', () => {
     ]);
   });
 
+  it('3. Images + Audio path (images_audio): returns 4 steps (Photos & Voice, Consent, Creating, Premiere)', () => {
+    const steps = getStepListForMode('images_audio');
+    expect(steps).toHaveLength(4);
+    expect(steps.map((s) => s.id)).toEqual([
+      'images_audio',
+      'consent',
+      'waiting',
+      'premiere',
+    ]);
+    expect(steps.map((s) => s.tabTitle)).toEqual([
+      '01. Photos & Audio',
+      '02. Rights & Consent',
+      '03. Studio Render',
+      '04. Final Film',
+    ]);
+  });
+
   it('3. Photo and Voice steps exist ONLY in custom_media path', () => {
     const customMediaIds = getStepListForMode('custom_media').map((s) => s.id);
     const promptFirstIds = getStepListForMode('prompt_first').map((s) => s.id);

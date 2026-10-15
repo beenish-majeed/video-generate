@@ -19,6 +19,17 @@ export interface StudioFlowState {
   prompt: string;
   ideaText?: string;
   tone?: ScriptTone;
+  visualMode?: 'slideshow' | 'talking_head';
+  imageStyle?: string;
+  uploadedImageAssetIds?: string[];
+  imageDurations?: number[];
+  uploadedAudioAssetId?: string;
+  preferLipSync?: boolean;
+  detectedFacesCount?: number;
+  autoSubtitles?: boolean;
+  burnSubtitles?: boolean;
+  bgMusicAssetId?: string;
+  bgMusicVolume?: number;
   errorMessage: string | null;
 }
 
@@ -46,6 +57,8 @@ export function transitionFlowMode(
       ...prevState,
       flowMode: 'prompt_first',
       currentStep: 'idea',
+      visualMode: prevState.visualMode || 'slideshow',
+      imageStyle: prevState.imageStyle || 'cinematic',
       avatarPresetId: prevState.avatarPresetId || DEFAULT_AVATAR_PRESET_ID,
       voicePresetId: prevState.voicePresetId || DEFAULT_VOICE_PRESET_ID,
       photoAssetId: prevState.photoAssetId || DEFAULT_PHOTO_ASSET_ID,
@@ -55,11 +68,24 @@ export function transitionFlowMode(
     };
   }
 
+  if (targetMode === 'images_audio') {
+    return {
+      ...prevState,
+      flowMode: 'images_audio',
+      currentStep: 'images_audio',
+      visualMode: 'slideshow',
+      preferLipSync: false,
+      burnSubtitles: true,
+      errorMessage: null,
+    };
+  }
+
   // Switch to custom_media mode
   return {
     ...prevState,
     flowMode: 'custom_media',
     currentStep: 'photo',
+    visualMode: 'talking_head',
     // Retain custom assets if previously uploaded, otherwise reset defaults
     photoAssetId: prevState.photoAssetId === DEFAULT_PHOTO_ASSET_ID ? '' : prevState.photoAssetId,
     voiceAssetId: prevState.voiceAssetId === DEFAULT_VOICE_ASSET_ID ? '' : prevState.voiceAssetId,
@@ -94,6 +120,16 @@ export function navigateBackStep(prevState: StudioFlowState): StudioFlowState {
     }
     if (currentStep === 'consent') {
       return { ...prevState, currentStep: 'script', errorMessage: null };
+    }
+  }
+
+  // Images + Audio path backward steps
+  if (flowMode === 'images_audio') {
+    if (currentStep === 'images_audio') {
+      return { ...prevState, currentStep: 'choice', errorMessage: null };
+    }
+    if (currentStep === 'consent') {
+      return { ...prevState, currentStep: 'images_audio', errorMessage: null };
     }
   }
 

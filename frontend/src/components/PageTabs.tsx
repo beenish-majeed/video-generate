@@ -8,6 +8,7 @@ export type JourneyStepId =
   | 'idea'
   | 'photo'
   | 'voice'
+  | 'images_audio'
   | 'duration'
   | 'look_voice'
   | 'script'
@@ -16,7 +17,7 @@ export type JourneyStepId =
   | 'premiere'
   | 'failed';
 
-export type FlowMode = 'custom_media' | 'prompt_first';
+export type FlowMode = 'custom_media' | 'prompt_first' | 'images_audio';
 
 export interface StepDefinition {
   id: JourneyStepId;
@@ -44,9 +45,18 @@ export const PROMPT_FIRST_STEPS: StepDefinition[] = [
   { id: 'premiere', label: 'Premiere', tabTitle: '07. Final Film' },
 ];
 
+export const IMAGES_AUDIO_STEPS: StepDefinition[] = [
+  { id: 'images_audio', label: 'Photos & Voice', tabTitle: '01. Photos & Audio' },
+  { id: 'consent', label: 'Consent', tabTitle: '02. Rights & Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '03. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '04. Final Film' },
+];
+
 // Helper to get step definitions for a given flow mode
 export function getStepListForMode(flowMode: FlowMode = 'custom_media'): StepDefinition[] {
-  return flowMode === 'prompt_first' ? PROMPT_FIRST_STEPS : CUSTOM_MEDIA_STEPS;
+  if (flowMode === 'prompt_first') return PROMPT_FIRST_STEPS;
+  if (flowMode === 'images_audio') return IMAGES_AUDIO_STEPS;
+  return CUSTOM_MEDIA_STEPS;
 }
 
 interface PageTabsProps {

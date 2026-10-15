@@ -167,5 +167,31 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     expect(s5.ideaText).toBe('Walk in autumn woods');
     expect(s5.script).toBe('Generated voice script');
   });
+
+  it('10. Transition to images_audio initializes flowMode and step properly', () => {
+    const nextState = transitionFlowMode(initialCustomState, 'images_audio');
+    expect(nextState.flowMode).toBe('images_audio');
+    expect(nextState.currentStep).toBe('images_audio');
+    expect(nextState.visualMode).toBe('slideshow');
+    expect(nextState.errorMessage).toBeNull();
+  });
+
+  it('11. Images + Audio back navigation: consent -> images_audio -> choice', () => {
+    const consentState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'consent',
+      flowMode: 'images_audio',
+      uploadedImageAssetIds: ['img-1', 'img-2'],
+      uploadedAudioAssetId: 'aud-1',
+    };
+
+    const s1 = navigateBackStep(consentState);
+    expect(s1.currentStep).toBe('images_audio');
+    expect(s1.uploadedImageAssetIds).toEqual(['img-1', 'img-2']);
+
+    const s2 = navigateBackStep(s1);
+    expect(s2.currentStep).toBe('choice');
+    expect(s2.uploadedImageAssetIds).toEqual(['img-1', 'img-2']);
+  });
 });
 
