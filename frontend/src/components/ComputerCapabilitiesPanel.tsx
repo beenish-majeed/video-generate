@@ -71,10 +71,10 @@ export const ComputerCapabilitiesPanel: React.FC<ComputerCapabilitiesPanelProps>
         backgroundColor: 'rgba(247, 243, 235, 0.75)',
         border: '1.5px dashed var(--paper-border)',
         borderRadius: 'var(--radius-paper)',
-        padding: '16px 18px',
+        padding: 'clamp(10px, 1.4dvh, 16px) clamp(12px, 1.5vw, 18px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: 'clamp(6px, 1dvh, 12px)',
         boxSizing: 'border-box',
         width: '100%',
       }}
