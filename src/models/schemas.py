@@ -277,8 +277,9 @@ class JobCreate(BaseModel):
     def validate_asset_sources(self) -> "JobCreate":
         has_uploads = bool(self.photo_asset_id and self.voice_asset_id)
         has_presets = bool(self.avatar_preset_id and self.voice_preset_id)
+        has_prompt_flow = bool(self.visual_mode == "slideshow" and (self.voice_preset_id or self.voice_asset_id))
 
-        if not has_uploads and not has_presets:
+        if not has_uploads and not has_presets and not has_prompt_flow:
             n_images = len(self.uploaded_image_asset_ids) if self.uploaded_image_asset_ids is not None else 0
             if n_images < 1 or n_images > 30:
                 raise ValueError(

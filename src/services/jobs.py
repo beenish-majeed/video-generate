@@ -224,7 +224,7 @@ def create_job(request: JobCreate) -> JobRecord:
     job_id = f"job_{uuid4().hex[:12]}"
 
     is_my_own = bool(request.uploaded_image_asset_ids)
-    is_preset_path = bool(request.avatar_preset_id and request.voice_preset_id)
+    is_preset_path = bool((request.avatar_preset_id or request.visual_mode == "slideshow") and request.voice_preset_id)
 
     if is_my_own:
         image_paths = []
@@ -267,10 +267,10 @@ def create_job(request: JobCreate) -> JobRecord:
 
     elif is_preset_path:
         from src.services.presets import get_avatar_file_path, get_voice_sample_path
-        photo_path = get_avatar_file_path(request.avatar_preset_id)
+        photo_path = get_avatar_file_path(request.avatar_preset_id or "avatar_default")
         voice_path = get_voice_sample_path(request.voice_preset_id)
         if photo_path is None:
-            raise ValueError(f"Avatar preset '{request.avatar_preset_id}' file not found.")
+            raise ValueError(f"Avatar preset '{request.avatar_preset_id or 'avatar_default'}' file not found.")
         if voice_path is None:
             raise ValueError(f"Voice preset '{request.voice_preset_id}' file not found.")
         explicit_dur = request.resolve_target_duration_seconds()
