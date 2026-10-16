@@ -73,12 +73,12 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: '28px 24px',
+        padding: 'clamp(12px, 1.8dvh, 24px) clamp(14px, 2vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '24px',
+        gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
-        maxWidth: '820px',
+        maxWidth: 'clamp(800px, 75vw, 1060px)',
         margin: '0 auto',
       }}
     >
@@ -104,7 +104,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             gap: '8px',
             minHeight: '44px',
             minWidth: '44px',
-            padding: '10px 18px',
+            padding: '8px 16px',
             fontSize: '15px',
             cursor: 'pointer',
           }}
@@ -117,19 +117,19 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
       </div>
 
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <p className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-terracotta)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.6dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', color: 'var(--ink-terracotta)', margin: 0 }}>
           Where every story starts...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: '30px', lineHeight: 1.2, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(22px, 2vw, 28px)', lineHeight: 1.2, margin: 0 }}>
           What is your video about?
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', lineHeight: 1.5, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13px, 1.05vw, 15px)', lineHeight: 1.45, margin: 0 }}>
           Write a thought, a memory, or an idea. Our studio writer will turn it into a tailored spoken script.
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.4dvh, 18px)' }}>
         {/* Textarea Box with Live Counter */}
         <div
           style={{
@@ -139,9 +139,9 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             backgroundColor: 'var(--paper-cream-alt)',
             border: isOverLimit ? '2px solid var(--ink-terracotta)' : '1.5px solid var(--paper-border)',
             borderRadius: 'var(--radius-paper)',
-            padding: '16px 18px',
+            padding: 'clamp(10px, 1.4dvh, 16px) clamp(12px, 1.5vw, 16px)',
             boxShadow: 'var(--shadow-card)',
-            gap: '10px',
+            gap: '8px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -149,7 +149,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
               htmlFor="idea-input"
               style={{
                 fontFamily: 'var(--font-hand)',
-                fontSize: '18px',
+                fontSize: '17px',
                 fontWeight: 'bold',
                 color: 'var(--ink-primary)',
               }}
@@ -160,7 +160,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
               id="idea-counter"
               aria-live="polite"
               style={{
-                fontSize: '13px',
+                fontSize: '12px',
                 fontFamily: 'var(--font-mono, monospace)',
                 color: isOverLimit
                   ? 'var(--ink-terracotta)'
@@ -181,21 +181,21 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             maxLength={MAX_IDEA_PROMPT_LENGTH}
             aria-describedby="idea-counter idea-examples-hint"
             placeholder="Describe the story, memory, or message you want to animate..."
-            rows={5}
+            rows={3}
             style={{
               width: '100%',
               boxSizing: 'border-box',
-              padding: '12px 14px',
+              padding: '10px 12px',
               borderRadius: '8px',
               border: '1px solid var(--paper-border)',
               backgroundColor: '#fffcf7',
               fontFamily: 'var(--font-sans)',
-              fontSize: '15px',
-              lineHeight: 1.6,
+              fontSize: '14px',
+              lineHeight: 1.5,
               color: 'var(--ink-primary)',
               resize: 'vertical',
               outline: 'none',
-              minHeight: '120px',
+              minHeight: 'clamp(72px, 10dvh, 100px)',
             }}
           />
 
@@ -207,12 +207,12 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
         </div>
 
         {/* 4 Example Chips */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={16} style={{ color: 'var(--ink-amber)' }} aria-hidden="true" />
             <span
               id="idea-examples-hint"
-              style={{ fontSize: '14px', fontFamily: 'var(--font-hand)', color: 'var(--ink-primary)' }}
+              style={{ fontSize: '13.5px', fontFamily: 'var(--font-hand)', color: 'var(--ink-primary)' }}
             >
               Or pick an idea to get started:
             </span>
@@ -222,7 +222,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: '10px',
+              gap: 'clamp(6px, 1vw, 10px)',
             }}
           >
             {EXAMPLE_CHIPS.map((chip, idx) => (
@@ -232,8 +232,8 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
                 onClick={() => handleSelectExample(chip.text)}
                 className="btn-secondary"
                 style={{
-                  padding: '8px 14px',
-                  fontSize: '13px',
+                  padding: 'clamp(6px, 1dvh, 8px) clamp(10px, 1vw, 14px)',
+                  fontSize: '12.5px',
                   borderRadius: '16px',
                   minHeight: '44px',
                   cursor: 'pointer',
@@ -252,11 +252,11 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
         </div>
 
         {/* Tone Selector */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(6px, 1dvh, 10px)' }}>
           <label
             style={{
               fontFamily: 'var(--font-hand)',
-              fontSize: '18px',
+              fontSize: '17px',
               fontWeight: 'bold',
               color: 'var(--ink-primary)',
             }}
@@ -267,8 +267,8 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-              gap: '12px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 'clamp(8px, 1.2vw, 12px)',
             }}
           >
             {TONE_OPTIONS.map((opt) => {
@@ -283,8 +283,8 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     justifyContent: 'center',
-                    padding: '12px 14px',
-                    minHeight: '52px',
+                    padding: 'clamp(8px, 1dvh, 12px) clamp(10px, 1vw, 14px)',
+                    minHeight: '44px',
                     borderRadius: '8px',
                     border: isSelected ? '2px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
                     backgroundColor: isSelected ? '#fffcf5' : 'var(--paper-cream)',
@@ -298,14 +298,14 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
                   <span
                     style={{
                       fontFamily: 'var(--font-hand)',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: 'bold',
                       color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
                     }}
                   >
                     {opt.label}
                   </span>
-                  <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>{opt.description}</span>
+                  <span style={{ fontSize: '11.5px', color: 'var(--ink-muted)' }}>{opt.description}</span>
                 </button>
               );
             })}
@@ -318,8 +318,8 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop: '8px',
-            paddingTop: '16px',
+            marginTop: '4px',
+            paddingTop: 'clamp(8px, 1.2dvh, 14px)',
             borderTop: '1px solid var(--paper-border)',
           }}
         >
@@ -327,7 +327,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             type="button"
             onClick={onBack}
             className="btn-secondary"
-            style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
+            style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
           >
             <ArrowLeft size={16} aria-hidden="true" />
             <span>Back</span>
@@ -339,7 +339,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             className="btn-terracotta"
             style={{
               minHeight: '44px',
-              padding: '12px 24px',
+              padding: '10px 22px',
               cursor: validation.isValid ? 'pointer' : 'not-allowed',
               opacity: validation.isValid ? 1 : 0.6,
               display: 'inline-flex',
