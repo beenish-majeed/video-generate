@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { HeroStep } from './HeroStep';
 
 describe('HeroStep welcome page', () => {
-  it('renders hero scene, headline, and single "Get started" button without choice cards', () => {
+  it('renders headline and single "Get started" button without choice cards', () => {
     const html = renderToStaticMarkup(
       React.createElement(HeroStep, {
         onGetStarted: () => {},
