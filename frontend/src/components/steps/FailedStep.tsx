@@ -32,19 +32,19 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
   };
 
   return (
-    <div className="step-container" style={{ padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+    <div className="step-container" style={{ padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)', display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.5dvh, 18px)', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="STUDIO NOTE" rotation="-3deg" variant="amber" />
 
       {/* Header Copy */}
       <header style={{ width: '100%' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(20px, 4vw, 24px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word', margin: 0 }}>
           Ah, a gentle bump along the creative path...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(22px, 4.5vw, 28px)', marginTop: '4px', wordBreak: 'break-word' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(20px, 2.5vw, 26px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
           {mapped.title}
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px', wordBreak: 'break-word' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px', wordBreak: 'break-word' }}>
           Don’t worry—your story text and uploaded files are safely kept in memory. You don’t have to start over.
         </p>
       </header>
@@ -54,13 +54,13 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
         role="region"
         aria-label="Error explanation card"
         style={{
-          padding: 'clamp(16px, 4vw, 24px)',
+          padding: 'clamp(12px, 1.5dvh, 18px)',
           borderRadius: '12px',
           backgroundColor: '#ffffff',
           border: '1.5px dashed var(--ink-terracotta)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '18px',
+          gap: 'clamp(10px, 1.2dvh, 14px)',
           boxShadow: 'var(--shadow-card)',
           width: '100%',
           boxSizing: 'border-box',
@@ -142,14 +142,16 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px',
-          marginTop: '8px',
+          gap: '12px',
+          marginTop: '4px',
+          paddingTop: 'clamp(8px, 1dvh, 12px)',
+          borderTop: '1px solid var(--paper-border)',
           width: '100%',
           boxSizing: 'border-box',
           flexWrap: 'wrap',
         }}
       >
-        <p className="handwritten" style={{ fontSize: 'clamp(16px, 3.5vw, 19px)', color: 'var(--ink-muted)', wordBreak: 'break-word' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(15px, 3vw, 18px)', color: 'var(--ink-muted)', wordBreak: 'break-word', margin: 0 }}>
           Let’s adjust parameters and try once more →
         </p>
 
@@ -157,7 +159,7 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
           type="button"
           onClick={handleTryAgain}
           className="btn-terracotta"
-          style={{ fontSize: '16px', padding: '12px 28px', minHeight: '44px' }}
+          style={{ fontSize: '15px', padding: '10px 22px', minHeight: '44px', cursor: 'pointer' }}
         >
           <RotateCcw size={16} />
           <span>Try Again</span>
