@@ -61,12 +61,13 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: 'clamp(10px, 1.5dvh, 16px)',
         position: 'relative',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="2.5deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
@@ -74,13 +75,13 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', margin: 0 }}>
           {isPromptPath ? 'AI Transparency & Attribution...' : 'Keeping creativity safe, honest & respectful...'}
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15 }}>
           {isPromptPath ? 'AI Generation & Transparency Consent' : 'Rights & Consent Confirmation'}
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px' }}>
           {isPromptPath
             ? 'Before we render your film, please confirm acceptance that this video is AI-generated and will display an AI transparency label.'
             : 'Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.'}
@@ -91,21 +92,21 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       <section
         aria-label={isPromptPath ? 'AI generation transparency overview' : 'What happens with your media'}
         style={{
-          padding: 'clamp(14px, 3vw, 20px)',
+          padding: 'clamp(10px, 1.2dvh, 16px) clamp(12px, 2vw, 18px)',
           borderRadius: '12px',
           backgroundColor: 'var(--paper-cream-alt)',
           border: '1px solid var(--paper-border)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '14px',
+          gap: 'clamp(6px, 1dvh, 10px)',
           boxShadow: 'var(--shadow-card)',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Info size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
-          <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
+          <Info size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
+          <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '16.5px', color: 'var(--ink-primary)', margin: 0 }}>
             {isPromptPath ? 'AI Generation Details' : 'What Happens with Your Media'}
           </h3>
         </div>
@@ -178,13 +179,13 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       </section>
 
       {/* Active Acceptance Form (No Pre-checked Boxes; 44px+ Touch Targets) */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.2dvh, 14px)', width: '100%' }}>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
-            padding: 'clamp(14px, 3vw, 20px)',
+            gap: 'clamp(8px, 1dvh, 12px)',
+            padding: 'clamp(10px, 1.2dvh, 16px) clamp(12px, 2vw, 18px)',
             borderRadius: '12px',
             backgroundColor: '#ffffff',
             border: '1.5px dashed var(--paper-border)',
@@ -446,8 +447,24 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         )}
 
         {/* Responsive Navigation & Action Footer */}
-        <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-          <button type="button" onClick={onBack} disabled={submitting} className="btn-secondary">
+        <footer
+          className="step-footer"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '4px',
+            paddingTop: 'clamp(8px, 1dvh, 12px)',
+            borderTop: '1px solid var(--paper-border)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={submitting}
+            className="btn-secondary"
+            style={{ minHeight: '44px', padding: '8px 18px', cursor: submitting ? 'not-allowed' : 'pointer' }}
+          >
             <ArrowLeft size={16} />
             <span>Back</span>
           </button>
@@ -459,10 +476,11 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             aria-disabled={!isValid || submitting}
             className="btn-terracotta"
             style={{
+              minHeight: '44px',
+              padding: '10px 22px',
               opacity: !isValid || submitting ? 0.5 : 1,
               cursor: !isValid || submitting ? 'not-allowed' : 'pointer',
-              fontSize: '16px',
-              padding: '12px 24px',
+              fontSize: '15px',
             }}
           >
             {submitting ? (
