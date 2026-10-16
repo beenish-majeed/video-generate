@@ -56,22 +56,22 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     : '30s';
 
   return (
-    <div className="step-container" style={{ padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)', display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+    <div className="step-container" style={{ padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)', display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.5dvh, 18px)', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
       <Tape rotation="-3deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
       <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
 
       {/* Header Copy */}
       <header style={{ width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle2 size={24} style={{ color: 'var(--ink-sage)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: 'clamp(20px, 4vw, 24px)', color: 'var(--ink-sage)', wordBreak: 'break-word' }}>
+          <CheckCircle2 size={22} style={{ color: 'var(--ink-sage)', flexShrink: 0 }} />
+          <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--ink-sage)', wordBreak: 'break-word', margin: 0 }}>
             Your film is ready!
           </p>
         </div>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginTop: '4px', wordBreak: 'break-word' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
           Grand Premiere
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px', wordBreak: 'break-word' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px', wordBreak: 'break-word' }}>
           Here is your finished animated memory ({formattedDuration}). Press play to watch.
         </p>
       </header>
@@ -219,29 +219,34 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
       <footer
         className="step-footer"
         style={{
-          padding: 'clamp(14px, 3vw, 20px)',
+          padding: 'clamp(10px, 1.5dvh, 16px) clamp(12px, 2vw, 18px)',
           borderRadius: '12px',
           backgroundColor: 'var(--paper-cream-alt)',
           border: '1px dashed var(--paper-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px',
+          gap: '12px',
           boxShadow: 'var(--shadow-card)',
           flexWrap: 'wrap',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        <button type="button" onClick={onRestart} className="btn-secondary">
+        <button
+          type="button"
+          onClick={onRestart}
+          className="btn-secondary"
+          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+        >
           <RotateCcw size={16} />
           <span>Make another video</span>
         </button>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <DoodleSparkle size={20} />
-            <span className="handwritten" style={{ fontSize: 'clamp(15px, 3.5vw, 18px)', color: 'var(--ink-muted)', wordBreak: 'break-word' }}>
+            <DoodleSparkle size={18} />
+            <span className="handwritten" style={{ fontSize: 'clamp(14px, 3vw, 17px)', color: 'var(--ink-muted)', wordBreak: 'break-word' }}>
               MP4 Format with AI Disclosure
             </span>
           </div>
@@ -251,7 +256,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             onClick={handleDownload}
             disabled={downloading}
             className="btn-terracotta"
-            style={{ fontSize: '15px', padding: '12px 24px', minHeight: '44px' }}
+            style={{ fontSize: '15px', padding: '10px 22px', minHeight: '44px', cursor: downloading ? 'not-allowed' : 'pointer' }}
           >
             {downloading ? (
               <>
