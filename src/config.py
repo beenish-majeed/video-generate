@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     ollama_url: str = "http://127.0.0.1:11434"
     llm_timeout_seconds: float = 60.0
 
-    tts_provider: str = "cosyvoice"
+    tts_provider: str = "piper"
     cosyvoice_model_path: str = "models/cosyvoice/CosyVoice2-0.5B"
 
     # Image Provider Configs
