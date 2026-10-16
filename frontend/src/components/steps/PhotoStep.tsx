@@ -124,12 +124,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)',
+        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: 'clamp(10px, 1.5dvh, 16px)',
         position: 'relative',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="2deg" style={{ position: 'absolute', top: '12px', right: '40px' }} />
@@ -137,13 +138,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', margin: 0 }}>
           First, let’s choose the main character...
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15 }}>
           Upload your portrait photograph
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px' }}>
           Choose a clear, front-facing photo. Our studio engine will bring its expressions to life.
         </p>
       </header>
@@ -152,16 +153,16 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       <div role="region" aria-label="Photo upload workspace" style={{ width: '100%' }}>
         {previewUrl ? (
           /* Taped Polaroid Presentation - Centered & Fluid Scaling */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
             <div
               style={{
                 position: 'relative',
-                padding: '10px 10px 30px 10px',
+                padding: 'clamp(8px, 1dvh, 10px) clamp(8px, 1dvh, 10px) clamp(18px, 2.5dvh, 26px) clamp(8px, 1dvh, 10px)',
                 backgroundColor: '#ffffff',
                 borderRadius: '4px',
                 boxShadow: 'var(--shadow-notebook)',
                 transform: 'rotate(-2deg)',
-                maxWidth: 'clamp(210px, 55vw, 280px)',
+                maxWidth: 'clamp(180px, 40vw, 250px)',
                 width: '100%',
                 margin: '0 auto',
                 border: '1px solid var(--paper-border)',
@@ -175,7 +176,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 alt={fileName ? `Uploaded portrait photo: ${fileName}` : 'Uploaded portrait photo'}
                 style={{
                   width: '100%',
-                  height: 'clamp(170px, 45vw, 230px)',
+                  height: 'clamp(140px, 30vw, 200px)',
                   objectFit: 'cover',
                   borderRadius: '2px',
                   backgroundColor: 'var(--paper-cream-alt)',
@@ -258,7 +259,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             aria-label="Upload portrait photo dropzone. Click or drag and drop an image file here."
             style={{
               position: 'relative',
-              padding: 'clamp(24px, 5vw, 36px) clamp(16px, 4vw, 24px)',
+              padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 3vw, 24px)',
               borderRadius: '12px',
               backgroundColor: dragActive ? 'var(--paper-cream-dark)' : 'var(--paper-cream-alt)',
               border: dragActive ? '2.5px dashed var(--ink-terracotta)' : '2px dashed var(--paper-border)',
@@ -266,9 +267,10 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '16px',
-              minHeight: 'clamp(200px, 35vh, 260px)',
+              gap: 'clamp(8px, 1.2dvh, 14px)',
+              minHeight: 'clamp(140px, 22vh, 220px)',
               width: '100%',
+              boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -333,8 +335,23 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       )}
 
       {/* Navigation Footer */}
-      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <button type="button" onClick={onBack} className="btn-secondary">
+      <footer
+        className="step-footer"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '4px',
+          paddingTop: 'clamp(8px, 1dvh, 12px)',
+          borderTop: '1px solid var(--paper-border)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="btn-secondary"
+          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+        >
           <ArrowLeft size={16} />
           <span>Back</span>
         </button>
@@ -345,6 +362,8 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           disabled={!selectedAssetId || uploading}
           className="btn-terracotta"
           style={{
+            minHeight: '44px',
+            padding: '10px 22px',
             opacity: !selectedAssetId || uploading ? 0.5 : 1,
             cursor: !selectedAssetId || uploading ? 'not-allowed' : 'pointer',
           }}
