@@ -354,13 +354,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: '24px 20px',
+        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '22px',
+        gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
         maxWidth: '920px',
         margin: '0 auto',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="1.5deg" style={{ position: 'absolute', top: '10px', right: '32px' }} />
@@ -385,8 +386,8 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             gap: '8px',
             minHeight: '44px',
             minWidth: '44px',
-            padding: '10px 18px',
-            fontSize: '15px',
+            padding: '8px 16px',
+            fontSize: '14.5px',
             cursor: 'pointer',
           }}
         >
@@ -398,14 +399,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       </div>
 
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <p className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-sage)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--ink-sage)', margin: 0 }}>
           Bring your own moments...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: '28px', lineHeight: 1.2, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15, margin: 0 }}>
           Photos, Voice &amp; Music
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', lineHeight: 1.5, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', lineHeight: 1.4, margin: 0 }}>
           Upload 1 to 30 photos, arrange their order, adjust pacing, and pair with your voice or spoken narration.
         </p>
       </header>
@@ -417,12 +418,12 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '12px 16px',
+            padding: '10px 14px',
             borderRadius: '8px',
             backgroundColor: '#fff4f2',
             border: '1px solid var(--ink-terracotta)',
             color: 'var(--ink-terracotta)',
-            fontSize: '14px',
+            fontSize: '13.5px',
           }}
         >
           <AlertCircle size={18} flex-shrink={0} />
@@ -433,13 +434,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       )}
 
       {/* SECTION 1: Multi-Image Upload & Polaroid Sequence */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(6px, 1dvh, 10px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <h2
               style={{
                 fontFamily: 'var(--font-hand)',
-                fontSize: '20px',
+                fontSize: '18px',
                 fontWeight: 'bold',
                 color: 'var(--ink-primary)',
                 margin: 0,
@@ -447,7 +448,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             >
               1. Your Photos ({images.length}/30)
             </h2>
-            <span style={{ fontSize: '12.5px', color: 'var(--ink-muted)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
               Reorder sequence with left/right buttons and set per-image duration (min 2.0s).
             </span>
           </div>
@@ -971,13 +972,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       </div>
 
       {/* Navigation Buttons */}
-      <div
+      <footer
+        className="step-footer"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '6px',
-          paddingTop: '16px',
+          marginTop: '4px',
+          paddingTop: 'clamp(8px, 1dvh, 14px)',
           borderTop: '1px solid var(--paper-border)',
         }}
       >
@@ -985,7 +987,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           type="button"
           onClick={onBack}
           className="btn-secondary"
-          style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
+          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
@@ -997,7 +999,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           className="btn-terracotta"
           style={{
             minHeight: '44px',
-            padding: '12px 24px',
+            padding: '10px 22px',
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
@@ -1007,7 +1009,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           <span>Continue to Consent</span>
           <ArrowRight size={18} aria-hidden="true" />
         </button>
-      </div>
+      </footer>
     </div>
   );
 };
