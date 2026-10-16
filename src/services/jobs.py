@@ -242,10 +242,16 @@ def create_job(request: JobCreate) -> JobRecord:
             audio_dur = probe_duration(voice_path)
             explicit_dur = audio_dur
             if request.image_durations:
-                if abs(sum(request.image_durations) - audio_dur) > 0.5:
+                diff = abs(sum(request.image_durations) - audio_dur)
+                if diff > 1.0:
                     raise ValueError(
                         f"Image durations sum ({sum(request.image_durations):.2f}s) must match audio length ({audio_dur:.2f}s)."
                     )
+                elif diff > 0.001:
+                    request.image_durations[-1] += (audio_dur - sum(request.image_durations))
+            else:
+                n_imgs = len(image_paths)
+                request.image_durations = [audio_dur / n_imgs] * n_imgs
         else:
             from src.services.presets import get_allowed_voice_preset_ids, get_voice_sample_path
             if request.voice_preset_id:

@@ -162,7 +162,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
 
       if (newItems.length > 0) {
         playStickerPopSound();
-        setImages((prev) => [...prev, ...newItems]);
+        setImages((prev) => {
+          const combined = [...prev, ...newItems];
+          if (audioDuration > 0 && combined.length > 0) {
+            const perImg = Math.max(2.0, Math.round((audioDuration / combined.length) * 10) / 10);
+            return combined.map((img) => ({ ...img, duration: perImg }));
+          }
+          return combined;
+        });
       }
     } catch (err: unknown) {
       setMappedError(mapAPIError(err));
@@ -219,6 +226,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       const res = await apiClient.uploadAsset('audio', file);
       playStickerPopSound();
       setAudioAssetId(res.asset_id);
+      const effectiveAudioDur = res.duration_seconds || (audioEl.duration && !isNaN(audioEl.duration) ? Math.round(audioEl.duration * 10) / 10 : 30.0);
+      setAudioDuration(effectiveAudioDur);
+      setImages((prev) => {
+        if (prev.length === 0) return prev;
+        const perImg = Math.max(2.0, Math.round((effectiveAudioDur / prev.length) * 10) / 10);
+        return prev.map((img) => ({ ...img, duration: perImg }));
+      });
     } catch (err: unknown) {
       setMappedError(mapAPIError(err));
     } finally {
@@ -311,8 +325,21 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       return;
     }
 
+    const finalImages = images.map((img) => ({ ...img }));
+    if (audioDuration > 0 && finalImages.length > 0) {
+      const curSum = finalImages.reduce((acc, img) => acc + img.duration, 0);
+      if (Math.abs(curSum - audioDuration) > 0.5) {
+        const perImg = Math.max(2.0, Math.round((audioDuration / finalImages.length) * 10) / 10);
+        finalImages.forEach((img) => {
+          img.duration = perImg;
+        });
+        const roundedSum = perImg * (finalImages.length - 1);
+        finalImages[finalImages.length - 1].duration = Math.max(2.0, Math.round((audioDuration - roundedSum) * 10) / 10);
+      }
+    }
+
     onNext({
-      images,
+      images: finalImages,
       audioAssetId: audioAssetId || undefined,
       audioDuration: audioDuration || undefined,
       script: scriptText.trim() || undefined,

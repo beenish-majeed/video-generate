@@ -28,6 +28,7 @@ export interface AssetUploadResponse {
   path: string;
   sha256: string;
   faces_detected?: number;
+  duration_seconds?: number;
 }
 
 export interface AvatarPreset {

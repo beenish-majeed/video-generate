@@ -145,6 +145,13 @@ def save_upload(file: UploadFile, kind: str) -> dict:
         except Exception:
             ret["faces_detected"] = 0
 
+    if kind in {"voice", "audio"}:
+        try:
+            from src.utils.ffmpeg import probe_duration
+            ret["duration_seconds"] = round(probe_duration(path), 2)
+        except Exception:
+            pass
+
     return ret
 
 
