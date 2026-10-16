@@ -196,10 +196,10 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(20px, 4vw, 32px) clamp(14px, 3vw, 24px)',
+        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '24px',
+        gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
         width: '100%',
         boxSizing: 'border-box',
@@ -257,9 +257,10 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <p
           className="handwritten"
           style={{
-            fontSize: 'clamp(20px, 4vw, 24px)',
+            fontSize: 'clamp(16px, 1.8vw, 20px)',
             color: 'var(--ink-terracotta)',
             wordBreak: 'break-word',
+            margin: 0,
           }}
         >
           {isCancelled ? 'Render cancelled' : 'Please take a gentle breath while we craft...'}
@@ -267,8 +268,9 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <h2
           className="editorial-title"
           style={{
-            fontSize: 'clamp(22px, 4.5vw, 28px)',
-            marginTop: '4px',
+            fontSize: 'clamp(20px, 2.5vw, 26px)',
+            marginTop: '2px',
+            lineHeight: 1.15,
             wordBreak: 'break-word',
           }}
         >
@@ -277,8 +279,8 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <p
           style={{
             color: 'var(--ink-muted)',
-            fontSize: '15px',
-            marginTop: '4px',
+            fontSize: '13.5px',
+            marginTop: '2px',
             wordBreak: 'break-word',
           }}
         >
@@ -348,7 +350,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               )
             }
             className="btn-terracotta"
-            style={{ marginTop: '10px', padding: '10px 22px', cursor: 'pointer' }}
+            style={{ marginTop: '10px', padding: '10px 22px', minHeight: '44px', cursor: 'pointer' }}
           >
             Start a new creation
           </button>
@@ -361,11 +363,11 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             backgroundColor: 'var(--paper-cream)',
             border: '1.5px solid var(--paper-border)',
             borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(24px, 4vw, 36px) clamp(16px, 3vw, 28px)',
+            padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 2.5vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '20px',
+            gap: 'clamp(10px, 1.5dvh, 18px)',
             boxShadow: 'var(--shadow-card)',
             width: '100%',
             boxSizing: 'border-box',
@@ -536,7 +538,8 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '13.5px',
-                padding: '7px 16px',
+                padding: '8px 18px',
+                minHeight: '44px',
                 color: 'var(--ink-terracotta)',
                 cursor: cancelling ? 'default' : 'pointer',
                 opacity: cancelling ? 0.7 : 1,
