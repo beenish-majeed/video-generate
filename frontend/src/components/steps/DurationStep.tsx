@@ -66,37 +66,40 @@ export const DurationStep: React.FC<DurationStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        padding: 'clamp(10px, 1.6dvh, 20px) clamp(14px, 2vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: 'clamp(10px, 1.4dvh, 18px)',
         position: 'relative',
+        maxWidth: 'clamp(800px, 75vw, 1060px)',
+        margin: '0 auto',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="1.8deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
       <Sticker label="HOW LONG SHOULD IT BE?" rotation="-3deg" variant="amber" />
 
       {/* Header Copy */}
-      <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.6dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', margin: 0 }}>
           Setting the rhythm & pacing...
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(22px, 2vw, 28px)', lineHeight: 1.2, margin: 0 }}>
           Select video duration
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13px, 1.05vw, 15px)', lineHeight: 1.45, margin: 0 }}>
           How long should your animated film be? We load options dynamically from the studio backend.
         </p>
       </header>
 
       {/* Main Interactive Preset Selection - Fluid Grid (1 col phone, 2 col tablet, 3-4 col desktop) */}
-      <div role="region" aria-label="Duration preset selection" style={{ minHeight: '180px', width: '100%' }}>
+      <div role="region" aria-label="Duration preset selection" style={{ width: '100%' }}>
         {loading ? (
           /* Loading State */
           <div
             style={{
-              padding: '40px 24px',
+              padding: '30px 20px',
               borderRadius: '12px',
               backgroundColor: 'var(--paper-cream-alt)',
               border: '2px dashed var(--paper-border)',
@@ -104,13 +107,13 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
+              gap: '10px',
               color: 'var(--ink-terracotta)',
               width: '100%',
             }}
           >
-            <Loader2 size={32} className="animate-spin" />
-            <p className="handwritten" style={{ fontSize: '20px' }}>
+            <Loader2 size={28} className="animate-spin" />
+            <p className="handwritten" style={{ fontSize: '18px' }}>
               Fetching duration options from the studio...
             </p>
           </div>
@@ -119,29 +122,29 @@ export const DurationStep: React.FC<DurationStepProps> = ({
           <div
             role="alert"
             style={{
-              padding: '24px',
+              padding: '18px',
               borderRadius: '12px',
               backgroundColor: '#fff',
               border: '1.5px dashed var(--ink-terracotta)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '16px',
+              gap: '12px',
               textAlign: 'center',
               boxShadow: 'var(--shadow-card)',
               width: '100%',
             }}
           >
-            <AlertCircle size={32} style={{ color: 'var(--ink-terracotta)' }} />
+            <AlertCircle size={28} style={{ color: 'var(--ink-terracotta)' }} />
             <div>
-              <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '18px', color: 'var(--ink-primary)' }}>
+              <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
                 {error.title}
               </h4>
-              <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '4px', maxWidth: '460px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', maxWidth: '460px' }}>
                 {error.message}
               </p>
             </div>
-            <button type="button" onClick={fetchDurations} className="btn-secondary" style={{ fontSize: '14px' }}>
+            <button type="button" onClick={fetchDurations} className="btn-secondary" style={{ fontSize: '14px', minHeight: '44px' }}>
               <RefreshCw size={14} />
               <span>Retry loading durations</span>
             </button>
@@ -169,7 +172,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                   aria-pressed={isSelected}
                   style={{
                     position: 'relative',
-                    padding: '18px 12px',
+                    padding: 'clamp(10px, 1.4dvh, 16px) clamp(8px, 1vw, 12px)',
                     borderRadius: '12px',
                     backgroundColor: isSelected ? '#ffffff' : 'var(--paper-cream-alt)',
                     border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1.5px solid var(--paper-border)',
@@ -179,11 +182,12 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '6px',
+                    gap: '4px',
                     boxShadow: isSelected ? 'var(--shadow-paper-float)' : 'var(--shadow-card)',
                     transform: `rotate(${tilt}deg)`,
                     height: '100%',
                     width: '100%',
+                    minHeight: '44px',
                   }}
                 >
                   {/* Selected Badge Sticker */}
@@ -208,17 +212,17 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     </div>
                   )}
 
-                  <Clock size={22} style={{ color: isSelected ? 'var(--ink-terracotta)' : '#524b42' }} />
+                  <Clock size={20} style={{ color: isSelected ? 'var(--ink-terracotta)' : '#524b42' }} />
 
-                  <span style={{ fontWeight: 'bold', fontSize: '18px', fontFamily: 'var(--font-serif)', marginTop: '2px' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '17px', fontFamily: 'var(--font-serif)', marginTop: '2px' }}>
                     {preset.label}
                   </span>
 
-                  <span className="handwritten" style={{ fontSize: '16px', color: '#4e473f' }}>
+                  <span className="handwritten" style={{ fontSize: '15px', color: '#4e473f' }}>
                     {preset.seconds}s length
                   </span>
 
-                  <span style={{ fontSize: '11px', color: '#4e473f', marginTop: '4px', fontStyle: 'italic', textAlign: 'center' }}>
+                  <span style={{ fontSize: '11px', color: '#4e473f', marginTop: '2px', fontStyle: 'italic', textAlign: 'center' }}>
                     {formatEstimatedRenderTime(preset.seconds)}
                   </span>
                 </motion.button>
@@ -231,49 +235,49 @@ export const DurationStep: React.FC<DurationStepProps> = ({
       {/* Kind Note about Render Time & Pacing - Wraps Text Cleanly without Overflow */}
       <section
         style={{
-          padding: 'clamp(14px, 3vw, 20px)',
+          padding: 'clamp(10px, 1.4dvh, 16px) clamp(12px, 2vw, 18px)',
           borderRadius: '12px',
           backgroundColor: '#ffffff',
           border: '1px dashed var(--paper-border)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
+          gap: 'clamp(6px, 1dvh, 10px)',
           boxShadow: 'var(--shadow-card)',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <Hourglass size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+          <Hourglass size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: 'var(--ink-primary)', margin: 0 }}>
               A Kind Note on Studio Render Time
             </h3>
-            <p style={{ fontSize: '14px', color: '#4e473f', marginTop: '4px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4, margin: 0 }}>
               Longer videos take longer to craft carefully: rendering takes about <strong>3.7 times</strong> the video length.
               For instance, a 5-minute video takes about 18 minutes to render completely.
             </p>
           </div>
         </div>
 
-        <div style={{ height: '1px', backgroundColor: 'var(--paper-border)', margin: '2px 0' }} />
+        <div style={{ height: '1px', backgroundColor: 'var(--paper-border)', margin: '1px 0' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <Sparkles size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: '18px', color: 'var(--ink-terracotta)', lineHeight: 1.3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <Sparkles size={16} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
+          <p className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-terracotta)', lineHeight: 1.2, margin: 0 }}>
             For {currentOption.label} ({currentOption.seconds}s), aim for ~{approxWords} spoken words (at {wpm} words/min rate).
           </p>
         </div>
       </section>
 
       {/* Navigation Footer */}
-      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <button type="button" onClick={onBack} className="btn-secondary">
+      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+        <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '8px 18px' }}>
           <ArrowLeft size={16} />
           <span>Back</span>
         </button>
 
-        <button type="button" onClick={onNext} className="btn-terracotta">
+        <button type="button" onClick={onNext} className="btn-terracotta" style={{ minHeight: '44px', padding: '10px 22px' }}>
           <span>Continue to Script</span>
           <ArrowRight size={16} />
         </button>
