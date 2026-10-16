@@ -452,12 +452,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(20px, 4vw, 32px) clamp(12px, 3vw, 24px)',
+        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
+        gap: 'clamp(10px, 1.5dvh, 16px)',
         position: 'relative',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="-1.5deg" style={{ position: 'absolute', top: '10px', right: '50px' }} />
@@ -465,13 +466,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
       {/* Header Copy */}
       <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 2vw + 12px, 22px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', margin: 0 }}>
           Now, let’s give your story a voice...
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '4px' }}>
+        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15 }}>
           Provide a voice sample
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '15px', marginTop: '4px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px' }}>
           Upload an existing audio recording or speak directly into your microphone (3 to 60 seconds).
         </p>
       </header>
@@ -483,13 +484,14 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
-            gap: '8px',
+            gap: '6px',
             backgroundColor: 'var(--paper-cream-alt)',
-            padding: '6px',
+            padding: '4px',
             borderRadius: '10px',
             border: '1px solid var(--paper-border)',
             width: '100%',
             maxWidth: '440px',
+            boxSizing: 'border-box',
           }}
         >
           <button
@@ -497,15 +499,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onClick={() => handleSwitchMode('upload')}
             className="handwritten"
             style={{
-              flex: '1 1 140px',
+              flex: '1 1 130px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 14px',
-              minHeight: '44px',
+              padding: '6px 12px',
+              minHeight: '40px',
               borderRadius: '8px',
-              fontSize: '17px',
+              fontSize: '15.5px',
               border: voiceMode === 'upload' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
               backgroundColor: voiceMode === 'upload' ? 'var(--paper-cream)' : 'transparent',
               color: voiceMode === 'upload' ? 'var(--ink-terracotta)' : '#524b42',
@@ -515,7 +517,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            <Upload size={16} />
+            <Upload size={15} />
             <span>Upload a file</span>
           </button>
 
@@ -524,15 +526,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onClick={() => handleSwitchMode('record')}
             className="handwritten"
             style={{
-              flex: '1 1 140px',
+              flex: '1 1 130px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 14px',
-              minHeight: '44px',
+              padding: '6px 12px',
+              minHeight: '40px',
               borderRadius: '8px',
-              fontSize: '17px',
+              fontSize: '15.5px',
               border: voiceMode === 'record' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
               backgroundColor: voiceMode === 'record' ? 'var(--paper-cream)' : 'transparent',
               color: voiceMode === 'record' ? 'var(--ink-terracotta)' : '#524b42',
@@ -542,7 +544,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            <Mic size={16} />
+            <Mic size={15} />
             <span>Record now</span>
           </button>
         </div>
@@ -727,7 +729,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onDrop={handleDrop}
             style={{
               position: 'relative',
-              padding: 'clamp(24px, 4vw, 36px) clamp(16px, 3vw, 24px)',
+              padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 3vw, 24px)',
               borderRadius: '12px',
               backgroundColor: dragActive ? 'var(--paper-cream-dark)' : 'var(--paper-cream-alt)',
               border: dragActive ? '2.5px dashed var(--ink-terracotta)' : '2px dashed var(--paper-border)',
@@ -735,9 +737,10 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '16px',
-              minHeight: 'clamp(200px, 35vh, 250px)',
+              gap: 'clamp(8px, 1.2dvh, 14px)',
+              minHeight: 'clamp(140px, 22vh, 220px)',
               width: '100%',
+              boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
@@ -767,7 +770,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           <div
             style={{
               position: 'relative',
-              padding: 'clamp(18px, 3vw, 28px) clamp(12px, 2.5vw, 24px)',
+              padding: 'clamp(14px, 2dvh, 24px) clamp(12px, 2.5vw, 20px)',
               borderRadius: '12px',
               backgroundColor: 'var(--paper-cream-alt)',
               border: '2px dashed var(--paper-border)',
@@ -775,8 +778,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '16px',
-              minHeight: 'clamp(220px, 35vh, 260px)',
+              gap: 'clamp(8px, 1.2dvh, 14px)',
+              minHeight: 'clamp(140px, 22vh, 220px)',
               width: '100%',
               textAlign: 'center',
               boxSizing: 'border-box',
@@ -991,8 +994,23 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       )}
 
       {/* Navigation Footer */}
-      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <button type="button" onClick={onBack} className="btn-secondary">
+      <footer
+        className="step-footer"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: '4px',
+          paddingTop: 'clamp(8px, 1dvh, 12px)',
+          borderTop: '1px solid var(--paper-border)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="btn-secondary"
+          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+        >
           <ArrowLeft size={16} />
           <span>Back</span>
         </button>
@@ -1003,6 +1021,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           disabled={!selectedAssetId || uploading}
           className="btn-terracotta"
           style={{
+            minHeight: '44px',
+            padding: '10px 22px',
             opacity: !selectedAssetId || uploading ? 0.5 : 1,
             cursor: !selectedAssetId || uploading ? 'not-allowed' : 'pointer',
           }}
