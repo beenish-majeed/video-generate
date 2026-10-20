@@ -24,52 +24,93 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
     <div
       className="step-container"
       style={{
-        padding: 'clamp(28px, 5dvh, 60px) clamp(20px, 4vw, 48px)',
+        minHeight: 'clamp(420px, 59dvh, 860px)',
+        padding: 'clamp(12px, 1.5dvh, 24px) clamp(16px, 3vw, 48px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 'clamp(20px, 3.5dvh, 36px)',
+        textAlign: 'center',
+        gap: 'clamp(18px, 3.2dvh, 48px)',
         position: 'relative',
-        maxWidth: 'min(920px, 92%)',
+        maxWidth: 'min(1400px, 94%)',
         margin: 'auto',
         width: '100%',
+        boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
-      <div style={{ alignSelf: 'flex-start' }}>
-        <Sticker label="MEMORY STUDIO" rotation="3deg" variant="terracotta" />
-      </div>
-
-      {/* Header Section */}
+      {/* Header Section with Sticker, Handwritten Lead, Title, and Body */}
       <header
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 'clamp(12px, 2dvh, 20px)',
+          gap: 'clamp(10px, 1.8dvh, 24px)',
+          alignItems: 'center',
           textAlign: 'center',
           width: '100%',
-          maxWidth: '820px',
         }}
       >
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.2vw + 10px, 28px)', color: 'var(--ink-terracotta)', margin: 0 }}>
+        {/* Centered Sticker & Tape directly above headline as part of group */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: 'clamp(4px, 0.8dvh, 10px)',
+          }}
+        >
+          <Tape
+            rotation="-2deg"
+            style={{
+              position: 'absolute',
+              top: '-12px',
+              left: '50%',
+              transform: 'translateX(-50%) rotate(-2deg)',
+            }}
+          />
+          <Sticker label="MEMORY STUDIO" rotation="2deg" variant="terracotta" />
+        </div>
+
+        <p
+          className="handwritten"
+          style={{
+            fontSize: 'clamp(18px, 1.6vw, 32px)',
+            color: 'var(--ink-terracotta)',
+            margin: 0,
+          }}
+        >
           Welcome, traveler of memories...
         </p>
         <h1
           ref={headingRef}
           tabIndex={-1}
           className="editorial-title"
-          style={{ fontSize: 'clamp(26px, 2.8vw + 8px, 48px)', lineHeight: 1.25, margin: 0, outline: 'none' }}
+          style={{
+            fontSize: 'clamp(40px, 4.2vw, 88px)',
+            lineHeight: 1.15,
+            margin: 0,
+            outline: 'none',
+            maxWidth: '1280px',
+          }}
         >
           Turn your ideas into a quiet, living video memory.
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(15px, 0.8vw + 8px, 19px)', lineHeight: 1.5, margin: 0, maxWidth: '680px', alignSelf: 'center' }}>
+        <p
+          style={{
+            color: 'var(--ink-muted)',
+            fontSize: 'clamp(16px, 1.3vw, 26px)',
+            lineHeight: 1.5,
+            margin: 0,
+            maxWidth: '960px',
+          }}
+        >
           Craft an intimate animated memory with handwritten notes and gentle sound.
         </p>
       </header>
 
       {/* Single "Get started" button */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'clamp(8px, 1.5dvh, 16px)' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'clamp(8px, 1.6dvh, 22px)' }}>
         <button
           type="button"
           onClick={onGetStarted}
@@ -78,15 +119,15 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '10px',
-            minHeight: '48px',
-            padding: 'clamp(12px, 1.5dvh, 16px) clamp(28px, 2.5vw, 42px)',
-            fontSize: 'clamp(16px, 0.8vw + 8px, 19px)',
+            gap: '12px',
+            minHeight: 'clamp(48px, 3.6vw, 72px)',
+            padding: 'clamp(12px, 1.2vw, 20px) clamp(32px, 2.8vw, 64px)',
+            fontSize: 'clamp(17px, 1.2vw, 24px)',
             cursor: 'pointer',
           }}
         >
           <span>Get started</span>
-          <ArrowRight size={18} aria-hidden="true" />
+          <ArrowRight size={22} aria-hidden="true" />
         </button>
       </div>
     </div>
