@@ -354,13 +354,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
+        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(12px, 1.8dvh, 20px)',
         position: 'relative',
-        maxWidth: 'min(1240px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
+        width: '100%',
         boxSizing: 'border-box',
       }}
     >
@@ -399,14 +400,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       </div>
 
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--ink-sage)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', margin: 0 }}>
           Bring your own moments...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15, margin: 0 }}>
           Photos, Voice &amp; Music
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', lineHeight: 1.4, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.4, margin: 0 }}>
           Upload 1 to 30 photos, arrange their order, adjust pacing, and pair with your voice or spoken narration.
         </p>
       </header>
