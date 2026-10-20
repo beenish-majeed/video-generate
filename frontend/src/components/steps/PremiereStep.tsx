@@ -53,10 +53,21 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     ? `${job.final_video_duration_seconds.toFixed(1)}s`
     : job.target_duration_seconds
     ? `${job.target_duration_seconds}s`
-    : '30s';
-
   return (
-    <div className="step-container" style={{ padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)', display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.5dvh, 18px)', position: 'relative', width: '100%', boxSizing: 'border-box' }}>
+    <div
+      className="step-container"
+      style={{
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 36px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'clamp(12px, 1.8dvh, 22px)',
+        position: 'relative',
+        maxWidth: 'min(1100px, 94%)',
+        margin: 'auto',
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
       <Tape rotation="-3deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
       <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
 
@@ -90,8 +101,12 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 'clamp(200px, 40dvh, 380px)',
+          minHeight: '220px',
+          maxHeight: 'min(480px, 50dvh)',
+          aspectRatio: '16 / 9',
           width: '100%',
+          maxWidth: '860px',
+          margin: '0 auto',
           boxSizing: 'border-box',
           border: '4px solid var(--paper-cream-alt)',
         }}
