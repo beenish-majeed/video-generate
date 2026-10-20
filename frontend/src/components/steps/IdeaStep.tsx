@@ -73,13 +73,13 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(12px, 1.8dvh, 24px) clamp(14px, 2vw, 24px)',
+        padding: 'clamp(16px, 2.5dvh, 28px) clamp(16px, 2.5vw, 36px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'clamp(800px, 75vw, 1060px)',
-        margin: '0 auto',
+        maxWidth: 'min(1100px, 94%)',
+        margin: 'auto',
       }}
     >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '28px' }} />
