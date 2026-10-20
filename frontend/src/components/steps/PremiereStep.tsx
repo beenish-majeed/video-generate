@@ -53,6 +53,8 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     ? `${job.final_video_duration_seconds.toFixed(1)}s`
     : job.target_duration_seconds
     ? `${job.target_duration_seconds}s`
+    : '30s';
+
   return (
     <div
       className="step-container"
