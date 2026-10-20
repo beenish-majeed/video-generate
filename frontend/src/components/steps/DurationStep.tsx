@@ -66,12 +66,12 @@ export const DurationStep: React.FC<DurationStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 28px) clamp(16px, 2.5vw, 36px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'min(1100px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -81,14 +81,14 @@ export const DurationStep: React.FC<DurationStepProps> = ({
       <Sticker label="HOW LONG SHOULD IT BE?" rotation="-3deg" variant="amber" />
 
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.6dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(3px, 0.6dvh, 8px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
           Setting the rhythm & pacing...
         </p>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(22px, 2vw, 28px)', lineHeight: 1.2, margin: 0 }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.2, margin: 0 }}>
           Select video duration
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13px, 1.05vw, 15px)', lineHeight: 1.45, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.45, margin: 0 }}>
           How long should your animated film be? We load options dynamically from the studio backend.
         </p>
       </header>
