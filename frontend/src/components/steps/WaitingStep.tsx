@@ -196,12 +196,12 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 36px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'min(1080px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -255,11 +255,11 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
       )}
 
       {/* Header Copy */}
-      <header style={{ width: '100%' }}>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
         <p
           className="handwritten"
           style={{
-            fontSize: 'clamp(16px, 1.8vw, 20px)',
+            fontSize: 'clamp(18px, 1.4vw, 24px)',
             color: 'var(--ink-terracotta)',
             wordBreak: 'break-word',
             margin: 0,
@@ -270,7 +270,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <h2
           className="editorial-title"
           style={{
-            fontSize: 'clamp(20px, 2.5vw, 26px)',
+            fontSize: 'clamp(24px, 2.2vw, 36px)',
             marginTop: '2px',
             lineHeight: 1.15,
             wordBreak: 'break-word',
@@ -281,7 +281,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <p
           style={{
             color: 'var(--ink-muted)',
-            fontSize: '13.5px',
+            fontSize: 'clamp(14px, 1vw, 17px)',
             marginTop: '2px',
             wordBreak: 'break-word',
           }}
