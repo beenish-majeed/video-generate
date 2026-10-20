@@ -61,11 +61,13 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
+        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 16px)',
+        gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
+        maxWidth: 'min(1160px, 94%)',
+        margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
