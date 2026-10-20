@@ -187,13 +187,13 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(12px, 1.8dvh, 24px) clamp(14px, 2vw, 24px)',
+        padding: 'clamp(16px, 3dvh, 32px) clamp(16px, 2.5vw, 36px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(12px, 2dvh, 22px)',
         position: 'relative',
-        maxWidth: 'clamp(840px, 82vw, 1180px)',
-        margin: '0 auto',
+        maxWidth: 'min(1360px, 94%)',
+        margin: 'auto',
       }}
     >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
@@ -231,19 +231,19 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
       </div>
 
       {/* Header Section */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.6dvh, 6px)', marginTop: '2px' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', color: 'var(--ink-terracotta)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 0.8dvh, 8px)', marginTop: '2px' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.2vw + 8px, 24px)', color: 'var(--ink-terracotta)', margin: 0 }}>
           Your story, your medium...
         </p>
         <h1
           ref={headingRef}
           tabIndex={-1}
           className="editorial-title"
-          style={{ fontSize: 'clamp(24px, 2.2vw, 30px)', lineHeight: 1.2, margin: 0, outline: 'none' }}
+          style={{ fontSize: 'clamp(24px, 2.2vw + 6px, 34px)', lineHeight: 1.2, margin: 0, outline: 'none' }}
         >
           How would you like to begin?
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13.5px, 1.1vw, 15px)', lineHeight: 1.45, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 0.9vw + 6px, 17px)', lineHeight: 1.45, margin: 0 }}>
           Choose your creative path below to begin crafting your personal film.
         </p>
       </header>
@@ -253,10 +253,10 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         className="choice-cards-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 'clamp(10px, 1.4vw, 18px)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 'clamp(14px, 1.8vw, 24px)',
           alignItems: 'stretch',
-          marginTop: '2px',
+          marginTop: 'clamp(4px, 1dvh, 12px)',
           width: '100%',
         }}
       >
@@ -267,11 +267,11 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             backgroundColor: 'var(--paper-cream-alt)',
             border: '1.5px solid var(--paper-border)',
             borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(14px, 1.6dvh, 20px) clamp(12px, 1.4vw, 18px)',
+            padding: 'clamp(16px, 2.2dvh, 26px) clamp(16px, 1.8vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(10px, 1.2dvh, 16px)',
+            gap: 'clamp(12px, 1.8dvh, 20px)',
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(-0.5deg)',
             boxSizing: 'border-box',
@@ -280,15 +280,15 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
           <Tape rotation="-3deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px, 1.2dvh, 14px)' }}>
               <Sticker label="TEXT TO VIDEO" variant="amber" rotation="-1deg" />
-              <DoodlePromptIdea size={40} />
+              <DoodlePromptIdea size={42} />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.5vw, 21px)', marginBottom: '4px' }}>
+            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw + 4px, 23px)', marginBottom: '6px' }}>
               Write an idea
             </h2>
-            <p style={{ fontSize: 'clamp(12.5px, 1.05vw, 14px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: 'clamp(13px, 0.8vw + 4px, 15.5px)', color: 'var(--ink-muted)', lineHeight: 1.45, margin: 0 }}>
               Type an idea, pick an animated visual style, and generate scenes with gentle camera moves.
             </p>
           </div>
@@ -301,9 +301,9 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
               marginTop: 'auto',
               justifyContent: 'center',
               width: '100%',
-              fontSize: '15px',
+              fontSize: 'clamp(14px, 0.8vw + 5px, 16px)',
               minHeight: '44px',
-              padding: 'clamp(8px, 1.2dvh, 11px) 16px',
+              padding: 'clamp(10px, 1.4dvh, 14px) 18px',
               cursor: 'pointer',
             }}
           >
@@ -319,11 +319,11 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             backgroundColor: 'var(--paper-cream-alt)',
             border: '1.5px solid var(--paper-border)',
             borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(14px, 1.6dvh, 20px) clamp(12px, 1.4vw, 18px)',
+            padding: 'clamp(16px, 2.2dvh, 26px) clamp(16px, 1.8vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(10px, 1.2dvh, 16px)',
+            gap: 'clamp(12px, 1.8dvh, 20px)',
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(0.3deg)',
             boxSizing: 'border-box',
@@ -332,15 +332,15 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
           <Tape rotation="1.5deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px, 1.2dvh, 14px)' }}>
               <Sticker label="PHOTOS &amp; AUDIO" variant="sage" rotation="1deg" />
-              <DoodleCamera size={38} color="var(--ink-sage)" />
+              <DoodleCamera size={40} color="var(--ink-sage)" />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.5vw, 21px)', marginBottom: '4px' }}>
+            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw + 4px, 23px)', marginBottom: '6px' }}>
               Use my photos and voice
             </h2>
-            <p style={{ fontSize: 'clamp(12.5px, 1.05vw, 14px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: 'clamp(13px, 0.8vw + 4px, 15.5px)', color: 'var(--ink-muted)', lineHeight: 1.45, margin: 0 }}>
               Upload 1 to 30 photos with custom timing, your voice recording, and optional face lip sync.
             </p>
           </div>
@@ -353,9 +353,9 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
               marginTop: 'auto',
               justifyContent: 'center',
               width: '100%',
-              fontSize: '15px',
+              fontSize: 'clamp(14px, 0.8vw + 5px, 16px)',
               minHeight: '44px',
-              padding: 'clamp(8px, 1.2dvh, 11px) 16px',
+              padding: 'clamp(10px, 1.4dvh, 14px) 18px',
               cursor: 'pointer',
             }}
           >
@@ -371,11 +371,11 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             backgroundColor: 'var(--paper-cream-alt)',
             border: '1.5px solid var(--paper-border)',
             borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(14px, 1.6dvh, 20px) clamp(12px, 1.4vw, 18px)',
+            padding: 'clamp(16px, 2.2dvh, 26px) clamp(16px, 1.8vw, 24px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(10px, 1.2dvh, 16px)',
+            gap: 'clamp(12px, 1.8dvh, 20px)',
             boxShadow: 'var(--shadow-card)',
             transform: 'rotate(0.6deg)',
             boxSizing: 'border-box',
@@ -384,15 +384,15 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
           <Tape rotation="2deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px, 1.2dvh, 14px)' }}>
               <Sticker label="TALKING FACE" variant="blue" rotation="-1deg" />
-              <DoodleCustomMedia size={40} />
+              <DoodleCustomMedia size={42} />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.5vw, 21px)', marginBottom: '4px' }}>
+            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw + 4px, 23px)', marginBottom: '6px' }}>
               A talking face
             </h2>
-            <p style={{ fontSize: 'clamp(12.5px, 1.05vw, 14px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: 'clamp(13px, 0.8vw + 4px, 15.5px)', color: 'var(--ink-muted)', lineHeight: 1.45, margin: 0 }}>
               Bring a single portrait photo to life with synchronized facial expressions and speech.
             </p>
           </div>
@@ -405,9 +405,9 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
               marginTop: 'auto',
               justifyContent: 'center',
               width: '100%',
-              fontSize: '15px',
+              fontSize: 'clamp(14px, 0.8vw + 5px, 16px)',
               minHeight: '44px',
-              padding: 'clamp(8px, 1.2dvh, 11px) 16px',
+              padding: 'clamp(10px, 1.4dvh, 14px) 18px',
               cursor: 'pointer',
             }}
           >
