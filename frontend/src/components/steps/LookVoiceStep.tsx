@@ -127,12 +127,12 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
+        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
-        maxWidth: 'min(1180px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -173,14 +173,14 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
       </div>
 
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.5dvh, 4px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(17px, 1.5vw, 20px)', color: 'var(--ink-sage)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(3px, 0.5dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', margin: 0 }}>
           Visual style &amp; narrator...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: 'clamp(22px, 2vw, 26px)', lineHeight: 1.2, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.2, margin: 0 }}>
           Choose your look and voice
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(12.5px, 1vw, 14px)', lineHeight: 1.4, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.4, margin: 0 }}>
           Select how your video should look: animated scenes with camera moves, or a talking character portrait.
         </p>
       </header>
