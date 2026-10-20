@@ -354,13 +354,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
+        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(12px, 1.8dvh, 20px)',
         position: 'relative',
-        maxWidth: '920px',
-        margin: '0 auto',
+        maxWidth: 'min(1240px, 94%)',
+        margin: 'auto',
         boxSizing: 'border-box',
       }}
     >
