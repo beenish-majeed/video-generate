@@ -61,12 +61,12 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
+        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
-        maxWidth: 'min(1160px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -76,14 +76,14 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       <Sticker label="RIGHTS & RESPECT" rotation="-2deg" variant="sage" />
 
       {/* Header Copy */}
-      <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
           {isPromptPath ? 'AI Transparency & Attribution...' : 'Keeping creativity safe, honest & respectful...'}
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15 }}>
+        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
           {isPromptPath ? 'AI Generation & Transparency Consent' : 'Rights & Consent Confirmation'}
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
           {isPromptPath
             ? 'Before we render your film, please confirm acceptance that this video is AI-generated and will display an AI transparency label.'
             : 'Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.'}
