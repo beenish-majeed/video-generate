@@ -127,13 +127,13 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(10px, 1.5dvh, 20px) clamp(14px, 2vw, 24px)',
+        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(8px, 1.2dvh, 14px)',
+        gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
-        maxWidth: 'clamp(840px, 80vw, 1140px)',
-        margin: '0 auto',
+        maxWidth: 'min(1180px, 94%)',
+        margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
