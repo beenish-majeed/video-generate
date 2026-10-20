@@ -59,12 +59,12 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 36px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'min(1100px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -74,17 +74,17 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
       <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
 
       {/* Header Copy */}
-      <header style={{ width: '100%' }}>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <CheckCircle2 size={22} style={{ color: 'var(--ink-sage)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', color: 'var(--ink-sage)', wordBreak: 'break-word', margin: 0 }}>
+          <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', wordBreak: 'break-word', margin: 0 }}>
             Your film is ready!
           </p>
         </div>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
           Grand Premiere
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px', wordBreak: 'break-word' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px', wordBreak: 'break-word' }}>
           Here is your finished animated memory ({formattedDuration}). Press play to watch.
         </p>
       </header>
@@ -104,10 +104,10 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: '220px',
-          maxHeight: 'min(480px, 50dvh)',
+          maxHeight: 'min(580px, 54dvh)',
           aspectRatio: '16 / 9',
           width: '100%',
-          maxWidth: '860px',
+          maxWidth: 'min(1080px, 96%)',
           margin: '0 auto',
           boxSizing: 'border-box',
           border: '4px solid var(--paper-cream-alt)',
