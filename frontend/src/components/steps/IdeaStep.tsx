@@ -73,13 +73,15 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 28px) clamp(16px, 2.5vw, 36px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'min(1100px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', left: '28px' }} />
@@ -117,14 +119,14 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
       </div>
 
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.6dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.6vw, 22px)', color: 'var(--ink-terracotta)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(3px, 0.6dvh, 8px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-terracotta)', margin: 0 }}>
           Where every story starts...
         </p>
-        <h1 className="editorial-title" style={{ fontSize: 'clamp(22px, 2vw, 28px)', lineHeight: 1.2, margin: 0 }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.2, margin: 0 }}>
           What is your video about?
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13px, 1.05vw, 15px)', lineHeight: 1.45, margin: 0 }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.45, margin: 0 }}>
           Write a thought, a memory, or an idea. Our studio writer will turn it into a tailored spoken script.
         </p>
       </header>
