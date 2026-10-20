@@ -124,11 +124,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(10px, 1.5dvh, 20px) clamp(12px, 2.5vw, 24px)',
+        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 16px)',
+        gap: 'clamp(12px, 1.8dvh, 20px)',
         position: 'relative',
+        maxWidth: 'min(1100px, 94%)',
+        margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
