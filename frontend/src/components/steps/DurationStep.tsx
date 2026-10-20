@@ -66,13 +66,13 @@ export const DurationStep: React.FC<DurationStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(10px, 1.6dvh, 20px) clamp(14px, 2vw, 24px)',
+        padding: 'clamp(16px, 2.5dvh, 28px) clamp(16px, 2.5vw, 36px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.4dvh, 18px)',
+        gap: 'clamp(12px, 1.8dvh, 22px)',
         position: 'relative',
-        maxWidth: 'clamp(800px, 75vw, 1060px)',
-        margin: '0 auto',
+        maxWidth: 'min(1100px, 94%)',
+        margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
