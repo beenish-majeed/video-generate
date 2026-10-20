@@ -228,7 +228,13 @@ export const App: React.FC = () => {
             initial="initial"
             animate="animate"
             exit="exit"
-            style={{ width: '100%' }}
+            style={{
+              width: '100%',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: '100%',
+            }}
           >
             {currentStep === 'hero' && (
               <HeroStep onGetStarted={() => changeStep('choice')} />

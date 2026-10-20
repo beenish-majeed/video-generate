@@ -74,6 +74,17 @@ img, svg, canvas, video {
   box-shadow: 0 0 0 4px rgba(200, 90, 50, 0.3) !important;
 }
 
+/* Headings focused programmatically for screen readers do not display focus rings */
+h1:focus,
+h1:focus-visible,
+h2:focus,
+h2:focus-visible,
+h3:focus,
+h3:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {

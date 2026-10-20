@@ -17,7 +17,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
 
   // Focus heading on transition for accessibility
   useEffect(() => {
-    headingRef.current?.focus();
+    headingRef.current?.focus({ preventScroll: true });
   }, []);
 
   return (

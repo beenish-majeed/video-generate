@@ -180,7 +180,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 
   // Focus heading on mount for accessibility screen transition
   useEffect(() => {
-    headingRef.current?.focus();
+    headingRef.current?.focus({ preventScroll: true });
   }, []);
 
   return (
