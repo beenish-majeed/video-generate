@@ -191,12 +191,12 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 26px) clamp(16px, 2.2vw, 32px)',
+        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
         gap: 'clamp(10px, 1.5dvh, 18px)',
         position: 'relative',
-        maxWidth: 'min(1160px, 94%)',
+        maxWidth: 'min(1500px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -206,14 +206,14 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       <Sticker label="WHAT WILL YOU SAY?" rotation="2.5deg" variant="terracotta" />
 
       {/* Header Copy */}
-      <header>
-        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.8vw, 20px)', margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
+        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
           Write down your story or memory...
         </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(20px, 2.5vw, 26px)', lineHeight: 1.15 }}>
+        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
           Spoken narrative script
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: '13.5px', marginTop: '2px' }}>
+        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
           Your synthesized voice will speak these words aloud during your {targetSeconds}s video.
         </p>
       </header>
