@@ -33,7 +33,19 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
         )}
 
         {/* Paper Page Inner Content */}
-        <main id="main-content" style={{ position: 'relative', minHeight: 'clamp(420px, 60dvh, 720px)', width: '100%' }}>
+        <main
+          id="main-content"
+          style={{
+            position: 'relative',
+            flex: 1,
+            minHeight: 0,
+            width: '100%',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {children}
         </main>
       </div>
