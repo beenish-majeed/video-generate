@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import type { ConsentPayload } from '../../types/api';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import { ArrowLeft, ShieldCheck, Loader2, Info, UserCheck, Mic, Tag, AlertCircle } from 'lucide-react';
 
 interface ConsentStepProps {
@@ -61,29 +59,23 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="2.5deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="RIGHTS & RESPECT" rotation="-2deg" variant="sage" />
-
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
-          {isPromptPath ? 'AI Transparency & Attribution...' : 'Keeping creativity safe, honest & respectful...'}
-        </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           {isPromptPath ? 'AI Generation & Transparency Consent' : 'Rights & Consent Confirmation'}
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           {isPromptPath
             ? 'Before we render your film, please confirm acceptance that this video is AI-generated and will display an AI transparency label.'
             : 'Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.'}
@@ -93,22 +85,19 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       {/* Plain Language Summary Card */}
       <section
         aria-label={isPromptPath ? 'AI generation transparency overview' : 'What happens with your media'}
+        className="card"
         style={{
-          padding: 'clamp(10px, 1.2dvh, 16px) clamp(12px, 2vw, 18px)',
-          borderRadius: '12px',
-          backgroundColor: 'var(--paper-cream-alt)',
-          border: '1px solid var(--paper-border)',
+          padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 'clamp(6px, 1dvh, 10px)',
-          boxShadow: 'var(--shadow-card)',
+          gap: '12px',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Info size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
-          <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '16.5px', color: 'var(--ink-primary)', margin: 0 }}>
+          <Info size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+          <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-sans)' }}>
             {isPromptPath ? 'AI Generation Details' : 'What Happens with Your Media'}
           </h3>
         </div>
@@ -116,30 +105,30 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         {isPromptPath ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
+              <UserCheck size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Studio Character Avatar</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Studio Character Avatar</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   Uses a curated studio portrait preset to synthesize facial animation.
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
+              <Mic size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Synthesized Voice Narration</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Synthesized Voice Narration</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   Uses a standard studio voice preset to pronounce your generated narrative.
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
+              <Tag size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Transparency Label</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   The rendered film carries a visible AI label so viewers know it was synthetically crafted.
                 </p>
               </div>
@@ -148,30 +137,30 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <UserCheck size={18} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
+              <UserCheck size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Photograph</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Your Photograph</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   Used strictly to synthesize natural facial animation for this video.
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <Mic size={18} style={{ color: 'var(--ink-blue)', flexShrink: 0, marginTop: '2px' }} />
+              <Mic size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Your Voice Recording</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Your Voice Recording</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   Used to clone speech tone and pronounce your script narrative.
                 </p>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <Tag size={18} style={{ color: 'var(--ink-amber)', flexShrink: 0, marginTop: '2px' }} />
+              <Tag size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>AI Transparency Label</p>
-                <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Transparency Label</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                   The rendered film carries a discrete AI label so viewers know it was synthetically crafted.
                 </p>
               </div>
@@ -183,15 +172,12 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       {/* Active Acceptance Form (No Pre-checked Boxes; 44px+ Touch Targets) */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.2dvh, 14px)', width: '100%' }}>
         <div
+          className="card"
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 'clamp(8px, 1dvh, 12px)',
-            padding: 'clamp(10px, 1.2dvh, 16px) clamp(12px, 2vw, 18px)',
-            borderRadius: '12px',
-            backgroundColor: '#ffffff',
-            border: '1.5px dashed var(--paper-border)',
-            boxShadow: 'var(--shadow-card)',
+            gap: '12px',
+            padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
             width: '100%',
             boxSizing: 'border-box',
           }}
@@ -220,27 +206,27 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                     playStickerPopSound();
                   }}
                   style={{
-                    width: '22px',
-                    height: '22px',
-                    minWidth: '22px',
-                    minHeight: '22px',
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
                     marginTop: '2px',
-                    accentColor: 'var(--ink-terracotta)',
+                    accentColor: 'var(--accent-primary)',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
                     I understand and accept that this video is AI-generated
                   </p>
-                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                     The video is created using studio preset character visuals and synthesized narration.
                   </p>
                 </div>
               </label>
 
-              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+              <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
 
               {/* Prompt Consent 2: AI Label Acceptance */}
               <label
@@ -264,21 +250,21 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                     playStickerPopSound();
                   }}
                   style={{
-                    width: '22px',
-                    height: '22px',
-                    minWidth: '22px',
-                    minHeight: '22px',
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
                     marginTop: '2px',
-                    accentColor: 'var(--ink-terracotta)',
+                    accentColor: 'var(--accent-primary)',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
                     I agree that the video will carry an AI transparency label
                   </p>
-                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                     A visible label ensures viewers know this animation was synthetically crafted.
                   </p>
                 </div>
@@ -308,27 +294,27 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                     playStickerPopSound();
                   }}
                   style={{
-                    width: '22px',
-                    height: '22px',
-                    minWidth: '22px',
-                    minHeight: '22px',
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
                     marginTop: '2px',
-                    accentColor: 'var(--ink-terracotta)',
+                    accentColor: 'var(--accent-primary)',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
                     I attest that I have permission to use the face image in this photograph
                   </p>
-                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                     This is my own face, or I have explicit agreement from the person shown in the photo.
                   </p>
                 </div>
               </label>
 
-              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+              <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
 
               {/* Consent 2: Voice Rights */}
               <label
@@ -352,27 +338,27 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                     playStickerPopSound();
                   }}
                   style={{
-                    width: '22px',
-                    height: '22px',
-                    minWidth: '22px',
-                    minHeight: '22px',
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
                     marginTop: '2px',
-                    accentColor: 'var(--ink-terracotta)',
+                    accentColor: 'var(--accent-primary)',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
                     I attest that I have permission to use this voice recording sample
                   </p>
-                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                     I am the speaker, or I have explicit agreement to synthesize speech matching this voice.
                   </p>
                 </div>
               </label>
 
-              <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+              <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
 
               {/* Consent 3: Authorization & AI Disclosure */}
               <label
@@ -396,21 +382,21 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
                     playStickerPopSound();
                   }}
                   style={{
-                    width: '22px',
-                    height: '22px',
-                    minWidth: '22px',
-                    minHeight: '22px',
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
                     marginTop: '2px',
-                    accentColor: 'var(--ink-terracotta)',
+                    accentColor: 'var(--accent-primary)',
                     cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 />
                 <div>
-                  <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: '15px' }}>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
                     I acknowledge the AI generation label and authorize Memory Studio to render this film
                   </p>
-                  <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                     I agree that this video is generated for respectful storytelling and carries an AI disclosure.
                   </p>
                 </div>
@@ -419,29 +405,28 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
           )}
         </div>
 
-        {/* Error Feedback Card after Job Creation - Fits 320px cleanly */}
+        {/* Error Feedback Card after Job Creation */}
         {error && (
           <div
             role="alert"
             style={{
               padding: '14px 16px',
-              borderRadius: '10px',
-              backgroundColor: '#fff',
-              border: '1.5px dashed var(--ink-terracotta)',
+              borderRadius: 'var(--radius-card)',
+              backgroundColor: 'var(--accent-danger-light)',
+              border: '1px solid var(--accent-danger)',
               display: 'flex',
               alignItems: 'flex-start',
               gap: '10px',
               width: '100%',
               boxSizing: 'border-box',
-              boxShadow: 'var(--shadow-card)',
             }}
           >
-            <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+            <AlertCircle size={20} style={{ color: 'var(--accent-danger)', flexShrink: 0, marginTop: '2px' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
-              <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: 'var(--ink-primary)' }}>
+              <h4 style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '15px', color: 'var(--accent-danger)' }}>
                 Job Creation Notice
               </h4>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', lineHeight: 1.4, wordBreak: 'break-word' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4, wordBreak: 'break-word' }}>
                 {error}
               </p>
             </div>
@@ -457,7 +442,6 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             justifyContent: 'space-between',
             marginTop: '4px',
             paddingTop: 'clamp(8px, 1dvh, 12px)',
-            borderTop: '1px solid var(--paper-border)',
           }}
         >
           <button
@@ -476,7 +460,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             type="submit"
             disabled={!isValid || submitting}
             aria-disabled={!isValid || submitting}
-            className="btn-terracotta"
+            className="btn-primary"
             style={{
               minHeight: '44px',
               padding: '10px 22px',
