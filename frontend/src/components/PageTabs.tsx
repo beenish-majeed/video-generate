@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import SoundToggle from './SoundToggle';
 
 export type JourneyStepId =
   | 'hero'
