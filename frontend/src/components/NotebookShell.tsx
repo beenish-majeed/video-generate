@@ -16,7 +16,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   children,
 }) => {
   return (
-    <div className="app-shell notebook-wrapper">
+    <div className="app-shell">
       {/* Modern Edge-to-Edge Top Bar */}
       <header className="app-topbar" aria-label="Application Header">
         <div
