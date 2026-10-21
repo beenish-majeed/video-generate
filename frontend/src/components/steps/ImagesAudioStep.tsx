@@ -463,7 +463,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             }}
             onClick={() => imageInputRef.current?.click()}
             style={{
-              border: dragActive ? '2px solid var(--accent-primary)' : '1px dashed var(--border-light)',
+              border: dragActive ? '2px solid var(--accent-primary)' : '1px solid var(--border-light)',
               borderRadius: 'var(--radius-md)',
               backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-subtle)',
               padding: '36px 20px',
@@ -687,7 +687,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             <div
               onClick={() => audioInputRef.current?.click()}
               style={{
-                border: '1px dashed var(--border-light)',
+                border: '1px solid var(--border-light)',
                 borderRadius: 'var(--radius-md)',
                 padding: '20px',
                 textAlign: 'center',
