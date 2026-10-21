@@ -1,9 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { DoodleCamera } from '../Doodles';
+import { ArrowRight, ArrowLeft, Sparkles, Image, User } from 'lucide-react';
 
 export const ENABLE_PROMPT_PATH = true;
 
@@ -14,161 +10,6 @@ export interface ChoiceStepProps {
   onBack: () => void;
 }
 
-/**
- * Original hand-drawn SVG doodle for Prompt Idea
- */
-const DoodlePromptIdea: React.FC<{ size?: number }> = ({ size = 52 }) => {
-  const shouldReduceMotion = useReducedMotion();
-  const transition = (delay: number) => ({
-    duration: shouldReduceMotion ? 0 : 0.6,
-    delay: shouldReduceMotion ? 0 : delay,
-    ease: 'easeOut',
-  });
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      {/* Lightbulb glass outline */}
-      <motion.path
-        d="M32 10 C21 10, 15 18, 15 28 C15 35, 22 40, 24 45 L40 45 C42 40, 49 35, 49 28 C49 18, 43 10, 32 10 Z"
-        stroke="var(--ink-amber)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="rgba(240, 160, 75, 0.12)"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0)}
-      />
-      {/* Filament scribble */}
-      <motion.path
-        d="M27 28 C29 23, 31 23, 32 28 C33 23, 35 23, 37 28"
-        stroke="var(--ink-amber)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.2)}
-      />
-      {/* Base screw thread */}
-      <motion.path
-        d="M26 49 L38 49 M28 53 L36 53 M30 57 L34 57"
-        stroke="var(--ink-primary)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.3)}
-      />
-      {/* Idea sparkle rays */}
-      <motion.path
-        d="M32 3 L32 7 M10 20 L14 22 M54 20 L50 22"
-        stroke="var(--ink-amber)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.4)}
-      />
-    </svg>
-  );
-};
-
-/**
- * Original hand-drawn SVG doodle for Custom Media (Portrait + Mic)
- */
-const DoodleCustomMedia: React.FC<{ size?: number }> = ({ size = 52 }) => {
-  const shouldReduceMotion = useReducedMotion();
-  const transition = (delay: number) => ({
-    duration: shouldReduceMotion ? 0 : 0.6,
-    delay: shouldReduceMotion ? 0 : delay,
-    ease: 'easeOut',
-  });
-
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" aria-hidden="true">
-      {/* Polaroid photo frame */}
-      <motion.rect
-        x="8"
-        y="12"
-        width="32"
-        height="40"
-        rx="3"
-        stroke="var(--ink-primary)"
-        strokeWidth="2.5"
-        fill="var(--paper-cream)"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0)}
-      />
-      {/* Photo inner window */}
-      <motion.rect
-        x="12"
-        y="16"
-        width="24"
-        height="24"
-        stroke="var(--ink-primary)"
-        strokeWidth="1.5"
-        fill="rgba(110, 140, 115, 0.15)"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.15)}
-      />
-      {/* Simple portrait person outline inside frame */}
-      <motion.circle
-        cx="24"
-        cy="25"
-        r="5"
-        stroke="var(--ink-sage)"
-        strokeWidth="2"
-        fill="none"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.25)}
-      />
-      <motion.path
-        d="M17 38 C17 33, 31 33, 31 38"
-        stroke="var(--ink-sage)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.35)}
-      />
-      {/* Microphone on right side */}
-      <motion.rect
-        x="44"
-        y="16"
-        width="10"
-        height="18"
-        rx="5"
-        stroke="var(--ink-terracotta)"
-        strokeWidth="2"
-        fill="rgba(196, 98, 77, 0.15)"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.2)}
-      />
-      <motion.path
-        d="M40 26 C40 33, 58 33, 58 26"
-        stroke="var(--ink-terracotta)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.3)}
-      />
-      <motion.path
-        d="M49 33 L49 46 M43 46 L55 46"
-        stroke="var(--ink-terracotta)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={transition(0.4)}
-      />
-    </svg>
-  );
-};
-
 export const ChoiceStep: React.FC<ChoiceStepProps> = ({
   onSelectPromptFlow,
   onSelectImagesAudioFlow,
@@ -177,7 +18,6 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 }) => {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // Focus heading on mount for accessibility screen transition
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
   }, []);
@@ -186,110 +26,87 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(4px, 0.8dvh, 12px) clamp(16px, 2vw, 36px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) 0',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(4px, 0.8dvh, 10px)',
+        gap: 'clamp(16px, 2dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1800px, 96%)',
+        maxWidth: 'min(1280px, 100%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-2deg" style={{ position: 'absolute', top: '6px', left: '30px' }} />
-
-      {/* Top Navigation Row: Back Button & Header Sticker */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}
-      >
+      {/* Top Navigation Row: Back Button */}
+      <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
           aria-label="Back to welcome page"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            minHeight: '44px',
-            minWidth: '44px',
-            padding: '6px 16px',
-            fontSize: 'clamp(14px, 1vw, 16px)',
-            cursor: 'pointer',
-          }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
         </button>
-
-        <Sticker label="CREATIVE PATH" rotation="2deg" variant="terracotta" />
       </div>
 
       {/* Header Section */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(16px, 1.2vw, 22px)', color: 'var(--ink-terracotta)', margin: 0 }}>
-          Your story, your medium...
-        </p>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h1
           ref={headingRef}
           tabIndex={-1}
           className="editorial-title"
-          style={{ fontSize: 'clamp(22px, 2vw, 32px)', lineHeight: 1.15, margin: 0, outline: 'none' }}
+          style={{ fontSize: 'clamp(26px, 2.8vw, 36px)', margin: 0, outline: 'none' }}
         >
           How would you like to begin?
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(13px, 0.85vw, 15.5px)', lineHeight: 1.35, margin: 0 }}>
+        <p className="page-lead" style={{ margin: 0 }}>
           Choose your creative path below to begin crafting your personal film.
         </p>
       </header>
 
-      {/* Three Choice Cards: Side-by-Side on wide screens, Stacked on narrow screens (320px to 2560px) */}
+      {/* Three Choice Cards: Side-by-Side on wide screens, Stacked on narrow screens */}
       <div
         className="choice-cards-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 'clamp(10px, 1.2vw, 18px)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 'clamp(16px, 2vw, 24px)',
           alignItems: 'stretch',
-          marginTop: '2px',
           width: '100%',
         }}
       >
         {/* Card 1: Write an idea (text to video) */}
         <div
+          className="card"
           style={{
-            position: 'relative',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(12px, 1.5dvh, 20px) clamp(14px, 1.5vw, 22px)',
+            padding: 'clamp(20px, 2.5vw, 28px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(8px, 1.2dvh, 16px)',
-            boxShadow: 'var(--shadow-card)',
-            transform: 'rotate(-0.5deg)',
-            boxSizing: 'border-box',
+            gap: '20px',
           }}
         >
-          <Tape rotation="-3deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
-              <Sticker label="TEXT TO VIDEO" variant="amber" rotation="-1deg" />
-              <DoodlePromptIdea size={38} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Sparkles size={22} />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw, 22px)', marginBottom: '4px' }}>
+            <h2 style={{ fontSize: 'clamp(18px, 1.4vw, 22px)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               Write an idea
             </h2>
-            <p style={{ fontSize: 'clamp(13px, 0.85vw, 15px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
               Type an idea, pick an animated visual style, and generate scenes with gentle camera moves.
             </p>
           </div>
@@ -297,16 +114,8 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
           <button
             type="button"
             onClick={onSelectPromptFlow}
-            className="btn-terracotta"
-            style={{
-              marginTop: 'auto',
-              justifyContent: 'center',
-              width: '100%',
-              fontSize: 'clamp(14px, 0.85vw, 16px)',
-              minHeight: '44px',
-              padding: 'clamp(8px, 1.1dvh, 12px) 16px',
-              cursor: 'pointer',
-            }}
+            className="btn-primary"
+            style={{ width: '100%', marginTop: 'auto' }}
           >
             <span>Write an idea</span>
             <ArrowRight size={17} aria-hidden="true" />
@@ -315,33 +124,35 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 
         {/* Card 2: Use my photos and voice (images + audio) */}
         <div
+          className="card"
           style={{
-            position: 'relative',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(12px, 1.5dvh, 20px) clamp(14px, 1.5vw, 22px)',
+            padding: 'clamp(20px, 2.5vw, 28px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(8px, 1.2dvh, 16px)',
-            boxShadow: 'var(--shadow-card)',
-            transform: 'rotate(0.3deg)',
-            boxSizing: 'border-box',
+            gap: '20px',
           }}
         >
-          <Tape rotation="1.5deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
-              <Sticker label="PHOTOS &amp; AUDIO" variant="sage" rotation="1deg" />
-              <DoodleCamera size={38} color="var(--ink-sage)" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Image size={22} />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw, 22px)', marginBottom: '4px' }}>
+            <h2 style={{ fontSize: 'clamp(18px, 1.4vw, 22px)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               Use my photos and voice
             </h2>
-            <p style={{ fontSize: 'clamp(13px, 0.85vw, 15px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
               Upload 1 to 30 photos with custom timing, your voice recording, and optional face lip sync.
             </p>
           </div>
@@ -350,15 +161,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             type="button"
             onClick={onSelectImagesAudioFlow}
             className="btn-secondary"
-            style={{
-              marginTop: 'auto',
-              justifyContent: 'center',
-              width: '100%',
-              fontSize: 'clamp(14px, 0.85vw, 16px)',
-              minHeight: '44px',
-              padding: 'clamp(8px, 1.1dvh, 12px) 16px',
-              cursor: 'pointer',
-            }}
+            style={{ width: '100%', marginTop: 'auto' }}
           >
             <span>Use my photos and voice</span>
             <ArrowRight size={17} aria-hidden="true" />
@@ -367,33 +170,35 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 
         {/* Card 3: A talking face (custom portrait + voice) */}
         <div
+          className="card"
           style={{
-            position: 'relative',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(12px, 1.5dvh, 20px) clamp(14px, 1.5vw, 22px)',
+            padding: 'clamp(20px, 2.5vw, 28px)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 'clamp(8px, 1.2dvh, 16px)',
-            boxShadow: 'var(--shadow-card)',
-            transform: 'rotate(0.6deg)',
-            boxSizing: 'border-box',
+            gap: '20px',
           }}
         >
-          <Tape rotation="2deg" style={{ position: 'absolute', top: '-12px', right: '24px' }} />
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(6px, 1dvh, 10px)' }}>
-              <Sticker label="TALKING FACE" variant="blue" rotation="-1deg" />
-              <DoodleCustomMedia size={38} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <User size={22} />
             </div>
 
-            <h2 className="editorial-title" style={{ fontSize: 'clamp(18px, 1.3vw, 22px)', marginBottom: '4px' }}>
+            <h2 style={{ fontSize: 'clamp(18px, 1.4vw, 22px)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               A talking face
             </h2>
-            <p style={{ fontSize: 'clamp(13px, 0.85vw, 15px)', color: 'var(--ink-muted)', lineHeight: 1.4, margin: 0 }}>
+            <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
               Bring a single portrait photo to life with synchronized facial expressions and speech.
             </p>
           </div>
@@ -402,15 +207,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             type="button"
             onClick={onSelectCustomMediaFlow}
             className="btn-secondary"
-            style={{
-              marginTop: 'auto',
-              justifyContent: 'center',
-              width: '100%',
-              fontSize: 'clamp(14px, 0.85vw, 16px)',
-              minHeight: '44px',
-              padding: 'clamp(8px, 1.1dvh, 12px) 16px',
-              cursor: 'pointer',
-            }}
+            style={{ width: '100%', marginTop: 'auto' }}
           >
             <span>A talking face</span>
             <ArrowRight size={17} aria-hidden="true" />
