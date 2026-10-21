@@ -35,9 +35,9 @@ const StepFallback: React.FC = () => (
       minHeight: '360px',
     }}
   >
-    <Loader2 size={36} className="animate-spin" style={{ color: 'var(--ink-terracotta)' }} />
-    <p className="handwritten" style={{ fontSize: '22px', color: 'var(--ink-terracotta)' }}>
-      Opening sketchbook page...
+    <Loader2 size={36} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />
+    <p style={{ fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
+      Loading step...
     </p>
   </div>
 );
