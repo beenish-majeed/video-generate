@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { JobRecord } from '../../types/api';
 import { mapFailedJobError } from '../../utils/failedJobMapper';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 interface FailedStepProps {
@@ -35,29 +33,25 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 22px)',
+        gap: 'clamp(16px, 2.5dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(900px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="STUDIO NOTE" rotation="-3deg" variant="amber" />
-
       {/* Header Copy */}
-      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word', margin: 0 }}>
-          Ah, a gentle bump along the creative path...
-        </p>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
-          {mapped.title}
-        </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px', wordBreak: 'break-word' }}>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', margin: 0, lineHeight: 1.15 }}>
+            {mapped.title}
+          </h2>
+          <span className="step-indicator-pill">STUDIO NOTE</span>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', margin: 0 }}>
           Don’t worry—your story text and uploaded files are safely kept in memory. You don’t have to start over.
         </p>
       </header>
@@ -66,39 +60,36 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
       <div
         role="region"
         aria-label="Error explanation card"
+        className="card"
         style={{
-          padding: 'clamp(12px, 1.5dvh, 18px)',
-          borderRadius: '12px',
-          backgroundColor: '#ffffff',
-          border: '1.5px dashed var(--ink-terracotta)',
+          padding: 'clamp(20px, 3dvh, 28px)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 'clamp(10px, 1.2dvh, 14px)',
-          boxShadow: 'var(--shadow-card)',
+          gap: '16px',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-          <AlertCircle size={28} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+          <AlertCircle size={28} style={{ color: 'var(--accent-danger)', flexShrink: 0, marginTop: '2px' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(17px, 3.5vw, 19px)', color: 'var(--ink-primary)' }}>
+            <h3 style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '18px', color: 'var(--text-primary)', margin: 0 }}>
               What Happened
             </h3>
-            <p className="handwritten" style={{ fontSize: 'clamp(17px, 4vw, 20px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word' }}>
+            <p style={{ fontSize: '15px', color: 'var(--accent-danger)', margin: 0, lineHeight: 1.5 }}>
               "{mapped.explanation}"
             </p>
           </div>
         </div>
 
-        <div style={{ height: '1px', backgroundColor: 'var(--paper-border)' }} />
+        <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
 
         {/* Recommended Next Step */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', backgroundColor: 'var(--paper-cream-alt)', padding: '14px 16px', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}>
-          <HelpCircle size={20} style={{ color: 'var(--ink-sage)', flexShrink: 0, marginTop: '2px' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', backgroundColor: 'var(--bg-subtle)', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', width: '100%', boxSizing: 'border-box' }}>
+          <HelpCircle size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
           <div style={{ width: '100%' }}>
-            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink-primary)' }}>Recommended Next Step</p>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', marginTop: '2px', lineHeight: 1.5, wordBreak: 'break-word' }}>
+            <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Recommended Next Step</p>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.5 }}>
               {mapped.nextStep}
             </p>
           </div>
@@ -112,7 +103,7 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--ink-muted)',
+              color: 'var(--text-muted)',
               fontSize: '13px',
               cursor: 'pointer',
               display: 'flex',
@@ -130,14 +121,14 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
               style={{
                 marginTop: '10px',
                 padding: '12px',
-                borderRadius: '6px',
-                backgroundColor: 'var(--paper-cream-alt)',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-subtle)',
                 fontSize: '12px',
-                color: 'var(--ink-primary)',
+                color: 'var(--text-primary)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
                 fontFamily: 'monospace',
-                border: '1px solid var(--paper-border)',
+                border: '1px solid var(--border-light)',
                 maxWidth: '100%',
                 overflowX: 'auto',
               }}
@@ -150,28 +141,26 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
 
       {/* Action Footer */}
       <footer
-        className="step-footer"
+        className="card"
         style={{
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          marginTop: '4px',
-          paddingTop: 'clamp(8px, 1dvh, 12px)',
-          borderTop: '1px solid var(--paper-border)',
+          flexWrap: 'wrap',
           width: '100%',
           boxSizing: 'border-box',
-          flexWrap: 'wrap',
         }}
       >
-        <p className="handwritten" style={{ fontSize: 'clamp(15px, 3vw, 18px)', color: 'var(--ink-muted)', wordBreak: 'break-word', margin: 0 }}>
-          Let’s adjust parameters and try once more →
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
+          Adjust parameters and try once more.
         </p>
 
         <button
           type="button"
           onClick={handleTryAgain}
-          className="btn-terracotta"
+          className="btn-primary"
           style={{ fontSize: '15px', padding: '10px 22px', minHeight: '44px', cursor: 'pointer' }}
         >
           <RotateCcw size={16} />
