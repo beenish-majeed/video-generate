@@ -234,6 +234,7 @@ export const App: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               minHeight: '100%',
+              justifyContent: 'center',
             }}
           >
             {currentStep === 'hero' && (

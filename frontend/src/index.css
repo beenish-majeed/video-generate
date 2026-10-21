@@ -270,7 +270,7 @@ h3:focus-visible {
   .step-container {
     padding: clamp(1rem, 4vw, 1.5rem) clamp(0.75rem, 3vw, 1.25rem) !important;
     gap: clamp(0.85rem, 3vw, 1.25rem) !important;
-    margin: 0 !important;
+    margin: auto !important;
   }
 
   .step-footer {
