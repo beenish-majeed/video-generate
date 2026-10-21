@@ -13,7 +13,7 @@ describe('HeroStep welcome page', () => {
 
     // Warm headline and one line explanation
     expect(html).toContain('Turn your ideas into a quiet, living video memory.');
-    expect(html).toContain('Craft an intimate animated memory with handwritten notes and gentle sound.');
+    expect(html).toContain('Craft an intimate animated memory with gentle sound.');
 
     // Single "Get started" button
     expect(html).toContain('Get started');
