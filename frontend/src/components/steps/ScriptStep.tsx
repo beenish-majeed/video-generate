@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError } from '../../api/errorMapper';
 import { analyzeScriptWords, type ScriptWordAnalysis } from '../../utils/scriptWordCount';
@@ -191,29 +189,23 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="WHAT WILL YOU SAY?" rotation="2.5deg" variant="terracotta" />
-
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
-          Write down your story or memory...
-        </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Spoken narrative script
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           Your synthesized voice will speak these words aloud during your {targetSeconds}s video.
         </p>
       </header>
@@ -224,12 +216,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
           role="status"
           aria-live="polite"
           data-testid="story-loading-state"
+          className="card"
           style={{
             padding: 'clamp(28px, 5vw, 44px) clamp(16px, 4vw, 32px)',
-            borderRadius: 'var(--radius-paper)',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px dashed var(--paper-border)',
-            boxShadow: 'var(--shadow-card)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -239,28 +228,39 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          <Tape rotation="-1deg" style={{ margin: '-10px auto 0 auto' }} />
-          <Sticker label="DRAFTING YOUR STORY" variant="terracotta" rotation="1.5deg" />
+          <span
+            style={{
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-pill)',
+              backgroundColor: 'var(--accent-primary-light)',
+              border: '1px solid var(--accent-primary-border)',
+              color: 'var(--accent-primary)',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+            }}
+          >
+            DRAFTING YOUR STORY
+          </span>
 
-          <div style={{ position: 'relative', margin: '10px 0' }}>
-            <Sparkles size={40} className="animate-pulse" style={{ color: 'var(--ink-terracotta)' }} />
+          <div style={{ position: 'relative', margin: '4px 0' }}>
+            <Sparkles size={36} className="animate-pulse" style={{ color: 'var(--accent-primary)' }} />
           </div>
 
           <h3
-            className="editorial-title"
-            style={{ fontSize: 'clamp(20px, 3vw, 24px)', margin: 0, color: 'var(--ink-primary)' }}
+            style={{ fontSize: 'clamp(20px, 2.5vw, 24px)', fontWeight: 600, margin: 0, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}
           >
             Listening to your idea...
           </h3>
 
           <p
-            className="handwritten"
             style={{
-              fontSize: 'clamp(17px, 2.5vw, 20px)',
-              color: 'var(--ink-terracotta)',
+              fontSize: '16px',
+              color: 'var(--text-secondary)',
               margin: 0,
               maxWidth: '540px',
               wordBreak: 'break-word',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             "{ideaText || prompt || 'Your story idea'}"
@@ -272,16 +272,17 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               flexDirection: 'column',
               gap: '6px',
               maxWidth: '480px',
-              color: 'var(--ink-muted)',
+              color: 'var(--text-muted)',
               fontSize: '14px',
               lineHeight: 1.5,
               marginTop: '4px',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             <p style={{ margin: 0 }}>
               Turning your thought into complete spoken sentences for a {targetSeconds}s film...
             </p>
-            <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', color: '#7a7062' }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
               This takes about 10–25 seconds. Take a quiet breath while our storyteller writes.
             </p>
           </div>
@@ -303,12 +304,10 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         <div
           role="alert"
           data-testid="story-error-state"
+          className="card"
           style={{
             padding: 'clamp(24px, 4vw, 36px) clamp(16px, 4vw, 28px)',
-            borderRadius: 'var(--radius-paper)',
-            backgroundColor: '#fffaf8',
-            border: '2px solid var(--ink-terracotta)',
-            boxShadow: 'var(--shadow-card)',
+            borderColor: 'var(--accent-danger)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -318,14 +317,13 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          <Tape rotation="1.5deg" style={{ margin: '-10px auto 0 auto' }} />
-          <AlertCircle size={36} style={{ color: 'var(--ink-terracotta)' }} />
+          <AlertCircle size={36} style={{ color: 'var(--accent-danger)' }} />
 
-          <h3 className="editorial-title" style={{ fontSize: '22px', margin: 0, color: 'var(--ink-primary)' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: 600, margin: 0, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
             Couldn't draft your script right now
           </h3>
 
-          <p style={{ color: 'var(--ink-muted)', fontSize: '14px', maxWidth: '480px', lineHeight: 1.5, margin: 0 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '480px', lineHeight: 1.5, margin: 0 }}>
             {generationError}
           </p>
 
@@ -342,7 +340,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             <button
               type="button"
               onClick={executeGeneration}
-              className="btn-terracotta"
+              className="btn-primary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
               <RotateCcw size={16} />
@@ -371,7 +369,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         <div
           role="region"
           aria-label="Narrative script workspace"
-          style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 1.2dvh, 12px)', width: '100%' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.4dvh, 16px)', width: '100%' }}
         >
           {/* Header Action Row */}
           <div
@@ -380,23 +378,24 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '6px',
+              gap: '8px',
               width: '100%',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <label
                 htmlFor="narrative-script-input"
                 style={{
-                  fontSize: '14.5px',
+                  fontSize: '15px',
                   fontWeight: 600,
-                  color: 'var(--ink-primary)',
+                  color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
-                <FileText size={17} />
+                <FileText size={18} />
                 <span>Narrative Script</span>
               </label>
 
@@ -407,35 +406,36 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
                   className="btn-secondary"
                   data-testid="write-it-again-btn"
                   style={{
-                    fontSize: '12.5px',
-                    padding: '3px 9px',
+                    fontSize: '13px',
+                    padding: '4px 12px',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    minHeight: '30px',
+                    gap: '6px',
+                    minHeight: '32px',
                     cursor: 'pointer',
                   }}
                 >
-                  <Sparkles size={13} style={{ color: 'var(--ink-terracotta)' }} />
+                  <Sparkles size={14} style={{ color: 'var(--accent-primary)' }} />
                   <span>Write it again</span>
                 </button>
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span className="handwritten" style={{ fontSize: '15px', color: 'var(--ink-muted)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '13.5px', color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
                 Target range: <strong>{analysis.minWords}–{analysis.maxWords}</strong> words (@ {wpm} WPM)
               </span>
               <span
                 style={{
-                  padding: '2px 8px',
-                  borderRadius: '12px',
+                  padding: '3px 10px',
+                  borderRadius: 'var(--radius-pill)',
                   backgroundColor: mood.bgColor,
-                  border: `1.5px solid ${mood.borderColor}`,
+                  border: `1px solid ${mood.borderColor}`,
                   color: mood.textColor,
-                  fontWeight: 'bold',
-                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  fontSize: '13px',
                   whiteSpace: 'nowrap',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 {analysis.wordCount} words
@@ -444,13 +444,13 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
                 <span
                   data-testid="script-source-badge"
                   style={{
-                    fontSize: '11.5px',
-                    fontFamily: 'var(--font-hand)',
-                    padding: '2px 7px',
-                    borderRadius: '8px',
-                    backgroundColor: scriptSource === 'template' ? 'rgba(240, 160, 75, 0.15)' : 'rgba(110, 140, 115, 0.15)',
-                    color: scriptSource === 'template' ? 'var(--ink-amber)' : 'var(--ink-sage)',
-                    border: '1px solid var(--paper-border)',
+                    fontSize: '12px',
+                    fontFamily: 'var(--font-sans)',
+                    padding: '3px 8px',
+                    borderRadius: 'var(--radius-pill)',
+                    backgroundColor: 'var(--bg-subtle)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-light)',
                   }}
                 >
                   source: {scriptSource}
@@ -464,26 +464,24 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             <div
               role="note"
               data-testid="template-script-notice"
+              className="card"
               style={{
-                padding: '8px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--paper-cream-alt)',
-                border: '1.5px solid var(--paper-border)',
-                color: 'var(--ink-muted)',
-                fontSize: '12.5px',
+                padding: '10px 14px',
+                color: 'var(--text-muted)',
+                fontSize: '13px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
-              <AlertCircle size={15} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
+              <AlertCircle size={16} style={{ color: 'var(--accent-warning)', flexShrink: 0 }} />
               <span>
                 Basic script (no AI model installed). Edit it freely, or install Ollama for better scripts.
               </span>
             </div>
           )}
 
-          {/* Textarea - Auto-scrolls into view on mobile keyboard focus */}
+          {/* Textarea */}
           <textarea
             id="narrative-script-input"
             value={script}
@@ -496,38 +494,35 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             aria-describedby="script-helper-text"
             style={{
               width: '100%',
-              minHeight: 'clamp(72px, 11dvh, 120px)',
-              padding: 'clamp(8px, 1.2dvh, 12px) 12px',
-              borderRadius: '10px',
-              border: `2px solid ${
+              minHeight: 'clamp(80px, 12dvh, 130px)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: `1px solid ${
                 analysis.status === 'perfect'
-                  ? 'var(--ink-sage)'
+                  ? 'var(--accent-success)'
                   : analysis.status === 'too_long'
-                  ? 'var(--ink-terracotta)'
-                  : 'var(--paper-border)'
+                  ? 'var(--accent-danger)'
+                  : 'var(--border-light)'
               }`,
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--bg-surface)',
               fontFamily: 'var(--font-sans)',
               fontSize: '14.5px',
               lineHeight: 1.5,
-              color: 'var(--ink-primary)',
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.04)',
+              color: 'var(--text-primary)',
               resize: 'vertical',
               outline: 'none',
               boxSizing: 'border-box',
             }}
           />
 
-          {/* Hand-Drawn Sketchbook Progress Bar */}
+          {/* Progress Bar Card */}
           <div
+            className="card"
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
-              padding: 'clamp(6px, 1dvh, 10px) 12px',
-              borderRadius: '8px',
-              backgroundColor: 'var(--paper-cream-alt)',
-              border: '1px solid var(--paper-border)',
+              gap: '6px',
+              padding: '12px 16px',
               width: '100%',
               boxSizing: 'border-box',
             }}
@@ -536,13 +531,14 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                fontSize: '12.5px',
+                fontSize: '13px',
                 fontWeight: 600,
                 flexWrap: 'wrap',
                 gap: '4px',
+                fontFamily: 'var(--font-sans)',
               }}
             >
-              <span style={{ color: 'var(--ink-primary)' }}>
+              <span style={{ color: 'var(--text-primary)' }}>
                 Script Target Progress ({analysis.percentage}%)
               </span>
               <span style={{ color: mood.textColor }}>
@@ -553,9 +549,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             <div
               style={{
                 width: '100%',
-                height: '8px',
-                backgroundColor: 'var(--paper-border)',
-                borderRadius: '4px',
+                height: '6px',
+                backgroundColor: 'var(--bg-subtle)',
+                borderRadius: '3px',
                 overflow: 'hidden',
               }}
             >
@@ -570,20 +566,18 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             </div>
           </div>
 
-          {/* Mood / Out of Bounds Message Card */}
+          {/* Helper Status Card */}
           <div
             id="script-helper-text"
             role="status"
+            className="card"
             style={{
-              padding: 'clamp(8px, 1.2dvh, 12px) 14px',
-              borderRadius: '10px',
+              padding: '12px 16px',
               backgroundColor: mood.bgColor,
-              border: `1.5px dashed ${mood.borderColor}`,
+              borderColor: mood.borderColor,
               display: 'flex',
               alignItems: 'flex-start',
               gap: '10px',
-              boxShadow: 'var(--shadow-card)',
-              transition: 'all 0.2s ease',
               width: '100%',
               boxSizing: 'border-box',
             }}
@@ -591,14 +585,14 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             {mood.icon}
             <div style={{ flex: 1, minWidth: '0' }}>
               <p
-                className="handwritten"
                 style={{
-                  fontSize: '16px',
+                  fontSize: '14px',
                   color: mood.textColor,
-                  fontWeight: 'bold',
+                  fontWeight: 600,
                   wordBreak: 'break-word',
-                  lineHeight: 1.3,
+                  lineHeight: 1.4,
                   margin: 0,
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 {analysis.helperText}
@@ -606,11 +600,11 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               {outOfBoundsMessage && (
                 <p
                   style={{
-                    fontSize: '12.5px',
+                    fontSize: '13px',
                     color: mood.textColor,
-                    marginTop: '3px',
-                    lineHeight: 1.35,
-                    margin: '3px 0 0 0',
+                    lineHeight: 1.4,
+                    margin: '4px 0 0 0',
+                    fontFamily: 'var(--font-sans)',
                   }}
                 >
                   {outOfBoundsMessage}
@@ -620,18 +614,19 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
           </div>
 
           {/* Optional Visual Style Prompt Field */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', width: '100%' }}>
             <label
               style={{
-                fontSize: '13.5px',
+                fontSize: '14px',
                 fontWeight: 600,
-                color: 'var(--ink-primary)',
+                color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                fontFamily: 'var(--font-sans)',
               }}
             >
-              <Sparkles size={15} style={{ color: 'var(--ink-terracotta)' }} />
+              <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
               <span>Visual Style Prompt (Optional)</span>
             </label>
             <input
@@ -644,14 +639,15 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               placeholder="e.g., Warm cinematic sunlight, Studio Ghibli watercolor aesthetic, soft bokeh"
               style={{
                 width: '100%',
-                padding: 'clamp(6px, 1dvh, 10px) 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--paper-border)',
-                backgroundColor: 'var(--paper-cream-alt)',
-                fontSize: '13.5px',
-                color: 'var(--ink-primary)',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-light)',
+                backgroundColor: 'var(--bg-surface)',
+                fontSize: '14px',
+                color: 'var(--text-primary)',
                 boxSizing: 'border-box',
-                minHeight: '40px',
+                minHeight: '42px',
+                fontFamily: 'var(--font-sans)',
               }}
             />
           </div>
@@ -663,16 +659,16 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '4px',
-              paddingTop: 'clamp(8px, 1dvh, 12px)',
-              borderTop: '1px solid var(--paper-border)',
+              marginTop: '8px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--border-light)',
             }}
           >
             <button
               type="button"
               onClick={onBack}
               className="btn-secondary"
-              style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+              style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
             >
               <ArrowLeft size={16} />
               <span>Back</span>
@@ -682,11 +678,10 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               type="button"
               onClick={onNext}
               disabled={!analysis.isWithinBounds}
-              className="btn-terracotta"
+              className="btn-primary"
               style={{
                 minHeight: '44px',
-                padding: '10px 22px',
-                opacity: !analysis.isWithinBounds ? 0.5 : 1,
+                padding: '10px 24px',
                 cursor: !analysis.isWithinBounds ? 'not-allowed' : 'pointer',
               }}
             >
