@@ -3,8 +3,6 @@ import type { DurationPreset, DurationOption, DurationsResponse } from '../../ty
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Clock, Sparkles, Loader2, AlertCircle, RefreshCw, Hourglass } from 'lucide-react';
 
@@ -69,51 +67,43 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 22px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="1.8deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="HOW LONG SHOULD IT BE?" rotation="-3deg" variant="amber" />
-
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(3px, 0.6dvh, 8px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
-          Setting the rhythm & pacing...
-        </p>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.2, margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Select video duration
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.45, margin: 0 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           How long should your animated film be? We load options dynamically from the studio backend.
         </p>
       </header>
 
-      {/* Main Interactive Preset Selection - Fluid Grid (1 col phone, 2 col tablet, 3-4 col desktop) */}
+      {/* Main Interactive Preset Selection - Fluid Grid */}
       <div role="region" aria-label="Duration preset selection" style={{ width: '100%' }}>
         {loading ? (
           /* Loading State */
           <div
+            className="card"
             style={{
-              padding: '30px 20px',
-              borderRadius: '12px',
-              backgroundColor: 'var(--paper-cream-alt)',
-              border: '2px dashed var(--paper-border)',
+              padding: '40px 20px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '10px',
-              color: 'var(--ink-terracotta)',
+              gap: '12px',
+              color: 'var(--accent-primary)',
               width: '100%',
             }}
           >
             <Loader2 size={28} className="animate-spin" />
-            <p className="handwritten" style={{ fontSize: '18px' }}>
+            <p style={{ fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
               Fetching duration options from the studio...
             </p>
           </div>
@@ -121,26 +111,24 @@ export const DurationStep: React.FC<DurationStepProps> = ({
           /* Failure / Error State */
           <div
             role="alert"
+            className="card"
             style={{
-              padding: '18px',
-              borderRadius: '12px',
-              backgroundColor: '#fff',
-              border: '1.5px dashed var(--ink-terracotta)',
+              padding: '24px',
+              borderColor: 'var(--accent-danger)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '12px',
               textAlign: 'center',
-              boxShadow: 'var(--shadow-card)',
               width: '100%',
             }}
           >
-            <AlertCircle size={28} style={{ color: 'var(--ink-terracotta)' }} />
+            <AlertCircle size={28} style={{ color: 'var(--accent-danger)' }} />
             <div>
-              <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+              <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
                 {error.title}
               </h4>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '2px', maxWidth: '460px' }}>
+              <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '460px' }}>
                 {error.message}
               </p>
             </div>
@@ -152,10 +140,8 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         ) : (
           /* Responsive Fluid Grid of Duration Preset Cards */
           <div className="duration-cards-grid">
-            {presets.map((preset, idx) => {
+            {presets.map((preset) => {
               const isSelected = preset.value === selectedPreset;
-              // Subtle hand-placed rotation tilt for unselected cards
-              const tilt = isSelected ? 0 : idx % 2 === 0 ? -1.5 : 1.5;
 
               return (
                 <motion.button
@@ -165,64 +151,37 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     playStickerPopSound();
                     onPresetSelected(preset.value, preset.seconds);
                   }}
-                  whileHover={{ scale: 1.03, rotate: isSelected ? 0 : tilt * 0.5 }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={{ scale: isSelected ? 1.03 : 1, y: isSelected ? -4 : 0 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   aria-pressed={isSelected}
+                  className={`card ${isSelected ? 'card-selected' : ''}`}
                   style={{
                     position: 'relative',
-                    padding: 'clamp(10px, 1.4dvh, 16px) clamp(8px, 1vw, 12px)',
-                    borderRadius: '12px',
-                    backgroundColor: isSelected ? '#ffffff' : 'var(--paper-cream-alt)',
-                    border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1.5px solid var(--paper-border)',
-                    color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
+                    padding: 'clamp(14px, 1.8dvh, 20px) clamp(10px, 1.2vw, 16px)',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '4px',
-                    boxShadow: isSelected ? 'var(--shadow-paper-float)' : 'var(--shadow-card)',
-                    transform: `rotate(${tilt}deg)`,
+                    gap: '6px',
                     height: '100%',
                     width: '100%',
                     minHeight: '44px',
+                    textAlign: 'center',
                   }}
                 >
-                  {/* Selected Badge Sticker */}
-                  {isSelected && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        right: '-6px',
-                        backgroundColor: 'var(--ink-terracotta)',
-                        color: '#ffffff',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        boxShadow: 'var(--shadow-tape)',
-                      }}
-                    >
-                      Selected
-                    </div>
-                  )}
+                  <Clock size={22} style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
 
-                  <Clock size={20} style={{ color: isSelected ? 'var(--ink-terracotta)' : '#524b42' }} />
-
-                  <span style={{ fontWeight: 'bold', fontSize: '17px', fontFamily: 'var(--font-serif)', marginTop: '2px' }}>
+                  <span style={{ fontWeight: 700, fontSize: '18px', color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)', marginTop: '4px' }}>
                     {preset.label}
                   </span>
 
-                  <span className="handwritten" style={{ fontSize: '15px', color: '#4e473f' }}>
+                  <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                     {preset.seconds}s length
                   </span>
 
-                  <span style={{ fontSize: '11px', color: '#4e473f', marginTop: '2px', fontStyle: 'italic', textAlign: 'center' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                     {formatEstimatedRenderTime(preset.seconds)}
                   </span>
                 </motion.button>
@@ -232,39 +191,36 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         )}
       </div>
 
-      {/* Kind Note about Render Time & Pacing - Wraps Text Cleanly without Overflow */}
+      {/* Kind Note about Render Time & Pacing */}
       <section
+        className="card"
         style={{
-          padding: 'clamp(10px, 1.4dvh, 16px) clamp(12px, 2vw, 18px)',
-          borderRadius: '12px',
-          backgroundColor: '#ffffff',
-          border: '1px dashed var(--paper-border)',
+          padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 'clamp(6px, 1dvh, 10px)',
-          boxShadow: 'var(--shadow-card)',
+          gap: '12px',
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-          <Hourglass size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <Hourglass size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
           <div>
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: 'var(--ink-primary)', margin: 0 }}>
-              A Kind Note on Studio Render Time
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+              Estimated Studio Render Time
             </h3>
-            <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '2px', lineHeight: 1.4, margin: 0 }}>
-              Longer videos take longer to craft carefully: rendering takes about <strong>3.7 times</strong> the video length.
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.5, margin: 0 }}>
+              Rendering takes about <strong>3.7 times</strong> the video length.
               For instance, a 5-minute video takes about 18 minutes to render completely.
             </p>
           </div>
         </div>
 
-        <div style={{ height: '1px', backgroundColor: 'var(--paper-border)', margin: '1px 0' }} />
+        <div style={{ height: '1px', backgroundColor: 'var(--border-light)', margin: '2px 0' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <Sparkles size={16} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-terracotta)', lineHeight: 1.2, margin: 0 }}>
+          <Sparkles size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.4, margin: 0 }}>
             For {currentOption.label} ({currentOption.seconds}s), aim for ~{approxWords} spoken words (at {wpm} words/min rate).
           </p>
         </div>
@@ -272,12 +228,12 @@ export const DurationStep: React.FC<DurationStepProps> = ({
 
       {/* Navigation Footer */}
       <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
-        <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '8px 18px' }}>
+        <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '10px 20px' }}>
           <ArrowLeft size={16} />
           <span>Back</span>
         </button>
 
-        <button type="button" onClick={onNext} className="btn-terracotta" style={{ minHeight: '44px', padding: '10px 22px' }}>
+        <button type="button" onClick={onNext} className="btn-primary" style={{ minHeight: '44px', padding: '10px 24px' }}>
           <span>Continue to Script</span>
           <ArrowRight size={16} />
         </button>
