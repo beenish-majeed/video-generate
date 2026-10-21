@@ -1,6 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
@@ -350,60 +348,25 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 20px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1200px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="1.5deg" style={{ position: 'absolute', top: '10px', right: '32px' }} />
-
-      {/* Top Header Row with Back Button */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}
-      >
-        <button
-          type="button"
-          onClick={onBack}
-          className="btn-secondary"
-          aria-label="Back to previous screen"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            minHeight: '44px',
-            minWidth: '44px',
-            padding: '8px 16px',
-            fontSize: '14.5px',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          <span>Back</span>
-        </button>
-
-        <Sticker label="PHOTOS &amp; AUDIO" rotation="-1deg" variant="sage" />
-      </div>
-
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', margin: 0 }}>
-          Bring your own moments...
-        </p>
-        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15, margin: 0 }}>
-          Photos, Voice &amp; Music
-        </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.4, margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15, margin: 0 }}>
+            Photos, Voice &amp; Music
+          </h1>
+          <span className="step-indicator-pill">PHOTOS &amp; AUDIO</span>
+        </div>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.4, margin: 0 }}>
           Upload 1 to 30 photos, arrange their order, adjust pacing, and pair with your voice or spoken narration.
         </p>
       </header>
@@ -415,37 +378,45 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            backgroundColor: '#fff4f2',
-            border: '1px solid var(--ink-terracotta)',
-            color: 'var(--ink-terracotta)',
-            fontSize: '13.5px',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-card)',
+            backgroundColor: 'var(--accent-danger-light)',
+            border: '1px solid var(--accent-danger)',
+            color: 'var(--accent-danger)',
+            fontSize: '14px',
           }}
         >
-          <AlertCircle size={18} flex-shrink={0} />
+          <AlertCircle size={18} style={{ flexShrink: 0 }} />
           <div>
             <strong>{mappedError.title}:</strong> {mappedError.message}
           </div>
         </div>
       )}
 
-      {/* SECTION 1: Multi-Image Upload & Polaroid Sequence */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(6px, 1dvh, 10px)' }}>
+      {/* SECTION 1: Multi-Image Upload & Photo Sequence */}
+      <section
+        className="card"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          padding: 'clamp(16px, 2dvh, 24px)',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <h2
               style={{
-                fontFamily: 'var(--font-hand)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: '18px',
-                fontWeight: 'bold',
-                color: 'var(--ink-primary)',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
                 margin: 0,
               }}
             >
               1. Your Photos ({images.length}/30)
             </h2>
-            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               Reorder sequence with left/right buttons and set per-image duration (min 2.0s).
             </span>
           </div>
@@ -492,9 +463,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             }}
             onClick={() => imageInputRef.current?.click()}
             style={{
-              border: dragActive ? '2px dashed var(--ink-sage)' : '2px dashed var(--paper-border)',
-              borderRadius: 'var(--radius-paper)',
-              backgroundColor: dragActive ? 'rgba(110, 140, 115, 0.08)' : 'rgba(247, 243, 235, 0.6)',
+              border: dragActive ? '2px solid var(--accent-primary)' : '1px dashed var(--border-light)',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-subtle)',
               padding: '36px 20px',
               textAlign: 'center',
               cursor: 'pointer',
@@ -502,13 +473,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               gap: '10px',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Upload size={32} color="var(--ink-sage)" />
-            <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>
+            <Upload size={32} style={{ color: 'var(--accent-primary)' }} />
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
               Drag &amp; drop 1 to 30 photos here, or click to browse
             </span>
-            <span style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               Supports JPG, PNG, WEBP. EXIF rotation handled automatically.
             </span>
           </div>
@@ -528,11 +500,11 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                 key={img.id}
                 style={{
                   position: 'relative',
-                  backgroundColor: 'var(--paper-cream)',
-                  border: '1px solid var(--paper-border)',
-                  borderRadius: '4px',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '8px 8px 12px 8px',
-                  boxShadow: 'var(--shadow-card)',
+                  boxShadow: 'var(--shadow-sm)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '6px',
@@ -548,7 +520,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                     width: '22px',
                     height: '22px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--ink-terracotta)',
+                    backgroundColor: 'var(--accent-primary)',
                     color: '#fff',
                     fontSize: '11px',
                     fontWeight: 'bold',
@@ -566,9 +538,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                   style={{
                     width: '100%',
                     aspectRatio: '1 / 1',
-                    borderRadius: '2px',
+                    borderRadius: '4px',
                     overflow: 'hidden',
-                    backgroundColor: '#ded7cb',
+                    backgroundColor: 'var(--bg-muted)',
                   }}
                 >
                   <img
@@ -580,7 +552,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
 
                 {/* Duration Control (min 2.0s) */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
-                  <label htmlFor={`dur-${img.id}`} style={{ color: 'var(--ink-muted)' }}>
+                  <label htmlFor={`dur-${img.id}`} style={{ color: 'var(--text-muted)' }}>
                     Secs:
                   </label>
                   <input
@@ -594,9 +566,10 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                       width: '54px',
                       padding: '2px 4px',
                       fontSize: '12px',
-                      border: '1px solid var(--paper-border)',
+                      border: '1px solid var(--border-light)',
                       borderRadius: '4px',
                       textAlign: 'center',
+                      fontFamily: 'var(--font-sans)',
                     }}
                   />
                 </div>
@@ -614,6 +587,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                       cursor: idx === 0 ? 'default' : 'pointer',
                       opacity: idx === 0 ? 0.2 : 0.7,
                       padding: '2px',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     <MoveLeft size={14} />
@@ -627,7 +601,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                       border: 'none',
                       background: 'none',
                       cursor: 'pointer',
-                      color: 'var(--ink-terracotta)',
+                      color: 'var(--accent-danger)',
                       padding: '2px',
                     }}
                   >
@@ -645,6 +619,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                       cursor: idx === images.length - 1 ? 'default' : 'pointer',
                       opacity: idx === images.length - 1 ? 0.2 : 0.7,
                       padding: '2px',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     <MoveRight size={14} />
@@ -657,13 +632,21 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       </section>
 
       {/* SECTION 2: Voice Narration (Upload, Record, or Typed Script) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <section
+        className="card"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          padding: 'clamp(16px, 2dvh, 24px)',
+        }}
+      >
         <h2
           style={{
-            fontFamily: 'var(--font-hand)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: 'var(--ink-primary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '18px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
             margin: 0,
           }}
         >
@@ -671,11 +654,11 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         </h2>
 
         {/* Tab selection */}
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setAudioMode('upload')}
-            className={audioMode === 'upload' ? 'btn-terracotta' : 'btn-secondary'}
+            className={audioMode === 'upload' ? 'btn-primary' : 'btn-secondary'}
             style={{ fontSize: '13px', padding: '6px 14px' }}
           >
             Upload Audio
@@ -683,7 +666,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           <button
             type="button"
             onClick={() => setAudioMode('record')}
-            className={audioMode === 'record' ? 'btn-terracotta' : 'btn-secondary'}
+            className={audioMode === 'record' ? 'btn-primary' : 'btn-secondary'}
             style={{ fontSize: '13px', padding: '6px 14px' }}
           >
             Record Mic
@@ -691,7 +674,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           <button
             type="button"
             onClick={() => setAudioMode('script')}
-            className={audioMode === 'script' ? 'btn-terracotta' : 'btn-secondary'}
+            className={audioMode === 'script' ? 'btn-primary' : 'btn-secondary'}
             style={{ fontSize: '13px', padding: '6px 14px' }}
           >
             Type Script (AI Voice)
@@ -704,11 +687,11 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             <div
               onClick={() => audioInputRef.current?.click()}
               style={{
-                border: '1.5px dashed var(--paper-border)',
-                borderRadius: 'var(--radius-paper)',
-                padding: '18px',
+                border: '1px dashed var(--border-light)',
+                borderRadius: 'var(--radius-md)',
+                padding: '20px',
                 textAlign: 'center',
-                backgroundColor: 'rgba(247, 243, 235, 0.6)',
+                backgroundColor: 'var(--bg-subtle)',
                 cursor: 'pointer',
               }}
             >
@@ -719,12 +702,12 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                 </div>
               ) : audioAssetId ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <Check size={18} color="var(--ink-sage)" />
-                  <span style={{ fontWeight: 600 }}>Audio ready: {audioFileName || 'Uploaded voice'}</span>
-                  {audioDuration > 0 && <span>({formatDuration(audioDuration)})</span>}
+                  <Check size={18} style={{ color: 'var(--accent-success)' }} />
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Audio ready: {audioFileName || 'Uploaded voice'}</span>
+                  {audioDuration > 0 && <span style={{ color: 'var(--text-muted)' }}>({formatDuration(audioDuration)})</span>}
                 </div>
               ) : (
-                <span>Click to upload spoken voice audio (WAV, MP3, M4A)</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Click to upload spoken voice audio (WAV, MP3, M4A)</span>
               )}
             </div>
             <input
@@ -742,9 +725,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           <div
             style={{
               padding: '16px',
-              border: '1.5px dashed var(--paper-border)',
-              borderRadius: 'var(--radius-paper)',
-              backgroundColor: 'rgba(247, 243, 235, 0.6)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -758,7 +741,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  backgroundColor: recording ? '#ff4d4f' : 'var(--ink-terracotta)',
+                  backgroundColor: recording ? 'var(--accent-danger)' : 'var(--accent-primary)',
                   color: '#fff',
                   display: 'flex',
                   alignItems: 'center',
@@ -768,10 +751,10 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                 <Mic size={18} className={recording ? 'animate-pulse' : ''} />
               </div>
               <div>
-                <span style={{ fontWeight: 600, display: 'block' }}>
+                <span style={{ fontWeight: 600, display: 'block', color: 'var(--text-primary)' }}>
                   {recording ? `Recording... (${recordingSeconds}s)` : audioAssetId ? `Recorded: ${formatDuration(audioDuration)}` : 'Ready to record voice'}
                 </span>
-                <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   Speak clearly into your microphone
                 </span>
               </div>
@@ -782,7 +765,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                 <button
                   type="button"
                   onClick={startRecording}
-                  className="btn-terracotta"
+                  className="btn-primary"
                   style={{ fontSize: '13px', padding: '6px 14px' }}
                 >
                   <Mic size={14} />
@@ -793,7 +776,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                   type="button"
                   onClick={stopRecording}
                   className="btn-secondary"
-                  style={{ fontSize: '13px', padding: '6px 14px', color: '#ff4d4f' }}
+                  style={{ fontSize: '13px', padding: '6px 14px', color: 'var(--accent-danger)' }}
                 >
                   <Square size={14} />
                   <span>Stop &amp; Save</span>
@@ -814,14 +797,14 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               style={{
                 width: '100%',
                 padding: '12px',
-                borderRadius: '8px',
-                border: '1.5px solid var(--paper-border)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-light)',
                 fontFamily: 'inherit',
                 fontSize: '14px',
                 boxSizing: 'border-box',
               }}
             />
-            <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
               Spoken narration will be synthesized offline with local voice models.
             </span>
           </div>
@@ -829,13 +812,21 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       </section>
 
       {/* SECTION 3: Options (Lip Sync, Subtitles, Background Music) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <section
+        className="card"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          padding: 'clamp(16px, 2dvh, 24px)',
+        }}
+      >
         <h2
           style={{
-            fontFamily: 'var(--font-hand)',
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: 'var(--ink-primary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '18px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
             margin: 0,
           }}
         >
@@ -846,9 +837,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         <div
           style={{
             padding: '12px 16px',
-            borderRadius: '8px',
-            border: '1px solid var(--paper-border)',
-            backgroundColor: 'var(--paper-cream)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-light)',
+            backgroundColor: 'var(--bg-subtle)',
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
@@ -860,13 +851,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               checked={preferLipSync && isSingleFace}
               disabled={!isSingleFace}
               onChange={(e) => setPreferLipSync(e.target.checked)}
-              style={{ width: '18px', height: '18px' }}
+              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)' }}
             />
-            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink-primary)' }}>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
               Enable face lip sync (Wav2Lip)
             </span>
           </label>
-          <span style={{ fontSize: '12px', color: isSingleFace ? 'var(--ink-sage)' : 'var(--ink-muted)' }}>
+          <span style={{ fontSize: '12px', color: isSingleFace ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
             {isSingleFace
               ? 'Exactly 1 face detected! Lip sync is enabled for your portrait.'
               : totalFaces === 0
@@ -879,9 +870,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         <div
           style={{
             padding: '12px 16px',
-            borderRadius: '8px',
-            border: '1px solid var(--paper-border)',
-            backgroundColor: 'var(--paper-cream)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-light)',
+            backgroundColor: 'var(--bg-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -892,13 +883,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               type="checkbox"
               checked={burnSubtitles}
               onChange={(e) => setBurnSubtitles(e.target.checked)}
-              style={{ width: '18px', height: '18px' }}
+              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)' }}
             />
-            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink-primary)' }}>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
               Burn in subtitles
             </span>
           </label>
-          <span style={{ fontSize: '12px', color: 'var(--ink-muted)' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             Auto-synchronized with speech
           </span>
         </div>
@@ -907,9 +898,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         <div
           style={{
             padding: '12px 16px',
-            borderRadius: '8px',
-            border: '1px solid var(--paper-border)',
-            backgroundColor: 'var(--paper-cream)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-light)',
+            backgroundColor: 'var(--bg-subtle)',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
@@ -917,8 +908,8 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Music size={18} color="var(--ink-terracotta)" />
-              <span style={{ fontWeight: 600, fontSize: '14px' }}>
+              <Music size={18} style={{ color: 'var(--accent-primary)' }} />
+              <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
                 Optional Background Music (Uploaded by you only)
               </span>
             </div>
@@ -941,8 +932,8 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
 
           {bgMusicAssetId && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-              <span>Track: {bgMusicName || 'Uploaded music'}</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Track: {bgMusicName || 'Uploaded music'}</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
                 <span>Volume: {Math.round(bgMusicVolume * 100)}%</span>
                 <input
                   type="range"
@@ -951,7 +942,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
                   step="0.05"
                   value={bgMusicVolume}
                   onChange={(e) => setBgMusicVolume(parseFloat(e.target.value))}
-                  style={{ width: '100px' }}
+                  style={{ width: '100px', accentColor: 'var(--accent-primary)' }}
                 />
               </label>
             </div>
@@ -968,7 +959,6 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           justifyContent: 'space-between',
           marginTop: '4px',
           paddingTop: 'clamp(8px, 1dvh, 14px)',
-          borderTop: '1px solid var(--paper-border)',
         }}
       >
         <button
@@ -984,7 +974,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         <button
           type="button"
           onClick={handleContinue}
-          className="btn-terracotta"
+          className="btn-primary"
           style={{
             minHeight: '44px',
             padding: '10px 22px',
