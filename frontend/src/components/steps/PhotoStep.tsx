@@ -1,11 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { DoodleCamera } from '../Doodles';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { Upload, ArrowRight, ArrowLeft, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Upload, ArrowRight, ArrowLeft, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface PhotoStepProps {
   selectedAssetId: string;
@@ -124,73 +121,63 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 20px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="2deg" style={{ position: 'absolute', top: '12px', right: '40px' }} />
-      <Sticker label="WHO IS SPEAKING?" rotation="-2deg" variant="sage" />
-
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
-          First, let’s choose the main character...
-        </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Upload your portrait photograph
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           Choose a clear, front-facing photo. Our studio engine will bring its expressions to life.
         </p>
       </header>
 
-      {/* Main Interactive Area: Empty / Drag & Drop / Polaroid Preview */}
+      {/* Main Interactive Area: Upload / Preview */}
       <div role="region" aria-label="Photo upload workspace" style={{ width: '100%' }}>
         {previewUrl ? (
-          /* Taped Polaroid Presentation - Centered & Fluid Scaling */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
+          /* Preview Presentation - Clean 16px Card */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
             <div
+              className="card"
               style={{
-                position: 'relative',
-                padding: 'clamp(8px, 1dvh, 10px) clamp(8px, 1dvh, 10px) clamp(18px, 2.5dvh, 26px) clamp(8px, 1dvh, 10px)',
-                backgroundColor: '#ffffff',
-                borderRadius: '4px',
-                boxShadow: 'var(--shadow-notebook)',
-                transform: 'rotate(-2deg)',
-                maxWidth: 'clamp(180px, 40vw, 250px)',
+                padding: '16px',
+                maxWidth: '300px',
                 width: '100%',
                 margin: '0 auto',
-                border: '1px solid var(--paper-border)',
-                transition: 'transform 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px',
               }}
             >
-              <Tape rotation="-2deg" style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%) rotate(-2deg)' }} />
-
               <img
                 src={previewUrl}
                 alt={fileName ? `Uploaded portrait photo: ${fileName}` : 'Uploaded portrait photo'}
                 style={{
                   width: '100%',
-                  height: 'clamp(140px, 30vw, 200px)',
+                  height: '240px',
                   objectFit: 'cover',
-                  borderRadius: '2px',
-                  backgroundColor: 'var(--paper-cream-alt)',
+                  borderRadius: '10px',
+                  backgroundColor: 'var(--bg-subtle)',
                 }}
               />
 
-              <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                <p className="handwritten" style={{ fontSize: '16px', color: 'var(--ink-primary)', fontWeight: 'bold' }}>
-                  {fileName || 'Memory Portrait'}
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '15px', color: 'var(--text-primary)', fontWeight: 600, margin: 0 }}>
+                  {fileName || 'Portrait Photo'}
                 </p>
                 {fileSizeStr && (
-                  <p style={{ fontSize: '12px', color: 'var(--ink-muted)', marginTop: '2px' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', margin: 0 }}>
                     {fileSizeStr}
                   </p>
                 )}
@@ -200,6 +187,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             {/* Uploading Progress State */}
             {uploading ? (
               <div
+                className="card"
                 style={{
                   width: '100%',
                   maxWidth: '360px',
@@ -207,24 +195,21 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                   flexDirection: 'column',
                   gap: '8px',
                   padding: '16px',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--paper-cream-alt)',
-                  border: '1px dashed var(--paper-border)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 600 }}>
-                  <span style={{ color: 'var(--ink-terracotta)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Loader2 size={16} className="animate-spin" />
-                    Placing photo on canvas...
+                    Uploading photo...
                   </span>
-                  <span style={{ color: 'var(--ink-primary)' }}>{uploadProgress}%</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{uploadProgress}%</span>
                 </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--paper-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div
                     style={{
                       width: `${uploadProgress}%`,
                       height: '100%',
-                      backgroundColor: 'var(--ink-terracotta)',
+                      backgroundColor: 'var(--accent-primary)',
                       transition: 'width 0.2s ease',
                     }}
                   />
@@ -233,14 +218,15 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             ) : selectedAssetId ? (
               /* Success Locked State with Option to Replace */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <span className="handwritten" style={{ color: 'var(--ink-sage)', fontSize: '20px', fontWeight: 'bold' }}>
-                  ✓ Photo pinned to canvas!
+                <span style={{ color: 'var(--accent-success)', fontSize: '15px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={18} />
+                  Photo ready for video
                 </span>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="btn-secondary"
-                  style={{ fontSize: '14px', padding: '8px 16px', minHeight: '44px' }}
+                  style={{ fontSize: '14px', padding: '8px 18px', minHeight: '44px' }}
                 >
                   <RefreshCw size={14} />
                   <span>Choose a different photo</span>
@@ -249,7 +235,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             ) : null}
           </div>
         ) : (
-          /* Empty / Drag & Drop Dropzone - Easy Touch Use */
+          /* Empty / Drag & Drop Dropzone */
           <div
             role="button"
             tabIndex={0}
@@ -259,35 +245,44 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             aria-label="Upload portrait photo dropzone. Click or drag and drop an image file here."
+            className="card"
             style={{
-              position: 'relative',
-              padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 3vw, 24px)',
-              borderRadius: '12px',
-              backgroundColor: dragActive ? 'var(--paper-cream-dark)' : 'var(--paper-cream-alt)',
-              border: dragActive ? '2.5px dashed var(--ink-terracotta)' : '2px dashed var(--paper-border)',
+              padding: 'clamp(24px, 4dvh, 48px) 24px',
+              borderColor: dragActive ? 'var(--accent-primary)' : undefined,
+              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-surface)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 'clamp(8px, 1.2dvh, 14px)',
-              minHeight: 'clamp(140px, 22vh, 220px)',
+              gap: '14px',
+              minHeight: '220px',
               width: '100%',
               boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: dragActive ? 'var(--shadow-paper-float)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Tape rotation="-3deg" style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%) rotate(-3deg)' }} />
-
-            <DoodleCamera size={52} />
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '16px',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Upload size={26} />
+            </div>
 
             <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: 'clamp(15px, 2.5vw, 17px)' }}>
+              <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '16px', margin: 0 }}>
                 Drag & drop your photograph here, or click to browse
               </p>
-              <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+              <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
                 Supports PNG, JPG, or WEBP (Up to 20MB)
               </p>
             </div>
@@ -309,27 +304,25 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
         />
       </div>
 
-      {/* Kind Human Error State Card */}
+      {/* Error State Card */}
       {mappedError && (
         <div
           role="alert"
+          className="card"
           style={{
             padding: '16px 20px',
-            borderRadius: '10px',
-            backgroundColor: '#fff',
-            border: '1.5px dashed var(--ink-terracotta)',
+            borderColor: 'var(--accent-danger)',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',
-            boxShadow: 'var(--shadow-card)',
           }}
         >
-          <AlertCircle size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+          <AlertCircle size={22} style={{ color: 'var(--accent-danger)', flexShrink: 0, marginTop: '2px' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               {mappedError.title}
             </h4>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
               {mappedError.message}
             </p>
           </div>
@@ -343,16 +336,16 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '4px',
-          paddingTop: 'clamp(8px, 1dvh, 12px)',
-          borderTop: '1px solid var(--paper-border)',
+          marginTop: '8px',
+          paddingTop: '16px',
+          borderTop: '1px solid var(--border-light)',
         }}
       >
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
-          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+          style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
         >
           <ArrowLeft size={16} />
           <span>Back</span>
@@ -362,11 +355,10 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           type="button"
           onClick={onNext}
           disabled={!selectedAssetId || uploading}
-          className="btn-terracotta"
+          className="btn-primary"
           style={{
             minHeight: '44px',
-            padding: '10px 22px',
-            opacity: !selectedAssetId || uploading ? 0.5 : 1,
+            padding: '10px 24px',
             cursor: !selectedAssetId || uploading ? 'not-allowed' : 'pointer',
           }}
         >
