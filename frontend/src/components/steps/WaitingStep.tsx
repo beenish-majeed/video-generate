@@ -4,17 +4,16 @@ import apiClient from '../../api/client';
 import { mapJobStateToStory } from '../../utils/jobStateMapper';
 import { getPollingInterval, isTerminalState } from '../../utils/pollingStrategy';
 import {
-  DoodlePerson,
-  DoodleStar,
-  DoodleSparkle,
-  DoodlePlant,
-  DoodleCamera,
-  DoodleMic,
-  DoodleSpiral,
-} from '../Doodles';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
-import { Loader2, Clock, WifiOff, XCircle } from 'lucide-react';
+  Loader2,
+  Clock,
+  WifiOff,
+  XCircle,
+  Camera,
+  Mic,
+  User,
+  Film,
+  Sparkles,
+} from 'lucide-react';
 
 interface WaitingStepProps {
   jobId: string;
@@ -169,26 +168,24 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     ? Math.round((completedSegments / totalSegments) * 100)
     : 0;
 
-  // Render appropriate doodle icon for story stage
-  const renderStoryDoodle = () => {
+  // Render appropriate icon for story stage
+  const renderStoryIcon = () => {
     switch (story.doodleKind) {
-      case 'spiral':
-        return <DoodleSpiral count={6} />;
       case 'camera':
-        return <DoodleCamera size={44} />;
+        return <Camera size={40} style={{ color: 'var(--accent-primary)' }} />;
       case 'mic':
-        return <DoodleMic size={44} />;
+        return <Mic size={40} style={{ color: 'var(--accent-primary)' }} />;
       case 'person':
-        return <DoodlePerson width={80} height={90} color="var(--ink-primary)" />;
+        return <User size={40} style={{ color: 'var(--accent-primary)' }} />;
       case 'plant':
-        return <DoodlePlant size={48} />;
+        return <Film size={40} style={{ color: 'var(--accent-primary)' }} />;
       case 'clock':
-        return <Clock size={40} style={{ color: 'var(--ink-terracotta)' }} />;
+        return <Clock size={40} style={{ color: 'var(--accent-primary)' }} />;
       case 'sparkle':
-        return <DoodleSparkle size={36} />;
+      case 'spiral':
       case 'star':
       default:
-        return <DoodleStar size={36} />;
+        return <Sparkles size={40} style={{ color: 'var(--accent-primary)' }} />;
     }
   };
 
@@ -196,20 +193,16 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 22px)',
+        gap: 'clamp(16px, 2.5dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(900px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-2deg" style={{ position: 'absolute', top: '10px', right: '40px' }} />
-      <Sticker label="STUDIO WAITING ROOM" rotation="3deg" variant="blue" />
-
       {/* Accessibility Announcement Region for Screen Readers */}
       <div
         aria-live="polite"
@@ -229,24 +222,23 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         {`Current studio stage: ${story.title}. ${story.storyLine}`}
       </div>
 
-      {/* Network Connection Loss / Slow Network Recovery Banner */}
+      {/* Network Connection Loss Banner */}
       {connectionLost && (
         <div
           role="status"
           style={{
             padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#fff8f6',
-            border: '1.5px dashed var(--ink-terracotta)',
+            borderRadius: 'var(--radius-card)',
+            backgroundColor: 'var(--accent-warning-light)',
+            border: '1px solid var(--accent-warning)',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            color: 'var(--ink-terracotta)',
+            color: 'var(--accent-warning)',
             fontSize: '14px',
             fontWeight: 600,
             width: '100%',
             boxSizing: 'border-box',
-            wordBreak: 'break-word',
           }}
         >
           <WifiOff size={18} style={{ flexShrink: 0 }} />
@@ -255,47 +247,37 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
       )}
 
       {/* Header Copy */}
-      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <h2
+            className="editorial-title"
+            style={{
+              fontSize: 'clamp(24px, 2.2vw, 36px)',
+              lineHeight: 1.15,
+              margin: 0,
+            }}
+          >
+            {isCancelled ? 'Job Stopped' : 'Rendering your memory film'}
+          </h2>
+          <span className="step-indicator-pill">STUDIO WAITING ROOM</span>
+        </div>
         <p
-          className="handwritten"
           style={{
-            fontSize: 'clamp(18px, 1.4vw, 24px)',
-            color: 'var(--ink-terracotta)',
-            wordBreak: 'break-word',
+            color: 'var(--text-muted)',
+            fontSize: 'clamp(14px, 1vw, 16px)',
             margin: 0,
-          }}
-        >
-          {isCancelled ? 'Render cancelled' : 'Please take a gentle breath while we craft...'}
-        </p>
-        <h2
-          className="editorial-title"
-          style={{
-            fontSize: 'clamp(24px, 2.2vw, 36px)',
-            marginTop: '2px',
-            lineHeight: 1.15,
-            wordBreak: 'break-word',
-          }}
-        >
-          {isCancelled ? 'Job stopped' : 'Rendering your memory film'}
-        </h2>
-        <p
-          style={{
-            color: 'var(--ink-muted)',
-            fontSize: 'clamp(14px, 1vw, 17px)',
-            marginTop: '2px',
-            wordBreak: 'break-word',
           }}
         >
           Job ID:{' '}
           <code
             style={{
-              backgroundColor: 'var(--paper-cream-alt)',
-              color: 'var(--ink-primary)',
+              backgroundColor: 'var(--bg-subtle)',
+              color: 'var(--text-primary)',
               padding: '2px 8px',
               borderRadius: '4px',
-              wordBreak: 'break-all',
-              display: 'inline-block',
-              maxWidth: '100%',
+              border: '1px solid var(--border-light)',
+              fontSize: '13px',
+              fontFamily: 'monospace',
             }}
           >
             {jobId}
@@ -308,29 +290,40 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
         <div
           role="status"
           data-testid="job-cancelled-banner"
+          className="card"
           style={{
-            padding: '28px 20px',
-            borderRadius: 'var(--radius-paper)',
-            backgroundColor: 'var(--paper-cream-alt)',
-            border: '1.5px dashed var(--ink-terracotta)',
+            padding: '36px 24px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             textAlign: 'center',
-            gap: '12px',
+            gap: '14px',
           }}
         >
-          <DoodleSpiral count={5} />
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--accent-primary-light)',
+              color: 'var(--accent-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Sparkles size={28} />
+          </div>
           <h3
             className="editorial-title"
-            style={{ fontSize: '22px', margin: 0, color: 'var(--ink-terracotta)' }}
+            style={{ fontSize: '22px', margin: 0, color: 'var(--text-primary)' }}
           >
             Job Cancelled
           </h3>
           <p
             style={{
               fontSize: '14px',
-              color: 'var(--ink-muted)',
+              color: 'var(--text-muted)',
               margin: 0,
               maxWidth: '460px',
               lineHeight: 1.5,
@@ -351,26 +344,23 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 }
               )
             }
-            className="btn-terracotta"
-            style={{ marginTop: '10px', padding: '10px 22px', minHeight: '44px', cursor: 'pointer' }}
+            className="btn-primary"
+            style={{ marginTop: '8px', padding: '10px 22px', minHeight: '44px', cursor: 'pointer' }}
           >
             Start a new creation
           </button>
         </div>
       ) : (
-        /* Main Ambient Frame */
+        /* Main Ambient Card */
         <div
+          className="card"
           style={{
             position: 'relative',
-            backgroundColor: 'var(--paper-cream)',
-            border: '1.5px solid var(--paper-border)',
-            borderRadius: 'var(--radius-paper)',
-            padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 2.5vw, 24px)',
+            padding: 'clamp(28px, 4dvh, 44px) clamp(20px, 3vw, 36px)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 'clamp(10px, 1.5dvh, 18px)',
-            boxShadow: 'var(--shadow-card)',
+            gap: 'clamp(14px, 2dvh, 22px)',
             width: '100%',
             boxSizing: 'border-box',
           }}
@@ -382,7 +372,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               textAlign: 'center',
-              gap: '10px',
+              gap: '12px',
               maxWidth: '560px',
               width: '100%',
             }}
@@ -392,11 +382,11 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '56px',
-                height: '56px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
-                backgroundColor: 'rgba(196, 98, 77, 0.1)',
-                color: 'var(--ink-terracotta)',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
               }}
             >
               <Loader2 size={32} className="animate-spin" />
@@ -405,10 +395,9 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             <h3
               className="editorial-title"
               style={{
-                fontSize: 'clamp(20px, 3.5vw, 24px)',
-                margin: '4px 0 0 0',
-                color: 'var(--ink-primary)',
-                wordBreak: 'break-word',
+                fontSize: 'clamp(20px, 3vw, 26px)',
+                margin: 0,
+                color: 'var(--text-primary)',
               }}
             >
               {story.title}
@@ -416,11 +405,10 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
 
             <p
               style={{
-                fontSize: 'clamp(14px, 2.5vw, 15px)',
-                color: 'var(--ink-muted)',
+                fontSize: 'clamp(14px, 1.2vw, 16px)',
+                color: 'var(--text-muted)',
                 lineHeight: 1.5,
                 margin: 0,
-                wordBreak: 'break-word',
               }}
             >
               {story.storyLine}
@@ -443,7 +431,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   display: 'flex',
                   justifyContent: 'space-between',
                   fontSize: '13px',
-                  color: 'var(--ink-muted)',
+                  color: 'var(--text-muted)',
                 }}
               >
                 <span>
@@ -456,7 +444,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   width: '100%',
                   height: '8px',
                   borderRadius: '4px',
-                  backgroundColor: 'rgba(0,0,0,0.06)',
+                  backgroundColor: 'var(--bg-muted)',
                   overflow: 'hidden',
                 }}
               >
@@ -464,7 +452,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   style={{
                     width: `${realSegmentPercent}%`,
                     height: '100%',
-                    backgroundColor: 'var(--ink-sage)',
+                    backgroundColor: 'var(--accent-primary)',
                     transition: 'width 0.3s ease',
                   }}
                 />
@@ -473,24 +461,24 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
           ) : (
             <div
               style={{
-                padding: '12px 16px',
-                borderRadius: '10px',
-                backgroundColor: 'var(--paper-cream-alt)',
-                border: '1px solid var(--paper-border)',
+                padding: '12px 18px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-subtle)',
+                border: '1px solid var(--border-light)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '8px',
+                gap: '12px',
                 width: '100%',
                 maxWidth: '440px',
                 boxSizing: 'border-box',
                 fontSize: '14px',
-                color: 'var(--ink-primary)',
+                color: 'var(--text-primary)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
+                <Clock size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
                 <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                   {formatMinSec(elapsedSeconds)} elapsed
                 </span>
@@ -499,8 +487,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               <div
                 style={{
                   fontSize: '13px',
-                  color: 'var(--ink-primary)',
-                  fontStyle: 'italic',
+                  color: 'var(--text-muted)',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -509,26 +496,25 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             </div>
           )}
 
-          {/* Story Doodle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '4px' }}>
-            {renderStoryDoodle()}
+          {/* Story Icon */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '6px' }}>
+            {renderStoryIcon()}
           </div>
 
           <p
-            className="handwritten"
             style={{
-              fontSize: 'clamp(15px, 3vw, 17px)',
-              color: 'var(--ink-primary)',
+              fontSize: '14px',
+              color: 'var(--text-muted)',
               marginTop: '2px',
               textAlign: 'center',
-              wordBreak: 'break-word',
+              lineHeight: 1.5,
             }}
           >
             Taking care with every frame... your memory is taking shape.
           </p>
 
           {/* Cancel Job Action Button */}
-          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
             <button
               type="button"
               data-testid="cancel-job-btn"
@@ -542,7 +528,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 fontSize: '13.5px',
                 padding: '8px 18px',
                 minHeight: '44px',
-                color: 'var(--ink-terracotta)',
+                color: 'var(--accent-danger)',
                 cursor: cancelling ? 'default' : 'pointer',
                 opacity: cancelling ? 0.7 : 1,
               }}
