@@ -1,7 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DoodleMic } from '../Doodles';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { extractWaveformPeaks, formatDuration, type WaveformAnalysis } from '../../utils/audioWaveform';
@@ -22,6 +19,7 @@ import {
   Check,
   Radio,
   ShieldAlert,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface VoiceStepProps {
@@ -452,34 +450,28 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 20px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-1.5deg" style={{ position: 'absolute', top: '10px', right: '50px' }} />
-      <Sticker label="LET US HEAR YOU" rotation="2deg" variant="blue" />
-
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', margin: 0 }}>
-          Now, let’s give your story a voice...
-        </p>
-        <h2 className="editorial-title" style={{ marginTop: '2px', fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.15 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Provide a voice sample
         </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           Upload an existing audio recording or speak directly into your microphone (3 to 60 seconds).
         </p>
       </header>
 
-      {/* Responsive Option Mode Selector (Upload vs Record Now) */}
+      {/* Segmented Option Mode Selector (Upload vs Record Now) */}
       {!previewUrl && (
         <div
           style={{
@@ -487,34 +479,35 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             flexWrap: 'wrap',
             alignItems: 'center',
             gap: '6px',
-            backgroundColor: 'var(--paper-cream-alt)',
+            backgroundColor: 'var(--bg-subtle)',
             padding: '4px',
-            borderRadius: '10px',
-            border: '1px solid var(--paper-border)',
+            borderRadius: 'var(--radius-pill)',
+            border: '1px solid var(--border-light)',
             width: '100%',
-            maxWidth: '440px',
+            maxWidth: '360px',
             boxSizing: 'border-box',
           }}
         >
           <button
             type="button"
             onClick={() => handleSwitchMode('upload')}
-            className="handwritten"
             style={{
-              flex: '1 1 130px',
+              flex: '1 1 120px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '6px 12px',
+              padding: '8px 16px',
               minHeight: '40px',
-              borderRadius: '8px',
-              fontSize: '15.5px',
-              border: voiceMode === 'upload' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
-              backgroundColor: voiceMode === 'upload' ? 'var(--paper-cream)' : 'transparent',
-              color: voiceMode === 'upload' ? 'var(--ink-terracotta)' : '#524b42',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '14px',
+              border: voiceMode === 'upload' ? '1px solid var(--border-light)' : '1px solid transparent',
+              backgroundColor: voiceMode === 'upload' ? 'var(--bg-surface)' : 'transparent',
+              color: voiceMode === 'upload' ? 'var(--text-primary)' : 'var(--text-muted)',
+              boxShadow: voiceMode === 'upload' ? 'var(--shadow-sm)' : 'none',
               cursor: 'pointer',
-              fontWeight: voiceMode === 'upload' ? 'bold' : 'normal',
+              fontWeight: voiceMode === 'upload' ? 600 : 500,
+              fontFamily: 'var(--font-sans)',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}
@@ -526,22 +519,23 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           <button
             type="button"
             onClick={() => handleSwitchMode('record')}
-            className="handwritten"
             style={{
-              flex: '1 1 130px',
+              flex: '1 1 120px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '6px 12px',
+              padding: '8px 16px',
               minHeight: '40px',
-              borderRadius: '8px',
-              fontSize: '15.5px',
-              border: voiceMode === 'record' ? '1.5px solid var(--ink-terracotta)' : '1px transparent',
-              backgroundColor: voiceMode === 'record' ? 'var(--paper-cream)' : 'transparent',
-              color: voiceMode === 'record' ? 'var(--ink-terracotta)' : '#524b42',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '14px',
+              border: voiceMode === 'record' ? '1px solid var(--border-light)' : '1px solid transparent',
+              backgroundColor: voiceMode === 'record' ? 'var(--bg-surface)' : 'transparent',
+              color: voiceMode === 'record' ? 'var(--text-primary)' : 'var(--text-muted)',
+              boxShadow: voiceMode === 'record' ? 'var(--shadow-sm)' : 'none',
               cursor: 'pointer',
-              fontWeight: voiceMode === 'record' ? 'bold' : 'normal',
+              fontWeight: voiceMode === 'record' ? 600 : 500,
+              fontFamily: 'var(--font-sans)',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}
@@ -555,47 +549,41 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       {/* Main Interactive Content */}
       <div role="region" aria-label="Voice recording workspace" style={{ width: '100%' }}>
         {previewUrl ? (
-          /* Waveform Preview Player Box - Scales Fluidly to Container Width */
+          /* Waveform Preview Player Box - Clean 16px Card */
           <div
+            className="card"
             style={{
-              position: 'relative',
-              padding: 'clamp(16px, 3vw, 24px)',
-              borderRadius: '12px',
-              backgroundColor: '#ffffff',
-              border: '1.5px dashed var(--paper-border)',
-              boxShadow: 'var(--shadow-paper-float)',
+              padding: 'clamp(20px, 3vw, 28px)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px',
+              gap: '20px',
               width: '100%',
               boxSizing: 'border-box',
             }}
           >
-            <Tape rotation="1.5deg" style={{ position: 'absolute', top: '-14px', left: '30px' }} />
-
             {/* Audio Info Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '0', flex: '1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '0', flex: '1' }}>
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--paper-cream-alt)',
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--accent-primary-light)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--ink-terracotta)',
+                    color: 'var(--accent-primary)',
                     flexShrink: 0,
                   }}
                 >
                   <Volume2 size={20} />
                 </div>
                 <div style={{ minWidth: '0', overflow: 'hidden' }}>
-                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '16px', color: 'var(--ink-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
                     {fileName || 'Voice Sample'}
                   </h4>
-                  <p style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', margin: 0 }}>
                     {fileSizeStr} {waveform ? `• ${formatDuration(waveform.duration)}` : ''}
                   </p>
                 </div>
@@ -610,14 +598,14 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   width: '42px',
                   height: '42px',
                   borderRadius: '50%',
-                  backgroundColor: 'var(--ink-terracotta)',
+                  backgroundColor: 'var(--accent-primary)',
                   color: '#ffffff',
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(200, 90, 50, 0.3)',
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                   transition: 'all 0.15s ease',
                   flexShrink: 0,
                 }}
@@ -626,23 +614,23 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               </button>
             </div>
 
-            {/* Real Audio Waveform Visualization - Scales 100% */}
+            {/* Real Audio Waveform Visualization */}
             <div
               style={{
-                padding: '14px 10px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--paper-cream-alt)',
-                border: '1px solid var(--paper-border)',
+                padding: '16px 12px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-subtle)',
+                border: '1px solid var(--border-light)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
+                gap: '10px',
                 width: '100%',
               }}
             >
               {analyzingAudio ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px 0', color: 'var(--ink-terracotta)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px 0', color: 'var(--accent-primary)' }}>
                   <Loader2 size={18} className="animate-spin" />
-                  <span className="handwritten" style={{ fontSize: '18px' }}>Reading audio frequencies...</span>
+                  <span style={{ fontSize: '14.5px', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>Reading audio frequencies...</span>
                 </div>
               ) : waveform ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '52px', width: '100%' }}>
@@ -656,8 +644,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                         key={idx}
                         style={{
                           flex: 1,
-                          height: `${amplitude * 100}%`,
-                          backgroundColor: isPlayed ? 'var(--ink-terracotta)' : 'var(--paper-border)',
+                          height: `${Math.max(8, amplitude * 100)}%`,
+                          backgroundColor: isPlayed ? 'var(--accent-primary)' : 'var(--border-subtle)',
                           borderRadius: '2px',
                           transition: 'height 0.2s ease, background-color 0.1s ease',
                         }}
@@ -668,7 +656,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               ) : null}
 
               {/* Time Counter Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--ink-muted)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
                 <span>{formatDuration(currentTime)}</span>
                 <span>{formatDuration(waveform?.duration || 0)}</span>
               </div>
@@ -678,18 +666,18 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {uploading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600 }}>
-                  <span style={{ color: 'var(--ink-terracotta)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Loader2 size={16} className="animate-spin" />
                     Sending voice sample to studio...
                   </span>
-                  <span style={{ color: 'var(--ink-primary)' }}>{uploadProgress}%</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{uploadProgress}%</span>
                 </div>
-                <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--paper-border)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div
                     style={{
                       width: `${uploadProgress}%`,
                       height: '100%',
-                      backgroundColor: 'var(--ink-terracotta)',
+                      backgroundColor: 'var(--accent-primary)',
                       transition: 'width 0.2s ease',
                     }}
                   />
@@ -697,8 +685,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               </div>
             ) : selectedAssetId ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-                <span className="handwritten" style={{ color: 'var(--ink-sage)', fontSize: '18px', fontWeight: 'bold' }}>
-                  ✓ Voice sample locked in!
+                <span style={{ color: 'var(--accent-success)', fontSize: '15px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={18} />
+                  Voice sample locked in!
                 </span>
                 <button
                   type="button"
@@ -729,35 +718,44 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
+            className="card"
             style={{
-              position: 'relative',
-              padding: 'clamp(16px, 2.5dvh, 28px) clamp(14px, 3vw, 24px)',
-              borderRadius: '12px',
-              backgroundColor: dragActive ? 'var(--paper-cream-dark)' : 'var(--paper-cream-alt)',
-              border: dragActive ? '2.5px dashed var(--ink-terracotta)' : '2px dashed var(--paper-border)',
+              padding: 'clamp(24px, 4dvh, 48px) 24px',
+              borderColor: dragActive ? 'var(--accent-primary)' : undefined,
+              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-surface)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 'clamp(8px, 1.2dvh, 14px)',
-              minHeight: 'clamp(140px, 22vh, 220px)',
+              gap: '14px',
+              minHeight: '220px',
               width: '100%',
               boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: dragActive ? 'var(--shadow-paper-float)' : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
-            <Tape rotation="2deg" style={{ position: 'absolute', top: '-14px', left: '40px' }} />
-
-            <DoodleMic size={50} />
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '16px',
+                backgroundColor: 'var(--accent-primary-light)',
+                color: 'var(--accent-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Upload size={26} />
+            </div>
 
             <div>
-              <p style={{ fontWeight: 600, color: 'var(--ink-primary)', fontSize: 'clamp(15px, 2.5vw, 17px)' }}>
+              <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '16px', margin: 0 }}>
                 Drag & drop voice audio clip (.wav, .mp3, .m4a, .webm)
               </p>
-              <p style={{ fontSize: '13px', color: '#4e473f', marginTop: '4px' }}>
+              <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
                 Clear speech with quiet background noise works best (Up to 20MB)
               </p>
             </div>
@@ -768,36 +766,44 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             </span>
           </div>
         ) : (
-          /* Option 2: Live Recording View - Responsive at 320px */
+          /* Option 2: Live Recording View */
           <div
+            className="card"
             style={{
-              position: 'relative',
-              padding: 'clamp(14px, 2dvh, 24px) clamp(12px, 2.5vw, 20px)',
-              borderRadius: '12px',
-              backgroundColor: 'var(--paper-cream-alt)',
-              border: '2px dashed var(--paper-border)',
+              padding: 'clamp(24px, 4dvh, 40px) 24px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 'clamp(8px, 1.2dvh, 14px)',
-              minHeight: 'clamp(140px, 22vh, 220px)',
+              gap: '16px',
+              minHeight: '220px',
               width: '100%',
               textAlign: 'center',
               boxSizing: 'border-box',
             }}
           >
-            <Tape rotation="-2deg" style={{ position: 'absolute', top: '-14px', right: '40px' }} />
-
             {/* Recording Status: Idle */}
             {recordingStatus === 'idle' && (
               <>
-                <DoodleMic size={44} />
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--accent-primary-light)',
+                    color: 'var(--accent-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Mic size={26} />
+                </div>
                 <div>
-                  <h3 className="editorial-title" style={{ fontSize: 'clamp(17px, 2.5vw, 20px)' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                     Speak into your microphone
                   </h3>
-                  <p style={{ fontSize: '13px', color: 'var(--ink-muted)', marginTop: '4px' }}>
+                  <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
                     Recording length must be between <strong>3 seconds</strong> and <strong>60 seconds</strong>.
                   </p>
                 </div>
@@ -805,7 +811,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 <button
                   type="button"
                   onClick={startRecording}
-                  className="btn-terracotta"
+                  className="btn-primary"
                   style={{ padding: '10px 24px', fontSize: '15px' }}
                 >
                   <Mic size={18} />
@@ -817,32 +823,32 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Recording Status: Requesting Permission */}
             {recordingStatus === 'requesting' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--ink-terracotta)' }} />
-                <p className="handwritten" style={{ fontSize: '20px', color: 'var(--ink-terracotta)' }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />
+                <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)', margin: 0 }}>
                   Requesting microphone permission...
                 </p>
-                <p style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: 0 }}>
                   Please allow microphone access in your browser prompt.
                 </p>
               </div>
             )}
 
-            {/* Recording Status: Active Recording - Fits 320px without overlap */}
+            {/* Recording Status: Active Recording */}
             {recordingStatus === 'recording' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
                 {/* Live REC Timer Indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Radio size={16} className="animate-pulse" style={{ color: 'var(--ink-terracotta)' }} />
-                  <span className="handwritten" style={{ fontSize: 'clamp(18px, 4vw, 22px)', color: 'var(--ink-terracotta)', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Radio size={18} className="animate-pulse" style={{ color: 'var(--accent-danger)' }} />
+                  <span style={{ fontSize: '20px', color: 'var(--accent-danger)', fontWeight: 700, fontFamily: 'monospace' }}>
                     REC {formatDuration(recordingTime)} / 01:00
                   </span>
                 </div>
 
-                <p style={{ fontSize: '12px', color: '#4e473f' }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
                   Speak clearly • Recording limit: 3s to 60s
                 </p>
 
-                {/* Hand-Drawn Live Level Meter */}
+                {/* Clean Live Level Meter */}
                 <div
                   role="img"
                   aria-label="Live audio volume level meter"
@@ -851,13 +857,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     alignItems: 'flex-end',
                     justifyContent: 'center',
                     gap: '4px',
-                    height: '52px',
+                    height: '48px',
                     width: '100%',
                     maxWidth: '220px',
                     padding: '6px 10px',
-                    backgroundColor: 'var(--paper-cream)',
-                    border: '1.5px solid var(--paper-border)',
-                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-subtle)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-md)',
                   }}
                 >
                   {audioLevels.map((lvl, idx) => (
@@ -867,9 +873,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                         flex: 1,
                         height: `${Math.max(12, lvl * 100)}%`,
                         backgroundColor:
-                          lvl > 0.6 ? 'var(--ink-terracotta)' : lvl > 0.3 ? 'var(--ink-amber)' : 'var(--ink-sage)',
-                        borderRadius: '3px',
-                        border: '1px solid var(--ink-primary)',
+                          lvl > 0.6 ? 'var(--accent-danger)' : lvl > 0.3 ? 'var(--accent-warning)' : 'var(--accent-primary)',
+                        borderRadius: '2px',
                         transition: 'height 0.1s ease',
                       }}
                     />
@@ -879,8 +884,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 <button
                   type="button"
                   onClick={stopRecording}
-                  className="btn-terracotta"
-                  style={{ padding: '8px 20px', backgroundColor: 'var(--ink-primary)', fontSize: '14px' }}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', backgroundColor: 'var(--text-primary)', fontSize: '14px' }}
                 >
                   <Square size={15} fill="#ffffff" />
                   <span>Stop Recording</span>
@@ -891,27 +896,27 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Recording Status: Too Short Warning */}
             {recordingStatus === 'too_short' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <AlertCircle size={28} style={{ color: 'var(--ink-amber)' }} />
-                <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+                <AlertCircle size={28} style={{ color: 'var(--accent-warning)' }} />
+                <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                   Recording was too short ({recordingTime}s)
                 </h4>
-                <p style={{ fontSize: '13px', color: 'var(--ink-muted)' }}>
+                <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: 0 }}>
                   Please record a voice clip between <strong>3 seconds</strong> and <strong>60 seconds</strong>.
                 </p>
 
-                <button type="button" onClick={resetRecording} className="btn-terracotta" style={{ fontSize: '14px', padding: '8px 18px' }}>
+                <button type="button" onClick={resetRecording} className="btn-primary" style={{ fontSize: '14px', padding: '8px 18px' }}>
                   <RefreshCw size={15} />
                   <span>Try Recording Again</span>
                 </button>
               </div>
             )}
 
-            {/* Recording Status: Recorded & Ready to Review - Fits 320px */}
+            {/* Recording Status: Recorded & Ready to Review */}
             {recordingStatus === 'recorded' && recordedFile && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--ink-sage)' }}>
-                  <Check size={18} />
-                  <span className="handwritten" style={{ fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: 'bold' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-success)' }}>
+                  <CheckCircle2 size={18} />
+                  <span style={{ fontSize: '16px', fontWeight: 600 }}>
                     Recording captured! ({recordingTime}s)
                   </span>
                 </div>
@@ -922,7 +927,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     <span>Re-record</span>
                   </button>
 
-                  <button type="button" onClick={handleUseRecording} className="btn-terracotta" style={{ fontSize: '13px', padding: '8px 14px', minHeight: '44px', flex: '1 1 140px' }}>
+                  <button type="button" onClick={handleUseRecording} className="btn-primary" style={{ fontSize: '13px', padding: '8px 14px', minHeight: '44px', flex: '1 1 140px' }}>
                     <Check size={14} />
                     <span>Use this recording</span>
                   </button>
@@ -930,28 +935,26 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               </div>
             )}
 
-            {/* Recording Permission / Device / Context Error Card */}
+            {/* Recording Permission Error Card */}
             {permissionError && (
               <div
+                className="card"
                 style={{
                   padding: '14px 16px',
-                  borderRadius: '10px',
-                  backgroundColor: '#fff',
-                  border: '1.5px dashed var(--ink-terracotta)',
+                  borderColor: 'var(--accent-danger)',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '10px',
                   textAlign: 'left',
                   width: '100%',
-                  boxShadow: 'var(--shadow-card)',
                 }}
               >
-                <ShieldAlert size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+                <ShieldAlert size={20} style={{ color: 'var(--accent-danger)', flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', color: 'var(--ink-primary)' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                     Microphone Notice
                   </h4>
-                  <p style={{ fontSize: '13px', color: 'var(--ink-muted)', lineHeight: 1.4 }}>{permissionError}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>{permissionError}</p>
                 </div>
               </div>
             )}
@@ -968,27 +971,25 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         />
       </div>
 
-      {/* Kind Human Error State Card */}
+      {/* Error State Card */}
       {mappedError && (
         <div
           role="alert"
+          className="card"
           style={{
             padding: '16px 20px',
-            borderRadius: '10px',
-            backgroundColor: '#fff',
-            border: '1.5px dashed var(--ink-terracotta)',
+            borderColor: 'var(--accent-danger)',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',
-            boxShadow: 'var(--shadow-card)',
           }}
         >
-          <AlertCircle size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0, marginTop: '2px' }} />
+          <AlertCircle size={22} style={{ color: 'var(--accent-danger)', flexShrink: 0, marginTop: '2px' }} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', color: 'var(--ink-primary)' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               {mappedError.title}
             </h4>
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
               {mappedError.message}
             </p>
           </div>
@@ -1002,16 +1003,16 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '4px',
-          paddingTop: 'clamp(8px, 1dvh, 12px)',
-          borderTop: '1px solid var(--paper-border)',
+          marginTop: '8px',
+          paddingTop: '16px',
+          borderTop: '1px solid var(--border-light)',
         }}
       >
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
-          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+          style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
         >
           <ArrowLeft size={16} />
           <span>Back</span>
@@ -1021,11 +1022,10 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           type="button"
           onClick={onNext}
           disabled={!selectedAssetId || uploading}
-          className="btn-terracotta"
+          className="btn-primary"
           style={{
             minHeight: '44px',
-            padding: '10px 22px',
-            opacity: !selectedAssetId || uploading ? 0.5 : 1,
+            padding: '10px 24px',
             cursor: !selectedAssetId || uploading ? 'not-allowed' : 'pointer',
           }}
         >
