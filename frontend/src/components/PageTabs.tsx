@@ -96,11 +96,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 12px 0 12px',
-        backgroundColor: 'var(--paper-cream-dark)',
-        borderBottom: '1px solid var(--paper-border)',
-        gap: '8px',
+        justifyContent: 'center',
         width: '100%',
       }}
     >
@@ -108,16 +104,16 @@ export const PageTabs: React.FC<PageTabsProps> = ({
       <div
         className="hide-scrollbar"
         role="tablist"
-        aria-label="Sketchbook step navigation tabs"
+        aria-label="Step navigation"
         tabIndex={0}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
+          gap: '6px',
           overflowX: 'auto',
           WebkitOverflowScrolling: 'touch',
-          paddingBottom: '0',
-          flex: 1,
+          padding: '4px 0',
+          maxWidth: '100%',
         }}
       >
         {stepsList.map((step, idx) => {
@@ -136,29 +132,31 @@ export const PageTabs: React.FC<PageTabsProps> = ({
               onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
               disabled={!isClickable}
               style={{
-                padding: '8px 14px',
-                minHeight: '44px',
-                borderRadius: '8px 8px 0 0',
-                border: '1px solid var(--paper-border)',
-                borderBottom: isActive ? '1px solid var(--paper-cream)' : '1px solid var(--paper-border)',
+                padding: '6px 14px',
+                minHeight: '36px',
+                borderRadius: 'var(--radius-pill)',
+                border: isActive
+                  ? '1px solid var(--accent-primary-border)'
+                  : isCompleted
+                  ? '1px solid var(--border-light)'
+                  : '1px solid transparent',
                 backgroundColor: isActive
-                  ? 'var(--paper-cream)'
+                  ? 'var(--accent-primary-light)'
                   : isCompleted
-                  ? 'var(--paper-cream-alt)'
-                  : 'rgba(225, 215, 200, 0.5)',
+                  ? 'var(--bg-surface)'
+                  : 'transparent',
                 color: isActive
-                  ? 'var(--ink-terracotta)'
+                  ? 'var(--accent-primary)'
                   : isCompleted
-                  ? 'var(--ink-primary)'
-                  : '#524b42',
-                fontFamily: 'var(--font-hand)',
-                fontSize: '16px',
-                fontWeight: isActive ? 'bold' : '500',
+                  ? 'var(--text-secondary)'
+                  : 'var(--text-muted)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '13px',
+                fontWeight: isActive ? 600 : 500,
                 cursor: isClickable ? 'pointer' : 'default',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                transform: isActive ? 'translateY(1px)' : 'none',
                 transition: 'all 0.15s ease',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
@@ -170,10 +168,10 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '16px',
-                    height: '16px',
+                    width: '15px',
+                    height: '15px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--ink-sage)',
+                    backgroundColor: 'var(--accent-primary)',
                     color: '#fff',
                   }}
                 >
@@ -185,9 +183,6 @@ export const PageTabs: React.FC<PageTabsProps> = ({
           );
         })}
       </div>
-
-      {/* Persistent Soft Sound Toggle */}
-      <SoundToggle />
     </div>
   );
 };

@@ -29,25 +29,25 @@ export const SoundToggle: React.FC = () => {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
-        padding: '8px 14px',
-        borderRadius: '9999px',
-        backgroundColor: enabled ? 'var(--paper-cream)' : 'rgba(225, 215, 200, 0.4)',
-        border: enabled ? '1.5px solid var(--ink-terracotta)' : '1px dashed #524b42',
-        color: enabled ? 'var(--ink-terracotta)' : '#3e3832',
-        fontFamily: 'var(--font-hand)',
-        fontSize: '15px',
-        fontWeight: 'bold',
+        padding: '6px 14px',
+        borderRadius: 'var(--radius-pill)',
+        backgroundColor: enabled ? 'var(--accent-primary-light)' : 'var(--bg-surface)',
+        border: enabled ? '1px solid var(--accent-primary-border)' : '1px solid var(--border-light)',
+        color: enabled ? 'var(--accent-primary)' : 'var(--text-secondary)',
+        fontFamily: 'var(--font-sans)',
+        fontSize: '13.5px',
+        fontWeight: 500,
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease',
         minHeight: '44px',
         userSelect: 'none',
         flexShrink: 0,
       }}
     >
       {enabled ? (
-        <Volume2 size={16} style={{ color: 'var(--ink-terracotta)' }} />
+        <Volume2 size={16} style={{ color: 'var(--accent-primary)' }} />
       ) : (
-        <VolumeX size={16} style={{ color: '#3e3832' }} />
+        <VolumeX size={16} style={{ color: 'var(--text-muted)' }} />
       )}
       <span>{enabled ? 'Sound: On' : 'Sound: Off'}</span>
     </button>

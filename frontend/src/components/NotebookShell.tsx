@@ -1,6 +1,6 @@
 import React from 'react';
 import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
-import { DoodleSpiral } from './Doodles';
+import SoundToggle from './SoundToggle';
 
 interface NotebookShellProps {
   currentStep: JourneyStepId;
@@ -16,41 +16,55 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   children,
 }) => {
   return (
-    <div className="notebook-wrapper">
-      {/* Outer Notebook Window Container */}
-      <div className="notebook-container graph-paper-bg">
-        {/* Notebook Top Binder Spiral */}
-        <header aria-label="Notebook Binder">
-          <h1 className="sr-only">Memory Studio — Turn Memories into Cinematic Videos</h1>
-          <DoodleSpiral count={14} />
-        </header>
+    <div className="app-shell notebook-wrapper">
+      {/* Modern Edge-to-Edge Top Bar */}
+      <header className="app-topbar" aria-label="Application Header">
+        <div
+          className="app-brand"
+          onClick={() => onSelectStep && onSelectStep('hero')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              onSelectStep && onSelectStep('hero');
+            }
+          }}
+          aria-label="Memory Studio Home"
+        >
+          <span className="app-brand-badge">M</span>
+          <span>Memory Studio</span>
+        </div>
 
-        {/* Handmade Page Tabs Step Indicator */}
+        {/* Clean Step Indicator */}
         {currentStep !== 'hero' && currentStep !== 'choice' && (
-          <nav aria-label="Step navigation">
+          <nav
+            aria-label="Step navigation"
+            style={{
+              flex: 1,
+              maxWidth: '840px',
+              margin: '0 16px',
+              overflow: 'hidden',
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
             <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
           </nav>
         )}
 
-        {/* Paper Page Inner Content */}
-        <main
-          id="main-content"
-          style={{
-            position: 'relative',
-            flex: 1,
-            minHeight: 0,
-            width: '100%',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          {children}
-        </main>
-      </div>
+        {/* Top-Right Sound & Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <SoundToggle />
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main id="main-content" className="app-main">
+        {children}
+      </main>
     </div>
   );
 };
 
 export default NotebookShell;
+
