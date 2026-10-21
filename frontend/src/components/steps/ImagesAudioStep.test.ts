@@ -8,7 +8,7 @@ describe('ImagesAudioStep component tests', () => {
     vi.restoreAllMocks();
   });
 
-  it('1. Renders photo sequence, voice options, subtitles toggle, and capabilities panel', () => {
+  it('1. Renders photo sequence, voice options, and subtitles toggle', () => {
     const markup = renderToStaticMarkup(
       React.createElement(ImagesAudioStep, {
         initialImages: [],
@@ -22,8 +22,6 @@ describe('ImagesAudioStep component tests', () => {
     expect(markup).toContain('2. Voice or Narration');
     expect(markup).toContain('3. Video Presentation Options');
     expect(markup).toContain('Burn in subtitles');
-    expect(markup).toContain('Your computer');
-    expect(markup).toContain('Limitations:');
     expect(markup).toContain('Continue to Consent');
   });
 

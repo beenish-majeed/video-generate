@@ -39,7 +39,6 @@ describe('LookVoiceStep component tests', () => {
     expect(markup).toContain('Watercolor');
     expect(markup).toContain('Narrator Voice');
     expect(markup).toContain('Review Script');
-    expect(markup).toContain('Limitations:');
   });
 
   it('2. Renders Character Look polaroids when presentation style is talking face', () => {

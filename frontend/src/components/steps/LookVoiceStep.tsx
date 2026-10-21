@@ -6,7 +6,6 @@ import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
 import { ArrowRight, ArrowLeft, Mic, Check, Loader2, AlertCircle, Film, User, Palette } from 'lucide-react';
 import type { AvatarPreset, VoicePreset } from '../../types/api';
-import ComputerCapabilitiesPanel from '../ComputerCapabilitiesPanel';
 
 export interface LookVoiceStepProps {
   initialVisualMode?: 'slideshow' | 'talking_head';
@@ -631,11 +630,6 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           })}
         </div>
       </section>
-
-      {/* Limitations and capabilities note */}
-      <div style={{ marginTop: '2px' }}>
-        <ComputerCapabilitiesPanel mode={visualMode} durationSeconds={30} showLimitations={true} />
-      </div>
 
       {/* Navigation Buttons */}
       <div

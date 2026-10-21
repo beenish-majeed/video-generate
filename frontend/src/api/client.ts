@@ -7,7 +7,6 @@ import type {
   PresetsResponse,
   ScriptGeneratePayload,
   ScriptGenerateResponse,
-  CapabilitiesResponse,
 } from '../types/api';
 
 /**
@@ -177,17 +176,6 @@ class MemoryStudioAPIClient {
     });
   }
 
-  /**
-   * GET /v1/capabilities
-   * Retrieves host machine capabilities (GPU, providers, honest time estimate).
-   */
-  async getCapabilities(mode?: string, durationSeconds?: number): Promise<CapabilitiesResponse> {
-    const params = new URLSearchParams();
-    if (mode) params.append('mode', mode);
-    if (durationSeconds !== undefined) params.append('duration_seconds', String(durationSeconds));
-    const qs = params.toString() ? `?${params.toString()}` : '';
-    return this.request<CapabilitiesResponse>(`/v1/capabilities${qs}`);
-  }
 
   /**
    * POST /v1/jobs/{id}/cancel

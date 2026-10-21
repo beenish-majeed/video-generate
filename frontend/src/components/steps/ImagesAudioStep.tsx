@@ -6,7 +6,6 @@ import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
 import { convertBlobToWavFile } from '../../utils/wavEncoder';
 import { formatDuration } from '../../utils/audioWaveform';
-import ComputerCapabilitiesPanel from '../ComputerCapabilitiesPanel';
 import {
   Upload,
   ArrowRight,
@@ -122,9 +121,6 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
     };
   }, []);
 
-  // Compute total timeline duration
-  const totalImageDuration = images.reduce((acc, img) => acc + (img.duration || 3.0), 0);
-  const effectiveDuration = audioDuration > 0 ? audioDuration : Math.max(totalImageDuration, 5.0);
 
   // Image Upload handler
   const handleImageFiles = async (files: FileList | File[]) => {
@@ -962,15 +958,6 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           )}
         </div>
       </section>
-
-      {/* Your computer panel with honest time estimate & limitations note */}
-      <div style={{ marginTop: '4px' }}>
-        <ComputerCapabilitiesPanel
-          mode={preferLipSync && isSingleFace ? 'talking_head' : 'slideshow'}
-          durationSeconds={effectiveDuration}
-          showLimitations={true}
-        />
-      </div>
 
       {/* Navigation Buttons */}
       <footer

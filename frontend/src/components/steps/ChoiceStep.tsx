@@ -4,7 +4,6 @@ import Sticker from '../Sticker';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { DoodleCamera } from '../Doodles';
-import ComputerCapabilitiesPanel from '../ComputerCapabilitiesPanel';
 
 export const ENABLE_PROMPT_PATH = true;
 
@@ -417,11 +416,6 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
             <ArrowRight size={17} aria-hidden="true" />
           </button>
         </div>
-      </div>
-
-      {/* Your computer panel with honest time estimate & limitations notice */}
-      <div style={{ marginTop: '2px', width: '100%' }}>
-        <ComputerCapabilitiesPanel mode="slideshow" durationSeconds={30} showLimitations={true} />
       </div>
     </div>
   );

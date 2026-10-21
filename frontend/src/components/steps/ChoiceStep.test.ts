@@ -30,7 +30,7 @@ describe('ChoiceStep screen with three creative paths', () => {
     expect(html).toContain('Back');
   });
 
-  it('renders Your computer panel and limitations note on choice screen', () => {
+  it('renders choice cards cleanly without capabilities panel', () => {
     const html = renderToStaticMarkup(
       React.createElement(ChoiceStep, {
         onSelectPromptFlow: () => {},
@@ -40,8 +40,7 @@ describe('ChoiceStep screen with three creative paths', () => {
       })
     );
 
-    expect(html).toContain('Your computer');
-    expect(html).toContain('Limitations:');
-    expect(html).toContain('visuals are generated scenes with camera moves, not real motion video');
+    expect(html).not.toContain('Your computer');
+    expect(html).not.toContain('Limitations:');
   });
 });

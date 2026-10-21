@@ -53,27 +53,6 @@ export type ScriptTone = 'friendly' | 'professional' | 'storytelling' | 'educati
 export type VisualPresentationMode = 'slideshow' | 'talking_head';
 export type VisualStyle = 'cinematic' | 'watercolor' | 'flat illustration' | 'photo' | 'cards';
 
-export interface CapabilitiesResponse {
-  gpu: {
-    available: boolean;
-    device_name: string;
-  };
-  providers: {
-    ollama: boolean;
-    diffusers: boolean;
-    whisper: boolean;
-    piper: boolean;
-    cards: boolean;
-  };
-  auto_subtitles: boolean;
-  image_provider_configured: string;
-  llm_provider_configured: string;
-  estimate?: {
-    estimated_seconds: number;
-    display_text: string;
-    device: 'gpu' | 'cpu';
-  };
-}
 
 export interface ScriptGeneratePayload {
   prompt: string;
