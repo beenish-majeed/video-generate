@@ -2,11 +2,8 @@ import React, { useState } from 'react';
 import type { JobRecord } from '../../types/api';
 import apiClient from '../../api/client';
 import { mapAPIError } from '../../api/errorMapper';
-import { DoodleSparkle } from '../Doodles';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Download, RotateCcw, CheckCircle2, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { Download, RotateCcw, CheckCircle2, AlertCircle, RefreshCw, Loader2, Sparkles } from 'lucide-react';
 
 interface PremiereStepProps {
   job: JobRecord;
@@ -59,32 +56,28 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
     <div
       className="step-container"
       style={{
-        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 40px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(12px, 1.8dvh, 22px)',
+        gap: 'clamp(16px, 2.5dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="-3deg" style={{ position: 'absolute', top: '10px', left: '30px' }} />
-      <Sticker label="DIRECTOR'S CUT" rotation="4deg" variant="terracotta" />
-
       {/* Header Copy */}
-      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 'clamp(2px, 0.4dvh, 6px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle2 size={22} style={{ color: 'var(--ink-sage)', flexShrink: 0 }} />
-          <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', wordBreak: 'break-word', margin: 0 }}>
-            Your film is ready!
-          </p>
+      <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CheckCircle2 size={24} style={{ color: 'var(--accent-success)', flexShrink: 0 }} />
+            <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', margin: 0, lineHeight: 1.15 }}>
+              Grand Premiere
+            </h2>
+          </div>
+          <span className="step-indicator-pill">DIRECTOR&apos;S CUT</span>
         </div>
-        <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', marginTop: '2px', lineHeight: 1.15, wordBreak: 'break-word' }}>
-          Grand Premiere
-        </h2>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', marginTop: '2px', wordBreak: 'break-word' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', margin: 0 }}>
           Here is your finished animated memory ({formattedDuration}). Press play to watch.
         </p>
       </header>
@@ -95,9 +88,9 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
         aria-label="Theater screening frame"
         style={{
           position: 'relative',
-          borderRadius: '12px',
-          backgroundColor: '#121212',
-          boxShadow: 'var(--shadow-notebook)',
+          borderRadius: 'var(--radius-card)',
+          backgroundColor: '#0f172a',
+          boxShadow: 'var(--shadow-card)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -107,14 +100,12 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           maxHeight: 'min(580px, 54dvh)',
           aspectRatio: '16 / 9',
           width: '100%',
-          maxWidth: 'min(1080px, 96%)',
+          maxWidth: 'min(1080px, 100%)',
           margin: '0 auto',
           boxSizing: 'border-box',
-          border: '4px solid var(--paper-cream-alt)',
+          border: '1px solid var(--border-light)',
         }}
       >
-        <Tape rotation="1.5deg" style={{ position: 'absolute', top: '12px', right: '20px', zIndex: 20 }} />
-
         {/* Left Opening Curtain */}
         <motion.div
           initial={{ x: 0 }}
@@ -126,18 +117,18 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             left: 0,
             width: '50.5%',
             height: '100%',
-            backgroundColor: 'var(--paper-cream-dark)',
-            borderRight: '2px dashed var(--paper-border)',
+            backgroundColor: 'var(--bg-muted)',
+            borderRight: '1px solid var(--border-light)',
             zIndex: 15,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            paddingRight: 'clamp(8px, 3vw, 20px)',
-            boxShadow: '4px 0 12px rgba(0,0,0,0.2)',
+            paddingRight: 'clamp(12px, 3vw, 24px)',
+            boxShadow: '4px 0 12px rgba(15,23,42,0.1)',
             boxSizing: 'border-box',
           }}
         >
-          <span className="handwritten" style={{ fontSize: 'clamp(18px, 4vw, 26px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word' }}>Grand</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'clamp(18px, 3vw, 24px)', color: 'var(--text-primary)' }}>Grand</span>
         </motion.div>
 
         {/* Right Opening Curtain */}
@@ -151,18 +142,18 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             right: 0,
             width: '50.5%',
             height: '100%',
-            backgroundColor: 'var(--paper-cream-dark)',
-            borderLeft: '2px dashed var(--paper-border)',
+            backgroundColor: 'var(--bg-muted)',
+            borderLeft: '1px solid var(--border-light)',
             zIndex: 15,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-start',
-            paddingLeft: 'clamp(8px, 3vw, 20px)',
-            boxShadow: '-4px 0 12px rgba(0,0,0,0.2)',
+            paddingLeft: 'clamp(12px, 3vw, 24px)',
+            boxShadow: '-4px 0 12px rgba(15,23,42,0.1)',
             boxSizing: 'border-box',
           }}
         >
-          <span className="handwritten" style={{ fontSize: 'clamp(18px, 4vw, 26px)', color: 'var(--ink-terracotta)', wordBreak: 'break-word' }}>Premiere</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: 'clamp(18px, 3vw, 24px)', color: 'var(--text-primary)' }}>Premiere</span>
         </motion.div>
 
         {/* Video Player: NO AUTOPLAY WITH SOUND! autoPlay={false} */}
@@ -178,7 +169,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
               textAlign: 'center',
             }}
           >
-            <AlertCircle size={36} style={{ color: 'var(--ink-terracotta)' }} />
+            <AlertCircle size={36} style={{ color: 'var(--accent-danger)' }} />
             <p style={{ fontSize: '15px' }}>Could not load video preview stream.</p>
             <button
               type="button"
@@ -207,23 +198,22 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
         <div
           role="alert"
           style={{
-            padding: '16px 20px',
-            borderRadius: '10px',
-            backgroundColor: '#fff',
-            border: '1.5px dashed var(--ink-terracotta)',
+            padding: '14px 18px',
+            borderRadius: 'var(--radius-card)',
+            backgroundColor: 'var(--accent-danger-light)',
+            border: '1px solid var(--accent-danger)',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '12px',
-            boxShadow: 'var(--shadow-card)',
             width: '100%',
             boxSizing: 'border-box',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertCircle size={20} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />
-            <p style={{ fontSize: '14px', color: 'var(--ink-muted)', wordBreak: 'break-word' }}>{downloadError}</p>
+            <AlertCircle size={20} style={{ color: 'var(--accent-danger)', flexShrink: 0 }} />
+            <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{downloadError}</p>
           </div>
           <button type="button" onClick={handleDownload} className="btn-secondary" style={{ fontSize: '13px', padding: '6px 12px' }}>
             <RefreshCw size={14} />
@@ -234,17 +224,13 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
 
       {/* Action Buttons: Download & Make Another */}
       <footer
-        className="step-footer"
+        className="card"
         style={{
-          padding: 'clamp(10px, 1.5dvh, 16px) clamp(12px, 2vw, 18px)',
-          borderRadius: '12px',
-          backgroundColor: 'var(--paper-cream-alt)',
-          border: '1px dashed var(--paper-border)',
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          boxShadow: 'var(--shadow-card)',
           flexWrap: 'wrap',
           width: '100%',
           boxSizing: 'border-box',
@@ -260,10 +246,10 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           <span>Make another video</span>
         </button>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', justifyContent: 'flex-end' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <DoodleSparkle size={18} />
-            <span className="handwritten" style={{ fontSize: 'clamp(14px, 3vw, 17px)', color: 'var(--ink-muted)', wordBreak: 'break-word' }}>
+            <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               MP4 Format with AI Disclosure
             </span>
           </div>
@@ -272,7 +258,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             type="button"
             onClick={handleDownload}
             disabled={downloading}
-            className="btn-terracotta"
+            className="btn-primary"
             style={{ fontSize: '15px', padding: '10px 22px', minHeight: '44px', cursor: downloading ? 'not-allowed' : 'pointer' }}
           >
             {downloading ? (
