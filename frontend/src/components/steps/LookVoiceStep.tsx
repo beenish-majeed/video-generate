@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Tape from '../Tape';
-import Sticker from '../Sticker';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
@@ -126,72 +124,35 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
     <div
       className="step-container"
       style={{
-        padding: 'clamp(14px, 2.2dvh, 28px) clamp(16px, 2.2vw, 40px)',
+        padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(10px, 1.5dvh, 18px)',
+        gap: 'clamp(16px, 2dvh, 24px)',
         position: 'relative',
-        maxWidth: 'min(1500px, 96%)',
+        maxWidth: 'min(1100px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      <Tape rotation="2deg" style={{ position: 'absolute', top: '10px', right: '35px' }} />
-
-      {/* Top Header Row with Back Button */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}
-      >
-        <button
-          type="button"
-          onClick={onBack}
-          className="btn-secondary"
-          aria-label="Back to previous screen"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            minHeight: '44px',
-            minWidth: '44px',
-            padding: '8px 16px',
-            fontSize: '15px',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft size={16} aria-hidden="true" />
-          <span>Back</span>
-        </button>
-
-        <Sticker label="STEP 03" rotation="-1deg" variant="sage" />
-      </div>
-
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(3px, 0.5dvh, 6px)' }}>
-        <p className="handwritten" style={{ fontSize: 'clamp(18px, 1.4vw, 24px)', color: 'var(--ink-sage)', margin: 0 }}>
-          Visual style &amp; narrator...
-        </p>
-        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 36px)', lineHeight: 1.2, margin: 0 }}>
+      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Choose your look and voice
         </h1>
-        <p style={{ color: 'var(--ink-muted)', fontSize: 'clamp(14px, 1vw, 17px)', lineHeight: 1.4, margin: 0 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           Select how your video should look: animated scenes with camera moves, or a talking character portrait.
         </p>
       </header>
 
       {/* Section 0: Presentation Mode Selection */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <label
           style={{
-            fontFamily: 'var(--font-hand)',
-            fontSize: '17px',
-            fontWeight: 'bold',
-            color: 'var(--ink-primary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '15px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
           }}
         >
           Presentation style
@@ -199,8 +160,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 'clamp(8px, 1vw, 12px)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '12px',
             width: '100%',
           }}
         >
@@ -209,16 +170,14 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
             type="button"
             onClick={() => handleSelectPresentation('slideshow')}
             aria-pressed={visualMode === 'slideshow'}
+            className={`card ${visualMode === 'slideshow' ? 'card-selected' : ''}`}
             style={{
-              padding: 'clamp(8px, 1.2dvh, 12px) 14px',
-              borderRadius: 'var(--radius-paper)',
-              border: visualMode === 'slideshow' ? '2px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
-              backgroundColor: visualMode === 'slideshow' ? 'rgba(196, 98, 77, 0.08)' : 'var(--paper-cream)',
+              padding: '14px 16px',
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '6px',
               boxSizing: 'border-box',
               transition: 'all 0.15s ease',
               minHeight: '44px',
@@ -226,8 +185,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Film size={17} color="var(--ink-terracotta)" />
-                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink-primary)' }}>
+                <Film size={18} color="var(--accent-primary)" />
+                <span style={{ fontWeight: 600, fontSize: '14.5px', color: 'var(--text-primary)' }}>
                   Visual style: scenes with camera moves
                 </span>
               </div>
@@ -237,7 +196,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     width: '18px',
                     height: '18px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--ink-terracotta)',
+                    backgroundColor: 'var(--accent-primary)',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -248,7 +207,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                 </span>
               )}
             </div>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.35 }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
               Cinematic scenes panning and zooming seamlessly along with the speech.
             </p>
           </button>
@@ -258,16 +217,14 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
             type="button"
             onClick={() => handleSelectPresentation('talking_head')}
             aria-pressed={visualMode === 'talking_head'}
+            className={`card ${visualMode === 'talking_head' ? 'card-selected' : ''}`}
             style={{
-              padding: 'clamp(8px, 1.2dvh, 12px) 14px',
-              borderRadius: 'var(--radius-paper)',
-              border: visualMode === 'talking_head' ? '2px solid var(--ink-sage)' : '1px solid var(--paper-border)',
-              backgroundColor: visualMode === 'talking_head' ? 'rgba(110, 140, 115, 0.08)' : 'var(--paper-cream)',
+              padding: '14px 16px',
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
               flexDirection: 'column',
-              gap: '4px',
+              gap: '6px',
               boxSizing: 'border-box',
               transition: 'all 0.15s ease',
               minHeight: '44px',
@@ -275,8 +232,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={17} color="var(--ink-sage)" />
-                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink-primary)' }}>
+                <User size={18} color="var(--accent-primary)" />
+                <span style={{ fontWeight: 600, fontSize: '14.5px', color: 'var(--text-primary)' }}>
                   A talking face
                 </span>
               </div>
@@ -286,7 +243,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     width: '18px',
                     height: '18px',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--ink-sage)',
+                    backgroundColor: 'var(--accent-primary)',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -297,7 +254,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                 </span>
               )}
             </div>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--ink-muted)', lineHeight: 1.35 }}>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
               A character portrait brought to life with synchronized lip movements.
             </p>
           </button>
@@ -306,15 +263,15 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
 
       {/* Section 1A: Visual Style for scenes with camera moves */}
       {visualMode === 'slideshow' && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Palette size={17} color="var(--ink-terracotta)" />
+            <Palette size={18} color="var(--accent-primary)" />
             <h2
               style={{
-                fontFamily: 'var(--font-hand)',
-                fontSize: '17px',
-                fontWeight: 'bold',
-                color: 'var(--ink-primary)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
                 margin: 0,
               }}
             >
@@ -325,8 +282,8 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: 'clamp(6px, 1vw, 10px)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: '10px',
               width: '100%',
             }}
           >
@@ -338,16 +295,14 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                   type="button"
                   onClick={() => handleSelectStyle(style.id)}
                   aria-pressed={isSelected}
+                  className={`card ${isSelected ? 'card-selected' : ''}`}
                   style={{
-                    padding: 'clamp(8px, 1dvh, 10px) 10px',
-                    borderRadius: 'var(--radius-paper)',
-                    border: isSelected ? '2px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
-                    backgroundColor: isSelected ? 'rgba(196, 98, 77, 0.08)' : 'var(--paper-cream)',
+                    padding: '12px 14px',
                     cursor: 'pointer',
                     textAlign: 'left',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '2px',
+                    gap: '4px',
                     boxSizing: 'border-box',
                     transition: 'all 0.15s ease',
                     minHeight: '44px',
@@ -356,17 +311,17 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span
                       style={{
-                        fontFamily: 'var(--font-hand)',
-                        fontSize: '15px',
-                        fontWeight: isSelected ? 'bold' : '600',
-                        color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '14.5px',
+                        fontWeight: 600,
+                        color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
                       }}
                     >
                       {style.label}
                     </span>
-                    {isSelected && <Check size={14} color="var(--ink-terracotta)" strokeWidth={3} />}
+                    {isSelected && <Check size={14} color="var(--accent-primary)" strokeWidth={3} />}
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--ink-muted)', lineHeight: 1.3 }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                     {style.description}
                   </span>
                 </button>
@@ -376,15 +331,15 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         </section>
       )}
 
-      {/* Section 1B: Character Look (Taped Polaroids) for talking face */}
+      {/* Section 1B: Character Look for talking face */}
       {visualMode === 'talking_head' && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h2
             style={{
-              fontFamily: 'var(--font-hand)',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              color: 'var(--ink-primary)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
               margin: 0,
             }}
           >
@@ -394,14 +349,13 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '20px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: '14px',
               width: '100%',
             }}
           >
-            {avatars.map((avatar, idx) => {
+            {avatars.map((avatar) => {
               const isSelected = selectedAvatar === avatar.id;
-              const rotation = idx % 2 === 0 ? '-1.5deg' : '1.5deg';
 
               return (
                 <button
@@ -409,16 +363,9 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                   type="button"
                   onClick={() => handleSelectAvatar(avatar.id)}
                   aria-pressed={isSelected}
+                  className={`card ${isSelected ? 'card-selected' : ''}`}
                   style={{
-                    position: 'relative',
-                    backgroundColor: 'var(--paper-cream)',
-                    border: isSelected ? '2.5px solid var(--ink-terracotta)' : '1px solid var(--paper-border)',
-                    borderRadius: '4px',
-                    padding: '12px 12px 18px 12px',
-                    boxShadow: isSelected
-                      ? '0 6px 16px rgba(196, 98, 77, 0.25)'
-                      : 'var(--shadow-card)',
-                    transform: `rotate(${rotation})`,
+                    padding: '12px',
                     cursor: 'pointer',
                     textAlign: 'center',
                     display: 'flex',
@@ -429,24 +376,13 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     outline: 'none',
                   }}
                 >
-                  <Tape
-                    rotation={idx % 2 === 0 ? '2deg' : '-2deg'}
-                    style={{
-                      position: 'absolute',
-                      top: '-10px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      zIndex: 2,
-                    }}
-                  />
-
                   <div
                     style={{
                       width: '100%',
                       aspectRatio: '1 / 1',
-                      borderRadius: '2px',
+                      borderRadius: '10px',
                       overflow: 'hidden',
-                      backgroundColor: '#ded7cb',
+                      backgroundColor: 'var(--bg-subtle)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -465,10 +401,10 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <span
                       style={{
-                        fontFamily: 'var(--font-hand)',
-                        fontSize: '16px',
-                        color: isSelected ? 'var(--ink-terracotta)' : 'var(--ink-primary)',
-                        fontWeight: isSelected ? 'bold' : 'normal',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '14.5px',
+                        color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                        fontWeight: 600,
                       }}
                     >
                       {avatar.name}
@@ -482,7 +418,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                           width: '18px',
                           height: '18px',
                           borderRadius: '50%',
-                          backgroundColor: 'var(--ink-terracotta)',
+                          backgroundColor: 'var(--accent-primary)',
                           color: '#fff',
                         }}
                       >
@@ -498,40 +434,39 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
       )}
 
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0', color: 'var(--ink-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0', color: 'var(--text-muted)' }}>
           <Loader2 size={18} className="animate-spin" />
-          <span style={{ fontSize: '14px' }}>Loading presets...</span>
+          <span style={{ fontSize: '14px', fontFamily: 'var(--font-sans)' }}>Loading presets...</span>
         </div>
       )}
 
       {error && (
         <div
           role="alert"
+          className="card"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            backgroundColor: '#fff4f2',
-            border: '1px solid var(--ink-terracotta)',
-            color: 'var(--ink-terracotta)',
-            fontSize: '13px',
+            padding: '12px 16px',
+            borderColor: 'var(--accent-danger)',
+            color: 'var(--accent-danger)',
+            fontSize: '13.5px',
           }}
         >
-          <AlertCircle size={16} flex-shrink={0} />
+          <AlertCircle size={16} style={{ flexShrink: 0 }} />
           <span>{error.message} (Using default studio presets)</span>
         </div>
       )}
 
       {/* Section 2: Narrator Voice */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '2px' }}>
         <h2
           style={{
-            fontFamily: 'var(--font-hand)',
-            fontSize: '17px',
-            fontWeight: 'bold',
-            color: 'var(--ink-primary)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '15px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
             margin: 0,
           }}
         >
@@ -542,7 +477,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 'clamp(6px, 1vw, 10px)',
+            gap: '10px',
             width: '100%',
           }}
         >
@@ -555,30 +490,27 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                 type="button"
                 onClick={() => handleSelectVoice(voice.id)}
                 aria-pressed={isSelected}
+                className={`card ${isSelected ? 'card-selected' : ''}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: 'clamp(6px, 1dvh, 10px) 12px',
+                  padding: '12px 14px',
                   minHeight: '44px',
-                  borderRadius: 'var(--radius-paper)',
-                  border: isSelected ? '2px solid var(--ink-sage)' : '1px solid var(--paper-border)',
-                  backgroundColor: isSelected ? 'rgba(110, 140, 115, 0.08)' : 'var(--paper-cream)',
-                  boxShadow: isSelected ? 'var(--shadow-card)' : 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease',
                   boxSizing: 'border-box',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div
                     style={{
-                      width: '26px',
-                      height: '26px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
-                      backgroundColor: isSelected ? 'var(--ink-sage)' : 'rgba(110, 140, 115, 0.15)',
-                      color: isSelected ? '#fff' : 'var(--ink-sage)',
+                      backgroundColor: isSelected ? 'var(--accent-primary)' : 'var(--accent-primary-light)',
+                      color: isSelected ? '#fff' : 'var(--accent-primary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -591,15 +523,15 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     <span
                       style={{
                         display: 'block',
-                        fontFamily: 'var(--font-hand)',
-                        fontSize: '15px',
-                        fontWeight: isSelected ? 'bold' : 'normal',
-                        color: isSelected ? 'var(--ink-sage)' : 'var(--ink-primary)',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '14.5px',
+                        fontWeight: 600,
+                        color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
                       }}
                     >
                       {voice.name}
                     </span>
-                    <span style={{ fontSize: '11px', color: 'var(--ink-muted)' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       Preset voice profile
                     </span>
                   </div>
@@ -618,7 +550,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
-                      backgroundColor: 'var(--ink-sage)',
+                      backgroundColor: 'var(--accent-primary)',
                       color: '#fff',
                     }}
                   >
@@ -637,16 +569,16 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginTop: '4px',
-          paddingTop: 'clamp(8px, 1dvh, 14px)',
-          borderTop: '1px solid var(--paper-border)',
+          marginTop: '8px',
+          paddingTop: '16px',
+          borderTop: '1px solid var(--border-light)',
         }}
       >
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
-          style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
+          style={{ minHeight: '44px', padding: '10px 20px', cursor: 'pointer' }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
@@ -655,14 +587,11 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         <button
           type="button"
           onClick={handleContinue}
-          className="btn-terracotta"
+          className="btn-primary"
           style={{
             minHeight: '44px',
-            padding: '10px 22px',
+            padding: '10px 24px',
             cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
           }}
         >
           <span>Review Script</span>
