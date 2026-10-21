@@ -24,8 +24,9 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
     <div
       className="step-container"
       style={{
-        minHeight: 'clamp(420px, 59dvh, 860px)',
-        padding: 'clamp(12px, 1.5dvh, 24px) clamp(16px, 3vw, 48px)',
+        minHeight: '100%',
+        flex: 1,
+        padding: '0 clamp(16px, 3vw, 48px)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -61,12 +62,14 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           }}
         >
           <Tape
-            rotation="-2deg"
+            rotation="1deg"
+            width="100px"
+            height="26px"
             style={{
               position: 'absolute',
-              top: '-12px',
+              top: '-21px',
               left: '50%',
-              transform: 'translateX(-50%) rotate(-2deg)',
+              transform: 'translateX(-50%) rotate(1deg)',
             }}
           />
           <Sticker label="MEMORY STUDIO" rotation="2deg" variant="terracotta" />
@@ -91,7 +94,8 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
             lineHeight: 1.15,
             margin: 0,
             outline: 'none',
-            maxWidth: '1280px',
+            maxWidth: 'clamp(18ch, 20ch, 22ch)',
+            textWrap: 'balance',
           }}
         >
           Turn your ideas into a quiet, living video memory.
@@ -110,7 +114,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
       </header>
 
       {/* Single "Get started" button */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 'clamp(8px, 1.6dvh, 22px)' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: 0 }}>
         <button
           type="button"
           onClick={onGetStarted}

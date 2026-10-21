@@ -6,6 +6,7 @@ interface StickerProps {
   rotation?: string;
   variant?: 'terracotta' | 'sage' | 'blue' | 'amber';
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export const Sticker: React.FC<StickerProps> = ({
@@ -13,6 +14,7 @@ export const Sticker: React.FC<StickerProps> = ({
   rotation = '4deg',
   variant = 'terracotta',
   className = '',
+  style: customStyle = {},
 }) => {
   const shouldReduceMotion = useReducedMotion();
 
@@ -50,7 +52,7 @@ export const Sticker: React.FC<StickerProps> = ({
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
-        padding: '4px 12px',
+        padding: '10px 14px 5px 14px',
         backgroundColor: style.bg,
         border: `2px dashed ${style.border}`,
         color: style.color,
@@ -63,6 +65,7 @@ export const Sticker: React.FC<StickerProps> = ({
         boxShadow: 'var(--shadow-card)',
         userSelect: 'none',
         cursor: 'pointer',
+        ...customStyle,
       }}
     >
       <span>✦</span>
