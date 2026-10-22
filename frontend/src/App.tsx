@@ -22,6 +22,7 @@ const ConsentStep = lazy(() => import('./components/steps/ConsentStep'));
 const WaitingStep = lazy(() => import('./components/steps/WaitingStep'));
 const PremiereStep = lazy(() => import('./components/steps/PremiereStep'));
 const FailedStep = lazy(() => import('./components/steps/FailedStep'));
+const StyleGuide = lazy(() => import('./components/StyleGuide'));
 
 const StepFallback: React.FC = () => (
   <div
@@ -217,6 +218,52 @@ export const App: React.FC = () => {
       },
     },
   };
+
+  const [isStyleGuide, setIsStyleGuide] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.location.pathname === '/styleguide' ||
+      window.location.pathname.endsWith('/styleguide') ||
+      window.location.hash === '#styleguide' ||
+      window.location.search.includes('styleguide')
+    );
+  });
+
+  useEffect(() => {
+    const handleRouteCheck = () => {
+      setIsStyleGuide(
+        window.location.pathname === '/styleguide' ||
+        window.location.pathname.endsWith('/styleguide') ||
+        window.location.hash === '#styleguide' ||
+        window.location.search.includes('styleguide')
+      );
+    };
+    window.addEventListener('hashchange', handleRouteCheck);
+    window.addEventListener('popstate', handleRouteCheck);
+    return () => {
+      window.removeEventListener('hashchange', handleRouteCheck);
+      window.removeEventListener('popstate', handleRouteCheck);
+    };
+  }, []);
+
+  if (isStyleGuide) {
+    return (
+      <div className="app-shell" style={{ overflowY: 'auto' }}>
+        <Suspense fallback={<StepFallback />}>
+          <StyleGuide
+            onClose={() => {
+              if (window.location.hash === '#styleguide') {
+                window.location.hash = '';
+              } else if (window.location.pathname.includes('styleguide')) {
+                window.history.pushState(null, '', '/');
+              }
+              setIsStyleGuide(false);
+            }}
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <NotebookShell currentStep={currentStep} flowMode={flowMode} onSelectStep={(step) => changeStep(step)}>
