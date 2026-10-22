@@ -328,20 +328,20 @@ h3:focus, h3:focus-visible {
   background: var(--accent-primary-light) !important;
 }
 
-/* Buttons: Primary (filled accent), Secondary (outlined), Ghost */
+/* Buttons: Primary (accent gradient + glow), Secondary (glass), Ghost */
 .btn-primary,
 .btn-terracotta {
-  background-color: var(--accent-primary);
+  background: var(--accent-gradient);
   color: #ffffff;
   border: 1px solid transparent;
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 15px;
-  padding: 10px 22px;
-  border-radius: var(--radius-md);
+  padding: 11px 26px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-  transition: all 0.15s ease-in-out;
+  box-shadow: var(--shadow-glow-accent);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -349,32 +349,68 @@ h3:focus, h3:focus-visible {
   min-height: 44px;
   box-sizing: border-box;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before,
+.btn-shine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  transition: none;
+  pointer-events: none;
+}
+
+.btn-primary:hover:not(:disabled)::before,
+.btn-shine:hover:not(:disabled)::before {
+  left: 140%;
+  transition: left 0.75s ease-in-out;
 }
 
 .btn-primary:hover:not(:disabled),
 .btn-terracotta:hover:not(:disabled) {
-  background-color: var(--accent-primary-hover);
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px 0 rgba(108, 77, 255, 0.45);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-terracotta:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
 }
 
 .btn-primary:disabled,
 .btn-terracotta:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  background-color: #ffffff;
-  color: var(--text-primary);
-  border: 1px solid var(--border-light);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--accent);
+  border: 1px solid var(--accent-2);
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 15px;
-  padding: 10px 22px;
-  border-radius: var(--radius-md);
+  padding: 10px 24px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: all 0.15s ease-in-out;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -385,13 +421,20 @@ h3:focus, h3:focus-visible {
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--bg-subtle);
-  border-color: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
 }
 
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-ghost {
@@ -401,10 +444,10 @@ h3:focus, h3:focus-visible {
   font-family: var(--font-sans);
   font-weight: 500;
   font-size: 15px;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -415,8 +458,12 @@ h3:focus, h3:focus-visible {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background-color: rgba(15, 23, 42, 0.05);
+  background-color: rgba(108, 77, 255, 0.08);
   color: var(--text-primary);
+}
+
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* Editorial & Title Styling */
