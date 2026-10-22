@@ -266,6 +266,30 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             "{ideaText || prompt || 'Your story idea'}"
           </p>
 
+          {/* Soft Writing State Shimmer & Blinking Caret */}
+          <div
+            aria-hidden="true"
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              padding: '16px 20px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(255, 255, 255, 0.7)',
+              border: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              margin: '6px 0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <div className="writing-skeleton-line" style={{ width: '85%' }} />
+              <span className="blinking-caret" />
+            </div>
+            <div className="writing-skeleton-line" style={{ width: '92%', animationDelay: '0.4s' }} />
+            <div className="writing-skeleton-line" style={{ width: '68%', animationDelay: '0.8s' }} />
+          </div>
+
           <div
             style={{
               display: 'flex',
@@ -436,6 +460,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
                   fontSize: '13px',
                   whiteSpace: 'nowrap',
                   fontFamily: 'var(--font-sans)',
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 {analysis.wordCount} words
@@ -541,7 +566,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               <span style={{ color: 'var(--text-primary)' }}>
                 Script Target Progress ({analysis.percentage}%)
               </span>
-              <span style={{ color: mood.textColor }}>
+              <span style={{ color: mood.textColor, fontVariantNumeric: 'tabular-nums' }}>
                 {analysis.wordCount} / {analysis.targetWords} target words (Range: {analysis.minWords}–{analysis.maxWords})
               </span>
             </div>
@@ -549,18 +574,25 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             <div
               style={{
                 width: '100%',
-                height: '6px',
-                backgroundColor: 'var(--bg-subtle)',
-                borderRadius: '3px',
+                height: '8px',
+                backgroundColor: 'rgba(108, 77, 255, 0.08)',
+                borderRadius: 'var(--radius-full)',
                 overflow: 'hidden',
+                boxShadow: 'inset 0 1px 2px rgba(45, 38, 74, 0.06)',
               }}
             >
               <div
                 style={{
                   width: `${Math.min(100, analysis.percentage)}%`,
                   height: '100%',
-                  backgroundColor: mood.textColor,
-                  transition: 'width 0.25s ease, background-color 0.25s ease',
+                  background:
+                    analysis.status === 'perfect'
+                      ? 'linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%)'
+                      : analysis.status === 'too_long'
+                      ? 'linear-gradient(90deg, #ff9e7d 0%, #e67e50 100%)'
+                      : 'linear-gradient(90deg, var(--accent) 0%, var(--blob-lavender) 100%)',
+                  borderRadius: 'var(--radius-full)',
+                  transition: 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.35s ease',
                 }}
               />
             </div>

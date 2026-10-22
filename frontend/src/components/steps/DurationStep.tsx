@@ -169,19 +169,36 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                     width: '100%',
                     minHeight: '44px',
                     textAlign: 'center',
+                    overflow: 'visible',
                   }}
                 >
-                  <Clock size={22} style={{ color: isSelected ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
+                  {isSelected && (
+                    <motion.div
+                      layoutId="durationCardHighlight"
+                      style={{
+                        position: 'absolute',
+                        inset: -2,
+                        borderRadius: 'calc(var(--radius-card) + 2px)',
+                        border: '2px solid var(--accent)',
+                        boxShadow: '0 0 20px rgba(108, 77, 255, 0.22), inset 0 0 10px rgba(108, 77, 255, 0.05)',
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                      }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
+                    />
+                  )}
 
-                  <span style={{ fontWeight: 700, fontSize: '18px', color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)', marginTop: '4px' }}>
+                  <Clock size={22} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)', position: 'relative', zIndex: 2 }} />
+
+                  <span style={{ fontWeight: 700, fontSize: '18px', color: isSelected ? 'var(--accent)' : 'var(--text-primary)', marginTop: '4px', position: 'relative', zIndex: 2 }}>
                     {preset.label}
                   </span>
 
-                  <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500, position: 'relative', zIndex: 2 }}>
                     {preset.seconds}s length
                   </span>
 
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', position: 'relative', zIndex: 2 }}>
                     {formatEstimatedRenderTime(preset.seconds)}
                   </span>
                 </motion.button>

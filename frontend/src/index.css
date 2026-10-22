@@ -776,4 +776,43 @@ button:active:not(:disabled),
   transform-origin: center bottom;
 }
 
+/* Script Writing State Shimmer & Caret */
+@keyframes blinkCaret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blinking-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.15em;
+  background-color: var(--accent);
+  vertical-align: -0.15em;
+  margin-left: 3px;
+  animation: blinkCaret 0.9s infinite;
+}
+
+@keyframes writingShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.writing-skeleton-line {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    90deg,
+    rgba(205, 184, 255, 0.22) 20%,
+    rgba(255, 201, 181, 0.5) 50%,
+    rgba(205, 184, 255, 0.22) 80%
+  );
+  background-size: 200% 100%;
+  animation: writingShimmer 2.4s infinite ease-in-out;
+}
+
+
 
