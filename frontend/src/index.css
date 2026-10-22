@@ -883,6 +883,66 @@ button:active:not(:disabled),
   box-shadow: 0 4px 16px rgba(255, 138, 160, 0.1) !important;
 }
 
+/* Waiting Room Motion: Flowing Gradient Orb & Pulsing Stage Dots */
+@keyframes gradientOrbFlow {
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.04);
+    filter: hue-rotate(12deg);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    filter: hue-rotate(0deg);
+  }
+}
+
+.flowing-orb {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--blob-peach) 0%, var(--blob-pink) 35%, var(--accent) 75%, var(--blob-sky) 100%);
+  box-shadow: 0 0 32px rgba(108, 77, 255, 0.35), 0 0 54px rgba(255, 201, 181, 0.28);
+  animation: gradientOrbFlow 9s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  position: relative;
+}
+
+@keyframes stageDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(108, 77, 255, 0.45);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 6px rgba(108, 77, 255, 0);
+  }
+}
+
+.stage-dot-pulse {
+  animation: stageDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes ambientPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}
+
+.ambient-status-dot {
+  animation: ambientPulse 2.4s infinite ease-in-out;
+}
+
+
 
 
 

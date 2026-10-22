@@ -3,6 +3,7 @@ import type { JobRecord } from '../../types/api';
 import apiClient from '../../api/client';
 import { mapJobStateToStory } from '../../utils/jobStateMapper';
 import { getPollingInterval, isTerminalState } from '../../utils/pollingStrategy';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Loader2,
   Clock,
@@ -13,6 +14,7 @@ import {
   User,
   Film,
   Sparkles,
+  Check,
 } from 'lucide-react';
 
 interface WaitingStepProps {
@@ -167,6 +169,23 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
   const realSegmentPercent = hasRealSegmentProgress
     ? Math.round((completedSegments / totalSegments) * 100)
     : 0;
+
+  const getActiveStageIndex = (state: string): number => {
+    const s = state.toUpperCase();
+    if (['COMPLETED'].includes(s)) return 4;
+    if (['ASSEMBLING'].includes(s)) return 3;
+    if (['GENERATING_SEGMENTS', 'QA_CHECKING'].includes(s)) return 2;
+    if (['PLANNING_TIMELINE', 'PREPARING_IDENTITY', 'SCHEDULING_SEGMENTS'].includes(s)) return 1;
+    return 0; // RECEIVED, CONSENT_*, COMPILING_PROMPT, SYNTHESIZING_AUDIO
+  };
+
+  const activeStageIdx = getActiveStageIndex(currentState);
+  const stagesList = [
+    'Script & Voice',
+    'Visuals & Flow',
+    'Scene Rendering',
+    'Final Polish',
+  ];
 
   // Render appropriate icon for story stage
   const renderStoryIcon = () => {
@@ -365,54 +384,142 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          {/* Animated Spinner & Current Stage Story Label */}
+          {/* Flowing Dreamy Gradient Orb with Story Icon */}
+          <div className="flowing-orb" aria-hidden="true" style={{ margin: '8px 0' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 10px rgba(45, 38, 74, 0.08)',
+              }}
+            >
+              {renderStoryIcon()}
+            </div>
+          </div>
+
+          {/* Progressive Stage Dots */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '2px 0 6px 0',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'rgba(255, 255, 255, 0.65)',
+              border: '1px solid var(--border-subtle)',
+              backdropFilter: 'blur(8px)',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}
+          >
+            {stagesList.map((label, idx) => {
+              const isDone = idx < activeStageIdx;
+              const isCurrent = idx === activeStageIdx;
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div
+                      className={isDone ? 'checkmark-pop' : isCurrent ? 'stage-dot-pulse' : ''}
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        backgroundColor: isDone
+                          ? 'var(--accent-success)'
+                          : isCurrent
+                          ? 'var(--accent)'
+                          : 'rgba(108, 77, 255, 0.15)',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {isDone ? <Check size={11} strokeWidth={3} /> : idx + 1}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: isCurrent ? 600 : 500,
+                        color: isCurrent
+                          ? 'var(--text-primary)'
+                          : isDone
+                          ? 'var(--text-secondary)'
+                          : 'var(--text-muted)',
+                      }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                  {idx < stagesList.length - 1 && (
+                    <div
+                      style={{
+                        width: '12px',
+                        height: '2px',
+                        backgroundColor: isDone ? 'var(--accent-success)' : 'rgba(108, 77, 255, 0.15)',
+                        borderRadius: '1px',
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Smooth Cross-Fading Current Stage Story Label */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               textAlign: 'center',
-              gap: '12px',
+              gap: '6px',
               maxWidth: '560px',
               width: '100%',
+              minHeight: '74px',
             }}
           >
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-primary-light)',
-                color: 'var(--accent-primary)',
-              }}
-            >
-              <Loader2 size={32} className="animate-spin" />
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={story.title}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                style={{ textAlign: 'center' }}
+              >
+                <h3
+                  className="editorial-title"
+                  style={{
+                    fontSize: 'clamp(20px, 3vw, 26px)',
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {story.title}
+                </h3>
 
-            <h3
-              className="editorial-title"
-              style={{
-                fontSize: 'clamp(20px, 3vw, 26px)',
-                margin: 0,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {story.title}
-            </h3>
-
-            <p
-              style={{
-                fontSize: 'clamp(14px, 1.2vw, 16px)',
-                color: 'var(--text-muted)',
-                lineHeight: 1.5,
-                margin: 0,
-              }}
-            >
-              {story.storyLine}
-            </p>
+                <p
+                  style={{
+                    fontSize: 'clamp(14px, 1.2vw, 16px)',
+                    color: 'var(--text-muted)',
+                    lineHeight: 1.5,
+                    margin: '6px 0 0 0',
+                  }}
+                >
+                  {story.storyLine}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Progress / Time Status */}
@@ -437,14 +544,14 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                 <span>
                   Segment {completedSegments} of {totalSegments}
                 </span>
-                <span>{realSegmentPercent}%</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{realSegmentPercent}%</span>
               </div>
               <div
                 style={{
                   width: '100%',
                   height: '8px',
-                  borderRadius: '4px',
-                  backgroundColor: 'var(--bg-muted)',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'rgba(108, 77, 255, 0.08)',
                   overflow: 'hidden',
                 }}
               >
@@ -452,8 +559,9 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   style={{
                     width: `${realSegmentPercent}%`,
                     height: '100%',
-                    backgroundColor: 'var(--accent-primary)',
-                    transition: 'width 0.3s ease',
+                    background: 'linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%)',
+                    borderRadius: 'var(--radius-full)',
+                    transition: 'width 0.35s ease',
                   }}
                 />
               </div>
@@ -463,8 +571,9 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               style={{
                 padding: '12px 18px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--bg-subtle)',
-                border: '1px solid var(--border-light)',
+                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                border: '1px solid var(--border-subtle)',
+                backdropFilter: 'blur(8px)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
@@ -478,8 +587,8 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-                <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                <Clock size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                   {formatMinSec(elapsedSeconds)} elapsed
                 </span>
               </div>
@@ -489,6 +598,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   fontSize: '13px',
                   color: 'var(--text-muted)',
                   whiteSpace: 'nowrap',
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 ~{formatMinSec(estimatedRenderSeconds)} estimated render
@@ -496,9 +606,32 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             </div>
           )}
 
-          {/* Story Icon */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '6px' }}>
-            {renderStoryIcon()}
+          {/* Friendly Reassurance Note */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'rgba(255, 255, 255, 0.75)',
+              border: '1px solid var(--border-subtle)',
+              backdropFilter: 'blur(8px)',
+              fontSize: '13px',
+              color: 'var(--text-secondary)',
+              marginTop: '2px',
+            }}
+          >
+            <span
+              className="ambient-status-dot"
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-success)',
+              }}
+            />
+            <span>You can leave this page; we keep working in the background.</span>
           </div>
 
           <p
