@@ -718,11 +718,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className="card"
+            className={`card upload-dropzone ${dragActive ? 'upload-dropzone--active' : ''}`}
             style={{
               padding: 'clamp(24px, 4dvh, 48px) 24px',
-              borderColor: dragActive ? 'var(--accent-primary)' : undefined,
-              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-surface)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -733,7 +731,6 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <div
@@ -741,8 +738,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 width: '56px',
                 height: '56px',
                 borderRadius: '16px',
-                backgroundColor: 'var(--accent-primary-light)',
-                color: 'var(--accent-primary)',
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -790,8 +787,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     width: '56px',
                     height: '56px',
                     borderRadius: '16px',
-                    backgroundColor: 'var(--accent-primary-light)',
-                    color: 'var(--accent-primary)',
+                    backgroundColor: 'var(--accent-light)',
+                    color: 'var(--accent)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -799,6 +796,34 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 >
                   <Mic size={26} />
                 </div>
+
+                {/* Smooth Fallback Idle Wave */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    height: '24px',
+                    margin: '2px 0',
+                  }}
+                >
+                  {[0.4, 0.7, 1.0, 0.55, 0.85, 0.6, 0.95, 0.45].map((scale, i) => (
+                    <div
+                      key={i}
+                      className="idle-wave-bar"
+                      style={{
+                        width: '3px',
+                        height: '100%',
+                        backgroundColor: 'var(--accent)',
+                        borderRadius: '2px',
+                        animationDelay: `${i * 0.16}s`,
+                        opacity: 0.35 + scale * 0.35,
+                      }}
+                    />
+                  ))}
+                </div>
+
                 <div>
                   <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                     Speak into your microphone
@@ -823,8 +848,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Recording Status: Requesting Permission */}
             {recordingStatus === 'requesting' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent-primary)' }} />
-                <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent-primary)', margin: 0 }}>
+                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
+                <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent)', margin: 0 }}>
                   Requesting microphone permission...
                 </p>
                 <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: 0 }}>
@@ -836,10 +861,19 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Recording Status: Active Recording */}
             {recordingStatus === 'recording' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
-                {/* Live REC Timer Indicator */}
+                {/* Live REC Timer with Tabular Numbers */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Radio size={18} className="animate-pulse" style={{ color: 'var(--accent-danger)' }} />
-                  <span style={{ fontSize: '20px', color: 'var(--accent-danger)', fontWeight: 700, fontFamily: 'monospace' }}>
+                  <span
+                    style={{
+                      fontSize: '20px',
+                      color: 'var(--accent-danger)',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-sans)',
+                      fontVariantNumeric: 'tabular-nums',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
                     REC {formatDuration(recordingTime)} / 01:00
                   </span>
                 </div>
@@ -847,6 +881,41 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
                   Speak clearly • Recording limit: 3s to 60s
                 </p>
+
+                {/* Live Pulsing Mic Orb Driven by Mic Volume */}
+                {(() => {
+                  const avgLevel = audioLevels.reduce((a, b) => a + b, 0) / (audioLevels.length || 1);
+                  const orbScale = 1 + avgLevel * 0.35;
+                  const glowSize = 16 + avgLevel * 30;
+                  return (
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: '76px',
+                        height: '76px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '4px 0',
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '50%',
+                          background: 'radial-gradient(circle, var(--blob-pink) 0%, var(--accent) 70%, var(--blob-lavender) 100%)',
+                          boxShadow: `0 0 ${glowSize}px rgba(255, 138, 160, ${0.4 + avgLevel * 0.5})`,
+                          transform: `scale(${orbScale})`,
+                          transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+                          opacity: 0.9,
+                        }}
+                      />
+                      <Mic size={24} style={{ color: '#ffffff', position: 'relative', zIndex: 2 }} />
+                    </div>
+                  );
+                })()}
 
                 {/* Clean Live Level Meter */}
                 <div
@@ -861,8 +930,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     width: '100%',
                     maxWidth: '220px',
                     padding: '6px 10px',
-                    backgroundColor: 'var(--bg-subtle)',
-                    border: '1px solid var(--border-light)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-md)',
                   }}
                 >
@@ -873,7 +942,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                         flex: 1,
                         height: `${Math.max(12, lvl * 100)}%`,
                         backgroundColor:
-                          lvl > 0.6 ? 'var(--accent-danger)' : lvl > 0.3 ? 'var(--accent-warning)' : 'var(--accent-primary)',
+                          lvl > 0.6 ? 'var(--accent-danger)' : lvl > 0.3 ? 'var(--accent-warning)' : 'var(--accent)',
                         borderRadius: '2px',
                         transition: 'height 0.1s ease',
                       }}
@@ -881,13 +950,21 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   ))}
                 </div>
 
+                {/* Pulsing Breathing Record Stop Button */}
                 <button
                   type="button"
                   onClick={stopRecording}
-                  className="btn-primary"
-                  style={{ padding: '8px 20px', backgroundColor: 'var(--text-primary)', fontSize: '14px' }}
+                  className="btn-primary record-btn-pulsing"
+                  style={{
+                    padding: '10px 24px',
+                    fontSize: '14px',
+                    borderRadius: 'var(--radius-full)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
                 >
-                  <Square size={15} fill="#ffffff" />
+                  <Square size={14} fill="#ffffff" />
                   <span>Stop Recording</span>
                 </button>
               </div>
@@ -911,14 +988,63 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               </div>
             )}
 
-            {/* Recording Status: Recorded & Ready to Review */}
+            {/* Recording Status: Recorded & Ready to Review with Scale Bounce */}
             {recordingStatus === 'recorded' && recordedFile && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
+              <div
+                className="scale-bounce"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '14px',
+                  width: '100%',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-success)' }}>
-                  <CheckCircle2 size={18} />
+                  <CheckCircle2 size={18} className="checkmark-pop" />
                   <span style={{ fontSize: '16px', fontWeight: 600 }}>
                     Recording captured! ({recordingTime}s)
                   </span>
+                </div>
+
+                {/* Morphs into captured playback wave indicator */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    width: '100%',
+                    maxWidth: '340px',
+                    padding: '12px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'rgba(255, 255, 255, 0.7)',
+                    border: '1px solid var(--border-subtle)',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'var(--accent-light)',
+                      color: 'var(--accent)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Volume2 size={18} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'left' }}>
+                    <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Spoken Voice Memo
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      {formatDuration(recordingTime)} • Ready to convert
+                    </span>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>

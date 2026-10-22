@@ -719,3 +719,61 @@ button:active:not(:disabled),
   will-change: width;
 }
 
+/* Voice Recording & Audio Visualizer */
+@keyframes recordPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 106, 0.45);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(255, 77, 106, 0);
+    transform: scale(1.025);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 106, 0);
+    transform: scale(1);
+  }
+}
+
+.record-btn-pulsing {
+  animation: recordPulse 1.8s infinite ease-in-out;
+  background: linear-gradient(135deg, #ff4d6a 0%, #ff8aa0 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+@keyframes scaleBounce {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.8;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scale-bounce {
+  animation: scaleBounce 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Fallback idle wave animation */
+@keyframes idleWave {
+  0%, 100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.idle-wave-bar {
+  animation: idleWave 1.4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+
