@@ -148,7 +148,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
           /* Preview Presentation - Clean 16px Card */
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%' }}>
             <div
-              className="card"
+              className="card thumbnail-pop"
               style={{
                 padding: '16px',
                 maxWidth: '300px',
@@ -198,19 +198,17 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 600 }}>
-                  <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Loader2 size={16} className="animate-spin" />
                     Uploading photo...
                   </span>
                   <span style={{ color: 'var(--text-primary)' }}>{uploadProgress}%</span>
                 </div>
-                <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div className="progress-bar-container">
                   <div
+                    className="progress-bar-fill"
                     style={{
                       width: `${uploadProgress}%`,
-                      height: '100%',
-                      backgroundColor: 'var(--accent-primary)',
-                      transition: 'width 0.2s ease',
                     }}
                   />
                 </div>
@@ -245,11 +243,9 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             aria-label="Upload portrait photo dropzone. Click or drag and drop an image file here."
-            className="card"
+            className={`card upload-dropzone ${dragActive ? 'upload-dropzone--active' : ''}`}
             style={{
               padding: 'clamp(24px, 4dvh, 48px) 24px',
-              borderColor: dragActive ? 'var(--accent-primary)' : undefined,
-              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-surface)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -260,7 +256,6 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
               boxSizing: 'border-box',
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
             }}
           >
             <div

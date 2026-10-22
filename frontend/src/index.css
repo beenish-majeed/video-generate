@@ -640,3 +640,82 @@ button:active:not(:disabled),
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* Upload Dropzones Motion & Reactions */
+.upload-dropzone {
+  position: relative;
+  border: 2px dashed rgba(108, 77, 255, 0.28);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease;
+  will-change: transform;
+}
+
+.upload-dropzone:hover {
+  border-color: rgba(108, 77, 255, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.upload-dropzone--active {
+  transform: scale(1.01);
+  border-color: var(--accent) !important;
+  background: rgba(205, 184, 255, 0.15) !important;
+  box-shadow: 0 0 24px rgba(108, 77, 255, 0.25), 0 0 0 1px var(--accent) !important;
+  animation: dropzonePulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes dropzonePulse {
+  0% {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(108, 77, 255, 0.2), 0 0 0 1px var(--accent);
+  }
+  100% {
+    border-color: var(--blob-pink);
+    box-shadow: 0 0 28px rgba(255, 138, 160, 0.3), 0 0 0 1px var(--blob-pink);
+  }
+}
+
+/* Uploaded thumbnails pop-in animation */
+.thumbnail-pop {
+  animation: thumbnailPopIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+@keyframes thumbnailPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) rotate(-1.5deg);
+  }
+  65% {
+    transform: scale(1.025) rotate(0.4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Dreamy upload progress bar */
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(108, 77, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(45, 38, 74, 0.06);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%);
+  border-radius: var(--radius-full);
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: width;
+}
+

@@ -462,10 +462,8 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               if (e.dataTransfer.files) handleImageFiles(e.dataTransfer.files);
             }}
             onClick={() => imageInputRef.current?.click()}
+            className={`upload-dropzone ${dragActive ? 'upload-dropzone--active' : ''}`}
             style={{
-              border: dragActive ? '2px solid var(--accent-primary)' : '1px solid var(--border-light)',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: dragActive ? 'var(--accent-primary-light)' : 'var(--bg-subtle)',
               padding: '36px 20px',
               textAlign: 'center',
               cursor: 'pointer',
@@ -473,10 +471,9 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               gap: '10px',
-              transition: 'all 0.15s ease',
             }}
           >
-            <Upload size={32} style={{ color: 'var(--accent-primary)' }} />
+            <Upload size={32} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
               Drag &amp; drop 1 to 30 photos here, or click to browse
             </span>
@@ -498,6 +495,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
             {images.map((img, idx) => (
               <div
                 key={img.id}
+                className="thumbnail-pop"
                 style={{
                   position: 'relative',
                   backgroundColor: 'var(--bg-surface)',
@@ -686,12 +684,10 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div
               onClick={() => audioInputRef.current?.click()}
+              className="upload-dropzone"
               style={{
-                border: '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-md)',
                 padding: '20px',
                 textAlign: 'center',
-                backgroundColor: 'var(--bg-subtle)',
                 cursor: 'pointer',
               }}
             >
