@@ -328,10 +328,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
         <div
           role="alert"
           data-testid="story-error-state"
-          className="card"
+          className="card error-shake error-card-tint"
           style={{
             padding: 'clamp(24px, 4vw, 36px) clamp(16px, 4vw, 28px)',
-            borderColor: 'var(--accent-danger)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

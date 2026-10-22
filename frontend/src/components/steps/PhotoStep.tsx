@@ -259,12 +259,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
             }}
           >
             <div
+              className="empty-state-float"
               style={{
                 width: '56px',
                 height: '56px',
                 borderRadius: '16px',
-                backgroundColor: 'var(--accent-primary-light)',
-                color: 'var(--accent-primary)',
+                backgroundColor: 'var(--accent-light)',
+                color: 'var(--accent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -303,10 +304,9 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       {mappedError && (
         <div
           role="alert"
-          className="card"
+          className="card error-shake error-card-tint"
           style={{
             padding: '16px 20px',
-            borderColor: 'var(--accent-danger)',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',

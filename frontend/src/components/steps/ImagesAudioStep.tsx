@@ -374,14 +374,13 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
       {mappedError && (
         <div
           role="alert"
+          className="error-shake error-card-tint"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
             padding: '12px 16px',
             borderRadius: 'var(--radius-card)',
-            backgroundColor: 'var(--accent-danger-light)',
-            border: '1px solid var(--accent-danger)',
             color: 'var(--accent-danger)',
             fontSize: '14px',
           }}

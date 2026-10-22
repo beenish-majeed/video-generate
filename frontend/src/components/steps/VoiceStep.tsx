@@ -1064,10 +1064,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             {/* Recording Permission Error Card */}
             {permissionError && (
               <div
-                className="card"
+                className="card error-shake error-card-tint"
                 style={{
                   padding: '14px 16px',
-                  borderColor: 'var(--accent-danger)',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '10px',
@@ -1101,10 +1100,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       {mappedError && (
         <div
           role="alert"
-          className="card"
+          className="card error-shake error-card-tint"
           style={{
             padding: '16px 20px',
-            borderColor: 'var(--accent-danger)',
             display: 'flex',
             alignItems: 'flex-start',
             gap: '12px',

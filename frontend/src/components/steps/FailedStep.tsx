@@ -60,7 +60,7 @@ export const FailedStep: React.FC<FailedStepProps> = ({ job, errorMessage, onRet
       <div
         role="region"
         aria-label="Error explanation card"
-        className="card"
+        className="card error-shake error-card-tint"
         style={{
           padding: 'clamp(20px, 3dvh, 28px)',
           display: 'flex',

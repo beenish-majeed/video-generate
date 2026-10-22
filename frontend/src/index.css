@@ -814,5 +814,75 @@ button:active:not(:disabled),
   animation: writingShimmer 2.4s infinite ease-in-out;
 }
 
+/* Skeleton Loaders: Soft Pastel Shimmer Across Cards */
+@keyframes pastelSkeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(205, 184, 255, 0.2) 20%,
+    rgba(255, 201, 181, 0.45) 50%,
+    rgba(205, 184, 255, 0.2) 80%
+  );
+  background-size: 200% 100%;
+  animation: pastelSkeletonShimmer 2.2s infinite ease-in-out;
+  border-radius: var(--radius-sm);
+}
+
+.card-skeleton {
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Empty States: Gentle Breathing Float */
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.empty-state-float {
+  animation: gentleFloat 4s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Error States: Soft Alert Tint & 200ms Once Shake */
+@keyframes errorShake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+.error-shake {
+  animation: errorShake 0.22s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.error-card-tint {
+  background: rgba(255, 243, 245, 0.85) !important;
+  border: 1px solid rgba(255, 138, 160, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(255, 138, 160, 0.1) !important;
+}
+
+
 
 
