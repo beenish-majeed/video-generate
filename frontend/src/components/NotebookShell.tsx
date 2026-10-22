@@ -1,6 +1,7 @@
 import React from 'react';
 import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
 import SoundToggle from './SoundToggle';
+import CursorGlow from './ui/CursorGlow';
 
 interface NotebookShellProps {
   currentStep: JourneyStepId;
@@ -17,6 +18,9 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
 }) => {
   return (
     <div className="app-shell">
+      {/* Desktop subtle cursor glow follower */}
+      <CursorGlow />
+
       {/* Modern Edge-to-Edge Top Bar */}
       <header className="app-topbar" aria-label="Application Header">
         <div
