@@ -1,35 +1,51 @@
 /* Modern Clean Design System for Memory Studio */
 
 :root {
-  /* Surfaces & Backgrounds */
-  --bg-gradient: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
-  --bg-surface: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-muted: #f1f5f9;
+  /* Dreamy Pastel Design Tokens */
+  --bg: #F6F1FF;
+  --blob-lavender: #CDB8FF;
+  --blob-peach: #FFC9B5;
+  --blob-sky: #B9DDFF;
+  --blob-pink: #FFD3E8;
 
-  /* Borders & Dividers (Solid only) */
-  --border-light: #e2e8f0;
-  --border-subtle: #cbd5e1;
-  --border-focus: #3b82f6;
+  /* Glassmorphism & Surfaces */
+  --glass: rgba(255, 255, 255, 0.6);
+  --glass-fallback: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --bg-surface: var(--glass);
+  --bg-subtle: rgba(255, 255, 255, 0.45);
+  --bg-muted: rgba(246, 241, 255, 0.5);
 
-  /* Typography (Dark Navy Palette) */
-  --text-primary: #0f172a;       /* Deep dark navy */
-  --text-secondary: #334155;     /* Slate navy */
-  --text-muted: #64748b;         /* Neutral slate */
+  /* Borders & Dividers */
+  --border-light: var(--glass-border);
+  --border-subtle: rgba(205, 184, 255, 0.35);
+  --border-focus: #6C4DFF;
 
-  /* Primary Accent (Blue) */
-  --accent-primary: #2563eb;     /* Modern vibrant blue */
-  --accent-primary-hover: #1d4ed8;
-  --accent-primary-light: #eff6ff;
-  --accent-primary-border: #bfdbfe;
+  /* Typography */
+  --text: #241F3A;
+  --text-primary: var(--text);
+  --text-secondary: #3D3759;
+  --text-muted: #5E587A;
 
-  /* Status Accents */
-  --accent-success: #10b981;
-  --accent-success-light: #ecfdf5;
-  --accent-danger: #ef4444;
-  --accent-danger-light: #fef2f2;
-  --accent-warning: #f59e0b;
-  --accent-warning-light: #fffbeb;
+  /* Primary Accent & Gradients */
+  --accent: #6C4DFF;
+  --accent-2: #B28CFF;
+  --accent-gradient: linear-gradient(135deg, #6C4DFF 0%, #B28CFF 100%);
+  --accent-primary: var(--accent);
+  --accent-primary-hover: #5835F5;
+  --accent-primary-light: rgba(108, 77, 255, 0.08);
+  --accent-primary-border: rgba(178, 140, 255, 0.4);
+
+  /* Status Accents in Soft Pastel Tones (WCAG AA Compliant) */
+  --accent-success: #1B6E44;
+  --accent-success-bg: #D1F4E0;
+  --accent-success-light: #E4F9ED;
+  --accent-danger: #B82846;
+  --accent-danger-bg: #FFE4E8;
+  --accent-danger-light: #FFDEE3;
+  --accent-warning: #8A5200;
+  --accent-warning-bg: #FFF0D4;
+  --accent-warning-light: #FFF8EB;
 
   /* Typography: Single clean sans-serif font */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -37,9 +53,11 @@
   --font-hand: var(--font-sans);
 
   /* Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-card: 16px;           /* 16px radius for cards */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-card: 24px;
   --radius-pill: 9999px;
 
   /* Shadows */
