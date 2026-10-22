@@ -46,15 +46,47 @@ const StepFallback: React.FC = () => (
 const DEFAULT_PHOTO_ASSET_ID = 'default-studio-photo';
 const DEFAULT_VOICE_ASSET_ID = 'default-studio-voice';
 
+const STEP_ORDER: Record<string, number> = {
+  hero: 0,
+  choice: 1,
+  idea: 2,
+  duration: 3,
+  look_voice: 4,
+  photo: 5,
+  voice: 6,
+  images_audio: 7,
+  script: 8,
+  consent: 9,
+  waiting: 10,
+  premiere: 11,
+  failed: 12,
+};
+
 export const App: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<JourneyStepId>('hero');
   const [flowMode, setFlowMode] = useState<FlowMode>('custom_media');
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const shouldReduceMotion = useReducedMotion();
 
   const changeStep = (step: JourneyStepId) => {
+    const currentIndex = STEP_ORDER[currentStep] ?? 0;
+    const nextIndex = STEP_ORDER[step] ?? 0;
+    setDirection(nextIndex >= currentIndex ? 'forward' : 'back');
     playPageTurnSound();
     setCurrentStep(step);
   };
+
+  // Focus heading on step change for accessibility and keyboard navigation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const heading = document.querySelector<HTMLElement>('main h1, main h2, .step-container h1, .step-container h2');
+      if (heading) {
+        heading.setAttribute('tabIndex', '-1');
+        heading.focus({ preventScroll: true });
+      }
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
@@ -192,31 +224,34 @@ export const App: React.FC = () => {
     }
   };
 
-  // Snappy paper-slide page transitions respecting prefers-reduced-motion
+  // Smooth directional page transitions respecting prefers-reduced-motion
   const pageVariants = {
-    initial: {
+    initial: (dir: 'forward' | 'back') => ({
       opacity: 0,
-      x: shouldReduceMotion ? 0 : 24,
-      rotate: shouldReduceMotion ? 0 : 0.6,
-    },
+      x: shouldReduceMotion ? 0 : (dir === 'forward' ? 32 : -32),
+      scale: shouldReduceMotion ? 1 : 0.985,
+      filter: shouldReduceMotion ? 'none' : 'blur(4px)',
+    }),
     animate: {
       opacity: 1,
       x: 0,
-      rotate: 0,
+      scale: 1,
+      filter: 'blur(0px)',
       transition: {
-        duration: shouldReduceMotion ? 0 : 0.25,
-        ease: 'easeOut',
+        duration: shouldReduceMotion ? 0.01 : 0.36,
+        ease: [0.16, 1, 0.3, 1], // --ease-dreamy
       },
     },
-    exit: {
+    exit: (dir: 'forward' | 'back') => ({
       opacity: 0,
-      x: shouldReduceMotion ? 0 : -24,
-      rotate: shouldReduceMotion ? 0 : -0.6,
+      x: shouldReduceMotion ? 0 : (dir === 'forward' ? -32 : 32),
+      scale: shouldReduceMotion ? 1 : 0.985,
+      filter: shouldReduceMotion ? 'none' : 'blur(4px)',
       transition: {
-        duration: shouldReduceMotion ? 0 : 0.18,
-        ease: 'easeIn',
+        duration: shouldReduceMotion ? 0.01 : 0.24,
+        ease: [0.25, 0.1, 0.25, 1],
       },
-    },
+    }),
   };
 
   const [isStyleGuide, setIsStyleGuide] = useState<boolean>(() => {
@@ -268,9 +303,10 @@ export const App: React.FC = () => {
   return (
     <NotebookShell currentStep={currentStep} flowMode={flowMode} onSelectStep={(step) => changeStep(step)}>
       <Suspense fallback={<StepFallback />}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStep}
+            custom={direction}
             variants={pageVariants}
             initial="initial"
             animate="animate"
