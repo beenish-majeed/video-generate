@@ -10,6 +10,56 @@ interface PremiereStepProps {
   onRestart: () => void;
 }
 
+const PastelConfetti: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+  if (shouldReduceMotion) return null;
+
+  const particles = [
+    { x: -55, y: -45, color: 'var(--blob-lavender)', size: 8, delay: 0 },
+    { x: 50, y: -50, color: 'var(--blob-peach)', size: 6, delay: 0.05 },
+    { x: -85, y: -20, color: 'var(--blob-sky)', size: 7, delay: 0.1 },
+    { x: 75, y: -25, color: 'var(--blob-pink)', size: 9, delay: 0.08 },
+    { x: -35, y: -70, color: 'var(--accent)', size: 6, delay: 0.12 },
+    { x: 35, y: -65, color: 'var(--blob-peach)', size: 8, delay: 0.04 },
+    { x: -105, y: 10, color: 'var(--blob-lavender)', size: 6, delay: 0.15 },
+    { x: 100, y: 15, color: 'var(--blob-sky)', size: 7, delay: 0.14 },
+    { x: -18, y: -80, color: 'var(--blob-pink)', size: 8, delay: 0.06 },
+    { x: 18, y: -75, color: 'var(--accent)', size: 6, delay: 0.1 },
+    { x: -70, y: -60, color: 'var(--blob-peach)', size: 7, delay: 0.12 },
+    { x: 65, y: -60, color: 'var(--blob-lavender)', size: 8, delay: 0.08 },
+  ];
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: '60px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        pointerEvents: 'none',
+        zIndex: 30,
+      }}
+    >
+      {particles.map((p, i) => (
+        <motion.div
+          key={i}
+          initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+          animate={{ x: p.x * 2.2, y: p.y * 1.8 + 20, scale: 1, opacity: 0 }}
+          transition={{ duration: 1.8, delay: p.delay, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            position: 'absolute',
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            borderRadius: i % 2 === 0 ? '50%' : '2px',
+            backgroundColor: p.color,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -66,6 +116,8 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
         boxSizing: 'border-box',
       }}
     >
+      <PastelConfetti />
+
       {/* Header Copy */}
       <header style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
@@ -82,15 +134,18 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
         </p>
       </header>
 
-      {/* Theater Frame with Opening Curtains Animation */}
-      <div
+      {/* Theater Frame with Opening Curtains Animation & Shadow Bloom */}
+      <motion.div
         role="region"
         aria-label="Theater screening frame"
+        initial={{ scale: shouldReduceMotion ? 1 : 0.97, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'relative',
           borderRadius: 'var(--radius-card)',
           backgroundColor: '#0f172a',
-          boxShadow: 'var(--shadow-card)',
+          boxShadow: '0 12px 40px rgba(108, 77, 255, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -106,6 +161,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           border: '1px solid var(--border-light)',
         }}
       >
+        <div className="premiere-sweep-overlay" aria-hidden="true" />
         {/* Left Opening Curtain */}
         <motion.div
           initial={{ x: 0 }}
@@ -191,7 +247,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
             style={{ width: '100%', maxHeight: '460px', objectFit: 'contain', display: 'block' }}
           />
         )}
-      </div>
+      </motion.div>
 
       {/* Download Error Card */}
       {downloadError && (
@@ -236,29 +292,40 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           boxSizing: 'border-box',
         }}
       >
-        <button
+        <motion.button
           type="button"
           onClick={onRestart}
           className="btn-secondary"
+          initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           style={{ minHeight: '44px', padding: '8px 18px', cursor: 'pointer' }}
         >
           <RotateCcw size={16} />
           <span>Make another video</span>
-        </button>
+        </motion.button>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', justifyContent: 'flex-end' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <motion.div
+            initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
             <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               MP4 Format with AI Disclosure
             </span>
-          </div>
+          </motion.div>
 
-          <button
+          <motion.button
             type="button"
             onClick={handleDownload}
             disabled={downloading}
             className="btn-primary"
+            initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             style={{ fontSize: '15px', padding: '10px 22px', minHeight: '44px', cursor: downloading ? 'not-allowed' : 'pointer' }}
           >
             {downloading ? (
@@ -272,7 +339,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
                 <span>Download Video</span>
               </>
             )}
-          </button>
+          </motion.button>
         </div>
       </footer>
     </div>
