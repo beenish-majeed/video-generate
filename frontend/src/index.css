@@ -47,10 +47,22 @@
   --accent-warning-bg: #FFF0D4;
   --accent-warning-light: #FFF8EB;
 
-  /* Typography: Single clean sans-serif font */
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-serif: var(--font-sans);
-  --font-hand: var(--font-sans);
+  /* Typography Stacks (Self-Hosted / Local Native Stacks) */
+  --font-serif: "Newsreader", "Playfair Display", "Cormorant Garamond", "Georgia", "Cambria", "Times New Roman", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-hand: var(--font-serif);
+
+  /* Fluid Typography Scale */
+  --text-hero: clamp(36px, 4.2vw + 14px, 72px);
+  --text-title: clamp(26px, 2.6vw + 10px, 42px);
+  --text-heading: clamp(20px, 1.6vw + 8px, 28px);
+  --text-subhead: clamp(16px, 1.1vw + 7px, 20px);
+  --text-body: clamp(14px, 0.6vw + 9px, 16px);
+  --text-sm: clamp(12px, 0.4vw + 8px, 14px);
+  --text-xs: 12px;
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.55;
 
   /* Radii */
   --radius-xs: 4px;
@@ -390,19 +402,42 @@ h3:focus, h3:focus-visible {
 }
 
 /* Editorial & Title Styling */
-.editorial-title {
-  font-family: var(--font-sans);
-  font-weight: 700;
+.editorial-title,
+.font-serif {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  font-size: var(--text-title);
+  line-height: var(--leading-snug);
+}
+
+.heading-hero {
+  font-family: var(--font-serif);
+  font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  font-size: clamp(24px, 2.5vw, 36px);
-  line-height: 1.2;
+  font-size: var(--text-hero);
+  line-height: var(--leading-tight);
+}
+
+.accent-italic,
+.heading-accent {
+  font-style: italic;
+  font-family: var(--font-serif);
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  padding-right: 0.06em;
 }
 
 .page-lead {
   color: var(--text-muted);
   font-size: clamp(14px, 1.1vw, 17px);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 /* Duration Preset Cards Fluid Grid */
