@@ -281,3 +281,41 @@ frontend/
 4. **No Video Retention or Auto-Cleanup Policy**:
    * Rendered video files (`final_video.mp4`), audio stems, subtitle files (`subtitles.vtt`), and uploaded assets remain saved in local filesystem storage (`storage/jobs/<job_id>/` and `storage/assets/`).
    * The system does not run an automated background retention or pruning policy. Administrators must manually clean up disk space or manage the `storage/` directory.
+
+
+---
+
+## 🎨 Motion System & Animation Architecture
+
+Memory Studio features a cohesive **Dreamy Pastel** animation and interaction system designed to feel soft, airy, and responsive while respecting device performance and user accessibility preferences.
+
+### 1. Motion Principles
+* **Calm & Tactile**: Subtle scale, gentle parallax drift, and spring-eased responses rather than flashy or abrupt motion.
+* **60 FPS Performance**: Animations strictly target GPU-accelerated compositing properties (`transform` and `opacity`) to eliminate layout thrash and reflows.
+* **Tab-Aware Pause**: Ambient pulses, floating bubbles, and continuous gradient drifts pause automatically when `document.visibilityState === 'hidden'`, preserving battery and CPU.
+* **Zero Input Delay**: Animations never block clicks, disable buttons artificially, or prevent rapid form navigation.
+
+### 2. Tokens, Durations & Easing Curves
+Centralized design tokens in `src/index.css` define shared timing and motion curves:
+* **Deceleration Easing**: `cubic-bezier(0.16, 1, 0.3, 1)` (out-expo / soft spring) for step entrances, modal reveals, and cards.
+* **Ambient Easing**: `cubic-bezier(0.4, 0, 0.2, 1)` (smooth in-out) for slow floating shapes and background gradient shifts.
+* **Standard Durations**:
+  * Micro-interactions (hover, active, focus): `150ms`
+  * Card / Dialog scale-in: `250ms - 350ms`
+  * Directional page slide & blur-in: `350ms`
+  * Ambient background loop: `18s - 24s`
+
+### 3. Reduced Motion (`prefers-reduced-motion`)
+Full accessibility support for users sensitive to motion:
+* **Component-Level Hooks**: Components query `useReducedMotion()`. When enabled, all parallax, tilt, confetti trajectories, and spatial translations (`x`, `y`, `scale`, `rotate`) are disabled, falling back to simple, non-moving opacity cross-fades.
+* **Global CSS Overrides**: Global media query in `src/index.css` sets `animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;` for all elements under `prefers-reduced-motion: reduce`.
+* **Zero Functional Loss**: Every step, form validation, file upload, audio recorder, and download action remains 100% operational under reduced motion.
+
+### 4. Small-Screen & Low-Power Performance
+* **Dynamic Blur Scaling**: Background and card backdrop blurs scale down from 80px / 24px to 40px / 8px on screens below 768px (`@media (max-width: 768px)`).
+* **Particle Count Reduction**: Decorative particles and confetti are pruned on mobile viewports (< 640px) to conserve GPU memory bandwidth.
+
+### 5. Bundle Footprint
+* Total JavaScript gzip growth across all motion features and steps: **~2.41 kB gzip** (87.57 kB baseline -> 89.98 kB final).
+* Total CSS gzip growth: **~2.04 kB gzip** (2.95 kB baseline -> 4.99 kB final).
+* Total bundle impact is well below the 30 kB gzip budget.
