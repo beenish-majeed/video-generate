@@ -210,6 +210,31 @@ h3:focus, h3:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .painted-landscape-container svg {
+    filter: none !important;
+  }
+}
+
+/* Print Stylesheet Fallback */
+@media print {
+  .painted-landscape-container,
+  .grain-overlay,
+  body::after {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .card,
+  .hero-welcome-card {
+    box-shadow: none !important;
+    border: 1px solid #d0d0d0 !important;
+    background: #ffffff !important;
+  }
 }
 
 /* Global App Shell: Edge to Edge Full Screen (0 margins) */
