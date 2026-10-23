@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import { ToastProvider } from './components/ui/Toast';
+import PaintedLandscape from './components/ui/PaintedLandscape';
 import type { JourneyStepId, FlowMode } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload } from './types/api';
 import apiClient from './api/client';
@@ -340,6 +341,7 @@ export const App: React.FC = () => {
     return (
       <ToastProvider>
         <div className="app-shell" style={{ overflowY: 'auto' }}>
+          <PaintedLandscape />
           <Suspense fallback={<StepFallback />}>
             <StyleGuide
               onClose={() => {
