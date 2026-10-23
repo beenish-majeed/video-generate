@@ -124,6 +124,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
       </div>
 

@@ -327,6 +327,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         >
           <span>Get started</span>
           <ArrowRight size={20} aria-hidden="true" />
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </motion.button>
       </div>
     </div>

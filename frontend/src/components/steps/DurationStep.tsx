@@ -248,11 +248,13 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '10px 20px' }}>
           <ArrowLeft size={16} />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
         <button type="button" onClick={onNext} className="btn-primary" style={{ minHeight: '44px', padding: '10px 24px' }}>
           <span>Continue to Script</span>
           <ArrowRight size={16} />
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
       </footer>
     </div>

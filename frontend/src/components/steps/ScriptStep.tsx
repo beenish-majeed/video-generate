@@ -703,6 +703,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
             >
               <ArrowLeft size={16} />
               <span>Back</span>
+              <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
             </button>
 
             <button
@@ -717,6 +718,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               }}
             >
               <span>Continue to Rights</span>
+              <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
               <ArrowRight size={16} />
             </button>
           </footer>

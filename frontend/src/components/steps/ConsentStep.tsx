@@ -453,6 +453,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
           >
             <ArrowLeft size={16} />
             <span>Back</span>
+            <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
           </button>
 
           {/* The Continue button stays disabled until ALL consents are accepted */}
@@ -478,6 +479,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
               <>
                 <ShieldCheck size={18} />
                 <span>Create My Memory Film</span>
+                <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
               </>
             )}
           </button>

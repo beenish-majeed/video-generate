@@ -344,6 +344,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
         >
           <ArrowLeft size={16} />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
         <button
@@ -359,6 +360,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
         >
           <span>Continue to Voice</span>
           <ArrowRight size={16} />
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
       </footer>
     </div>

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
 
 export type JourneyStepId =
@@ -69,6 +70,8 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   flowMode = 'custom_media',
   onSelectStep,
 }) => {
+  const shouldReduceMotion = useReducedMotion();
+
   // Step tabs are hidden on welcome and choice screens
   if (currentStep === 'hero' || currentStep === 'choice') {
     return null;
@@ -122,63 +125,94 @@ export const PageTabs: React.FC<PageTabsProps> = ({
             idx <= currentIndex && currentStep !== 'waiting' && currentStep !== 'failed';
 
           return (
-            <button
-              key={step.id}
-              ref={isActive ? activeTabRef : null}
-              role="tab"
-              aria-selected={isActive}
-              aria-disabled={!isClickable}
-              onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
-              disabled={!isClickable}
-              style={{
-                padding: '6px 14px',
-                minHeight: '36px',
-                borderRadius: 'var(--radius-pill)',
-                border: isActive
-                  ? '1px solid var(--accent-primary-border)'
-                  : isCompleted
-                  ? '1px solid var(--border-light)'
-                  : '1px solid transparent',
-                backgroundColor: isActive
-                  ? 'var(--accent-primary-light)'
-                  : isCompleted
-                  ? 'var(--bg-surface)'
-                  : 'transparent',
-                color: isActive
-                  ? 'var(--accent-primary)'
-                  : isCompleted
-                  ? 'var(--text-secondary)'
-                  : 'var(--text-muted)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '13px',
-                fontWeight: isActive ? 600 : 500,
-                cursor: isClickable ? 'pointer' : 'default',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.15s ease',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {isCompleted ? (
-                <span
+            <React.Fragment key={step.id}>
+              {/* Smooth connecting line between steps */}
+              {idx > 0 && (
+                <div
+                  aria-hidden="true"
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '15px',
-                    height: '15px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--accent-primary)',
-                    color: '#fff',
+                    width: '12px',
+                    height: '2px',
+                    backgroundColor: 'rgba(108, 77, 255, 0.12)',
+                    borderRadius: '2px',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    position: 'relative',
                   }}
                 >
-                  <Check size={10} strokeWidth={3} />
-                </span>
-              ) : null}
-              <span>{step.tabTitle}</span>
-            </button>
+                  <motion.div
+                    initial={false}
+                    animate={{ scaleX: idx <= currentIndex ? 1 : 0 }}
+                    transition={{
+                      duration: shouldReduceMotion ? 0 : 0.35,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: 'var(--accent-primary)',
+                      transformOrigin: 'left',
+                    }}
+                  />
+                </div>
+              )}
+              <button
+                ref={isActive ? activeTabRef : null}
+                role="tab"
+                aria-selected={isActive}
+                aria-disabled={!isClickable}
+                onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
+                disabled={!isClickable}
+                style={{
+                  padding: '6px 14px',
+                  minHeight: '36px',
+                  borderRadius: 'var(--radius-pill)',
+                  border: isActive
+                    ? '1px solid var(--accent-primary-border)'
+                    : isCompleted
+                    ? '1px solid var(--border-light)'
+                    : '1px solid transparent',
+                  backgroundColor: isActive
+                    ? 'var(--accent-primary-light)'
+                    : isCompleted
+                    ? 'var(--bg-surface)'
+                    : 'transparent',
+                  color: isActive
+                    ? 'var(--accent-primary)'
+                    : isCompleted
+                    ? 'var(--text-secondary)'
+                    : 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 600 : 500,
+                  cursor: isClickable ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {isCompleted ? (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '15px',
+                      height: '15px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--accent-primary)',
+                      color: '#fff',
+                    }}
+                  >
+                    <Check size={10} strokeWidth={3} />
+                  </span>
+                ) : null}
+                <span>{step.tabTitle}</span>
+              </button>
+            </React.Fragment>
           );
         })}
       </div>

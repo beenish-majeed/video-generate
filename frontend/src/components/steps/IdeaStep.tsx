@@ -288,6 +288,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
           >
             <ArrowLeft size={16} aria-hidden="true" />
             <span>Back</span>
+            <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
           </button>
 
           <button
@@ -302,6 +303,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
           >
             <span>Choose Length</span>
             <ArrowRight size={18} aria-hidden="true" />
+            <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
           </button>
         </div>
       </form>

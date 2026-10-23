@@ -1140,6 +1140,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         >
           <ArrowLeft size={16} />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
         <button
@@ -1154,6 +1155,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           }}
         >
           <span>Continue to Duration</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
           <ArrowRight size={16} />
         </button>
       </footer>

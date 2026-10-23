@@ -89,6 +89,60 @@ export const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [currentStep]);
 
+  // Safe Keyboard Navigation: Esc to go back, Enter to proceed on valid forms
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.isContentEditable);
+
+      // Esc to safely go back (blurs input first, then goes back)
+      if (e.key === 'Escape') {
+        if (isInput) {
+          activeEl.blur();
+          return;
+        }
+        if (currentStep === 'choice') {
+          changeStep('hero');
+        } else if (currentStep === 'idea' || currentStep === 'photo' || currentStep === 'images_audio') {
+          changeStep('choice');
+        } else if (currentStep === 'voice') {
+          changeStep('photo');
+        } else if (currentStep === 'duration') {
+          changeStep(flowMode === 'prompt_first' ? 'idea' : 'voice');
+        } else if (currentStep === 'look_voice') {
+          changeStep('duration');
+        } else if (currentStep === 'script') {
+          changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration');
+        } else if (currentStep === 'consent') {
+          changeStep(flowMode === 'images_audio' ? 'images_audio' : 'script');
+        }
+      }
+
+      // Enter to safely continue on forms when valid
+      if (e.key === 'Enter') {
+        if (activeEl?.tagName === 'TEXTAREA' && !e.ctrlKey && !e.metaKey) {
+          return;
+        }
+
+        const nextButton = document.querySelector<HTMLButtonElement>(
+          'main button.btn-primary:not(:disabled), .step-container button.btn-primary:not(:disabled)'
+        );
+        if (nextButton && !nextButton.disabled && !nextButton.contains(activeEl)) {
+          if (activeEl?.tagName === 'BUTTON') return;
+          e.preventDefault();
+          nextButton.click();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentStep, flowMode]);
+
   // Journey State Machine Data (RETAINED across retries & failures!)
   const [photoAssetId, setPhotoAssetId] = useState<string>('');
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');

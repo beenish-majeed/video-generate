@@ -964,6 +964,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
         <button
@@ -981,6 +982,7 @@ export const ImagesAudioStep: React.FC<ImagesAudioStepProps> = ({
         >
           <span>Continue to Consent</span>
           <ArrowRight size={18} aria-hidden="true" />
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
       </footer>
     </div>

@@ -582,6 +582,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
+          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
         <button
@@ -596,6 +597,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
         >
           <span>Review Script</span>
           <ArrowRight size={18} aria-hidden="true" />
+          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
       </div>
     </div>
