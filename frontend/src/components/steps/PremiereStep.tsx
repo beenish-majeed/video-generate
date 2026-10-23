@@ -41,7 +41,7 @@ const PastelConfetti: React.FC = () => {
         zIndex: 30,
       }}
     >
-      {particles.map((p, i) => (
+      {(typeof window !== 'undefined' && window.innerWidth < 640 ? particles.slice(0, 6) : particles).map((p, i) => (
         <motion.div
           key={i}
           initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}

@@ -1006,3 +1006,20 @@ button:focus-visible .kbd-hint {
   color: var(--text-primary);
   border-color: rgba(108, 77, 255, 0.4);
 }
+
+/* Performance & Small Screen Optimizations: Reduce blurs and particle counts on mobile/low-power */
+@media (max-width: 768px) {
+  .app-shell::before {
+    filter: blur(40px) !important;
+  }
+  .card, .glass-card, [class*="glass"] {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-floating-shapes > div:nth-child(3) {
+    display: none !important;
+  }
+}

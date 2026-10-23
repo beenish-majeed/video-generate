@@ -117,6 +117,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
     >
       {/* Floating Glass Parallax Shapes (Desktop Mouse & Mobile Tilt with Ambient Drift) */}
       <div
+        className="hero-floating-shapes"
         aria-hidden="true"
         style={{
           position: 'absolute',
