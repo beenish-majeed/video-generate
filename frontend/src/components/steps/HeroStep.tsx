@@ -224,6 +224,28 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         />
       </div>
 
+      {/* Solid Near-White Canvas Sheet Card over the Painted Landscape */}
+      <div
+        className="card hero-welcome-card"
+        style={{
+          background: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-card)',
+          padding: 'clamp(28px, 4.5dvh, 52px) clamp(24px, 4vw, 56px)',
+          boxShadow: 'var(--shadow-card)',
+          border: '1px solid var(--border-light)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 'clamp(20px, 3dvh, 32px)',
+          maxWidth: '820px',
+          width: '100%',
+          position: 'relative',
+          zIndex: 1,
+          boxSizing: 'border-box',
+        }}
+      >
       <header
         style={{
           display: 'flex',
@@ -232,8 +254,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           alignItems: 'center',
           textAlign: 'center',
           width: '100%',
-          position: 'relative',
-          zIndex: 1,
         }}
       >
         <h1
@@ -330,6 +350,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           <ArrowRight size={20} aria-hidden="true" />
           <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </motion.button>
+      </div>
       </div>
     </div>
   );
