@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import BrushUnderline from '../ui/BrushUnderline';
 
 export interface HeroStepProps {
   onGetStarted: () => void;
@@ -10,7 +11,7 @@ export interface HeroStepProps {
   onSelectCustomMediaFlow?: () => void;
 }
 
-const HEADLINE_WORDS = [
+const HEADLINE_WORDS: Array<{ text: string; italic: boolean; underline?: boolean }> = [
   { text: 'Turn', italic: false },
   { text: 'your', italic: false },
   { text: 'ideas', italic: false },
@@ -19,7 +20,7 @@ const HEADLINE_WORDS = [
   { text: 'quiet,', italic: false },
   { text: 'living', italic: true },
   { text: 'video', italic: false },
-  { text: 'memory.', italic: false },
+  { text: 'memory.', italic: false, underline: true },
 ];
 
 export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
@@ -290,9 +291,11 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
                 style={{
                   display: 'inline-block',
                   marginRight: '0.28em',
+                  position: item.underline ? 'relative' : undefined,
                 }}
               >
-                {item.text}
+                <span style={{ position: 'relative', zIndex: 1 }}>{item.text}</span>
+                {item.underline && <BrushUnderline />}
               </motion.span>
             ))}
           </span>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import BrushUnderline from './ui/BrushUnderline';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, Info, AlertCircle, CheckCircle2, ChevronRight, Bell } from 'lucide-react';
 import { toast } from './ui/Toast';
@@ -288,6 +289,20 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
               <h3 style={{ margin: '8px 0 0', fontSize: 'var(--text-heading)', fontWeight: 600, color: 'var(--text)' }}>
                 Fine-tune pacing, tone, and visual narration.
               </h3>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 }}>
+                Hand-Painted Accent Underline (Organic SVG brush stroke)
+              </span>
+              <p style={{ margin: '8px 0 0', fontSize: 'var(--text-heading)', fontFamily: 'var(--font-serif)', color: 'var(--text-primary)' }}>
+                Turn moments into a{' '}
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  <span style={{ position: 'relative', zIndex: 1 }}>cherished memory</span>
+                  <BrushUnderline color="var(--blob-peach)" />
+                </span>{' '}
+                with soft gouache warmth.
+              </p>
             </div>
 
             <div>
