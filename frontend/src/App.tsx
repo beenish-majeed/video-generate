@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
+import { ToastProvider } from './components/ui/Toast';
 import type { JourneyStepId, FlowMode } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload } from './types/api';
 import apiClient from './api/client';
@@ -283,20 +284,22 @@ export const App: React.FC = () => {
 
   if (isStyleGuide) {
     return (
-      <div className="app-shell" style={{ overflowY: 'auto' }}>
-        <Suspense fallback={<StepFallback />}>
-          <StyleGuide
-            onClose={() => {
-              if (window.location.hash === '#styleguide') {
-                window.location.hash = '';
-              } else if (window.location.pathname.includes('styleguide')) {
-                window.history.pushState(null, '', '/');
-              }
-              setIsStyleGuide(false);
-            }}
-          />
-        </Suspense>
-      </div>
+      <ToastProvider>
+        <div className="app-shell" style={{ overflowY: 'auto' }}>
+          <Suspense fallback={<StepFallback />}>
+            <StyleGuide
+              onClose={() => {
+                if (window.location.hash === '#styleguide') {
+                  window.location.hash = '';
+                } else if (window.location.pathname.includes('styleguide')) {
+                  window.history.pushState(null, '', '/');
+                }
+                setIsStyleGuide(false);
+              }}
+            />
+          </Suspense>
+        </div>
+      </ToastProvider>
     );
   }
 

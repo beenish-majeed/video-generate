@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Info, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Info, AlertCircle, CheckCircle2, ChevronRight, Bell } from 'lucide-react';
+import { toast } from './ui/Toast';
 
 interface StyleGuideProps {
   onClose?: () => void;
@@ -697,6 +698,45 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
                     boxShadow: 'var(--shadow-glow-accent)',
                   }}
                 />
+              </div>
+            </div>
+
+            {/* Interactive Toasts & Feedback */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Bell size={16} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                  Interactive Toasts & Spring Feedback (Countdown & Accessible Status)
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => toast.success('Memory film rendered and ready for download!')}
+                  className="btn-secondary"
+                  style={{ fontSize: '13px', padding: '8px 14px' }}
+                >
+                  <CheckCircle2 size={14} style={{ color: 'var(--accent-success, #10b981)' }} />
+                  <span>Success Toast</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toast.info('Voice synthesis running at 48kHz studio quality.')}
+                  className="btn-secondary"
+                  style={{ fontSize: '13px', padding: '8px 14px' }}
+                >
+                  <Info size={14} style={{ color: 'var(--accent)' }} />
+                  <span>Info Toast</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toast.error('Connection interrupted. Please verify your network and retry.')}
+                  className="btn-secondary"
+                  style={{ fontSize: '13px', padding: '8px 14px' }}
+                >
+                  <AlertCircle size={14} style={{ color: 'var(--accent-danger)' }} />
+                  <span>Error Toast (Stays Until Closed)</span>
+                </button>
               </div>
             </div>
           </div>

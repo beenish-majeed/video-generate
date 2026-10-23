@@ -2,6 +2,7 @@ import React from 'react';
 import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
 import SoundToggle from './SoundToggle';
 import CursorGlow from './ui/CursorGlow';
+import { ToastProvider } from './ui/Toast';
 
 interface NotebookShellProps {
   currentStep: JourneyStepId;
@@ -17,7 +18,8 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   children,
 }) => {
   return (
-    <div className="app-shell">
+    <ToastProvider>
+      <div className="app-shell">
       {/* Desktop subtle cursor glow follower */}
       <CursorGlow />
 
@@ -67,6 +69,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
         {children}
       </main>
     </div>
+  </ToastProvider>
   );
 };
 
