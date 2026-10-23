@@ -352,6 +352,21 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         </motion.button>
       </div>
       </div>
+
+      {/* Subtle Footer Line (Welcome Page Only) */}
+      <footer
+        style={{
+          marginTop: 'clamp(8px, 1.5dvh, 16px)',
+          fontSize: '12.5px',
+          color: 'var(--text-muted)',
+          opacity: 0.85,
+          letterSpacing: '0.015em',
+          userSelect: 'none',
+          zIndex: 1,
+        }}
+      >
+        <span>Crafted with local neural models — 100% private &amp; offline at runtime</span>
+      </footer>
     </div>
   );
 };
