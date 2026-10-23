@@ -124,6 +124,20 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(108, 77, 255, 0.22);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background: rgba(108, 77, 255, 0.22);
+  color: var(--text-primary);
+}
+
 html, body {
   width: 100%;
   max-width: 100vw;
@@ -545,7 +559,12 @@ h3:focus, h3:focus-visible {
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Pastel Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(108, 77, 255, 0.25) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -554,8 +573,11 @@ h3:focus, h3:focus-visible {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: 3px;
+  background: rgba(108, 77, 255, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 77, 255, 0.45);
 }
 
 /* Screen Reader Utility */
