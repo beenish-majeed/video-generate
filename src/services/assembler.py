@@ -49,6 +49,26 @@ def assemble(
     # Pad or clip final_audio.wav so it matches the requested target_duration_seconds precisely
     normalize_audio_duration(final_audio, final_audio, target_seconds=target_dur)
 
+    audio_for_final = final_audio
+    if plan.music_asset_id:
+        from src.services.store import get_asset_path
+        from src.utils.ffmpeg import mix_background_music
+
+        music_path = get_asset_path(plan.music_asset_id)
+        if music_path is None or not music_path.exists():
+            raise RuntimeError(f"Background music asset '{plan.music_asset_id}' not found.")
+
+        mixed_audio = job_path / "final_audio_with_music.wav"
+        mix_background_music(
+            speech_path=final_audio,
+            music_path=music_path,
+            output_path=mixed_audio,
+            target_duration=target_dur,
+            volume=plan.music_volume,
+            ducking=plan.music_ducking,
+        )
+        audio_for_final = mixed_audio
+
     video_paths = [s.video_path for s in segments if s.video_path and Path(s.video_path).exists()]
 
     if not video_paths:
@@ -74,7 +94,7 @@ def assemble(
 
     finalize_video(
         video_path=joined_video,
-        audio_path=final_audio,
+        audio_path=audio_for_final,
         watermark_path=label_path,
         output_path=output_path,
         duration=target_dur,

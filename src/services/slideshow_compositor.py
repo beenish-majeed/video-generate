@@ -228,43 +228,21 @@ class SlideshowCompositor:
         bg_music_path: Path,
         volume: float,
         output_path: Path,
+        ducking: bool = True,
     ) -> Path:
         """
-        Duck background music under speech audio using sidechaincompress filter.
-        Sidechain compressor compresses/reduces the background music volume whenever
-        speech is detected, then amix mixes speech and ducked music.
+        Duck background music under speech audio using sidechain compression and peak limiting.
         """
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        clamped_volume = max(0.01, min(1.0, float(volume)))
-
-        filter_complex = (
-            f"[1:a]volume={clamped_volume}[bg_vol]; "
-            f"[bg_vol][0:a]sidechaincompress=threshold=0.1:ratio=5:attack=20:release=250[bg_ducked]; "
-            f"[0:a][bg_ducked]amix=inputs=2:duration=first:dropout_transition=0[aout]"
+        from src.utils.ffmpeg import mix_background_music
+        dur = probe_duration(speech_audio_path)
+        return mix_background_music(
+            speech_path=speech_audio_path,
+            music_path=bg_music_path,
+            output_path=output_path,
+            target_duration=dur,
+            volume=volume,
+            ducking=ducking,
         )
-
-        cmd = [
-            settings.ffmpeg_bin,
-            "-y",
-            "-i",
-            str(speech_audio_path),
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(bg_music_path),
-            "-filter_complex",
-            filter_complex,
-            "-map",
-            "[aout]",
-            "-c:a",
-            "pcm_s16le",
-            str(output_path),
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode != 0:
-            # Fall back to un-ducked speech if mixing fails
-            output_path.write_bytes(speech_audio_path.read_bytes())
-        return output_path
 
     @classmethod
     def multiplex_final(
@@ -468,6 +446,7 @@ class SlideshowCompositor:
                 bg_music_path=Path(bg_music_path),
                 volume=bg_music_volume,
                 output_path=mixed_audio,
+                ducking=getattr(plan, "music_ducking", True),
             )
             final_audio_path = mixed_audio
         else:
@@ -529,6 +508,7 @@ class SlideshowCompositor:
         audio_path: Path,
         bg_music_path: Optional[Path] = None,
         bg_music_volume: float = 0.2,
+        bg_music_ducking: bool = True,
         subtitle_path: Optional[Path] = None,
         burn_subtitles: bool = False,
         watermark_path: Optional[Path] = None,
@@ -585,6 +565,7 @@ class SlideshowCompositor:
                 bg_music_path=Path(bg_music_path),
                 volume=bg_music_volume,
                 output_path=mixed_audio,
+                ducking=bg_music_ducking,
             )
             final_audio_path = mixed_audio
         else:

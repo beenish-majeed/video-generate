@@ -453,6 +453,12 @@ class JobRecord(BaseModel):
     visual_mode_used: Optional[str] = None
     visual_mode_reason: Optional[str] = None
 
+    music_asset_id: Optional[str] = None
+    music_volume: Optional[float] = None
+    music_ducking: Optional[bool] = None
+    music_applied: Optional[bool] = None
+    music_failure_reason: Optional[str] = None
+
     output_path: Optional[str] = None
     subtitle_path: Optional[str] = None
     error: Optional[str] = None

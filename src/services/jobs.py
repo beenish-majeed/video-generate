@@ -329,6 +329,10 @@ def create_job(request: JobCreate) -> JobRecord:
         consent=consent,
         plan=plan,
         timeline=timeline,
+        music_asset_id=request.music_asset_id,
+        music_volume=request.music_volume,
+        music_ducking=request.music_ducking,
+        music_applied=False if request.music_asset_id else None,
     )
 
     save_job_record(job)
@@ -359,6 +363,57 @@ def run_job(job_id: str) -> None:
     visual_mode = getattr(job.request, "visual_mode", "talking_head")
 
     try:
+        # Early pre-flight validation of music asset before rendering segments
+        if job.request.music_asset_id:
+            music_file = get_asset_path(job.request.music_asset_id)
+            if music_file is None or not music_file.exists():
+                job.music_applied = False
+                job.music_failure_reason = f"Music asset '{job.request.music_asset_id}' not found."
+                raise FileNotFoundError(job.music_failure_reason)
+
+            try:
+                import subprocess
+
+                probe_cmd = [
+                    settings.ffprobe_bin,
+                    "-v",
+                    "error",
+                    "-select_streams",
+                    "a:0",
+                    "-show_entries",
+                    "stream=codec_type:format=duration",
+                    "-of",
+                    "json",
+                    str(music_file),
+                ]
+                probe_res = subprocess.run(probe_cmd, capture_output=True, text=True)
+                if probe_res.returncode != 0:
+                    raise ValueError(f"ffprobe failed: {probe_res.stderr.strip()[:100]}")
+                data = json.loads(probe_res.stdout)
+                streams = data.get("streams", [])
+                if not streams or streams[0].get("codec_type") != "audio":
+                    raise ValueError("No valid audio stream found in music asset")
+                dur = float(data.get("format", {}).get("duration", 0.0))
+                if dur <= 0:
+                    raise ValueError("Music duration is 0 or invalid")
+
+                dec_cmd = [
+                    settings.ffmpeg_bin,
+                    "-v",
+                    "error",
+                    "-i",
+                    str(music_file),
+                    "-f",
+                    "null",
+                    "-",
+                ]
+                dec_proc = subprocess.run(dec_cmd, capture_output=True, text=True)
+                if dec_proc.returncode != 0:
+                    raise ValueError(f"ffmpeg decode failed: {dec_proc.stderr.strip()[:100]}")
+            except Exception as exc:
+                job.music_applied = False
+                job.music_failure_reason = f"Music asset '{job.request.music_asset_id}' could not be decoded: {exc}"
+                raise ValueError(job.music_failure_reason) from exc
         if is_my_own:
             image_paths = [get_asset_path(img_id) for img_id in job.request.uploaded_image_asset_ids]
 
@@ -476,10 +531,26 @@ def run_job(job_id: str) -> None:
                 save_job_record(job)
 
                 output_path = job_path / "final_video.mp4"
-                from src.utils.ffmpeg import finalize_video
+                from src.utils.ffmpeg import finalize_video, mix_background_music
+
+                final_speech_audio = speech_audio_path
+                if job.request.music_asset_id:
+                    m_path = get_asset_path(job.request.music_asset_id)
+                    if m_path and m_path.exists():
+                        mixed_audio = job_path / "final_audio_with_music.wav"
+                        mix_background_music(
+                            speech_path=speech_audio_path,
+                            music_path=m_path,
+                            output_path=mixed_audio,
+                            target_duration=audio_dur,
+                            volume=job.request.music_volume,
+                            ducking=job.request.music_ducking,
+                        )
+                        final_speech_audio = mixed_audio
+
                 finalize_video(
                     video_path=video_path,
-                    audio_path=speech_audio_path,
+                    audio_path=final_speech_audio,
                     watermark_path=label_path,
                     output_path=output_path,
                     duration=audio_dur,
@@ -502,8 +573,8 @@ def run_job(job_id: str) -> None:
                 save_job_record(job)
 
                 bg_music_path = None
-                if job.request.bg_music_asset_id:
-                    bg_music_path = get_asset_path(job.request.bg_music_asset_id)
+                if job.request.music_asset_id:
+                    bg_music_path = get_asset_path(job.request.music_asset_id)
 
                 from src.services.slideshow_compositor import SlideshowCompositor
                 output_path = SlideshowCompositor.compose_user_slideshow(
@@ -512,7 +583,8 @@ def run_job(job_id: str) -> None:
                     image_durations=durations,
                     audio_path=speech_audio_path,
                     bg_music_path=bg_music_path,
-                    bg_music_volume=getattr(job.request, "bg_music_volume", 0.2),
+                    bg_music_volume=job.request.music_volume,
+                    bg_music_ducking=job.request.music_ducking,
                     subtitle_path=subtitle_path,
                     burn_subtitles=job.plan.subtitles.burn_in,
                     watermark_path=label_path,
@@ -532,6 +604,8 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            if job.request.music_asset_id:
+                job.music_applied = True
             job.state = JobState.COMPLETED
 
         elif visual_mode == "slideshow":
@@ -630,8 +704,8 @@ def run_job(job_id: str) -> None:
                 label_path = None
 
             bg_music_path = None
-            if job.request.bg_music_asset_id:
-                bg_music_path = get_asset_path(job.request.bg_music_asset_id)
+            if job.request.music_asset_id:
+                bg_music_path = get_asset_path(job.request.music_asset_id)
 
             output_path, subtitle_path = SlideshowCompositor.compose_slideshow_job(
                 job_path=job_path,
@@ -640,7 +714,7 @@ def run_job(job_id: str) -> None:
                 scene_audio_paths=scene_audio_paths,
                 scene_images=scene_images,
                 bg_music_path=bg_music_path,
-                bg_music_volume=getattr(job.request, "bg_music_volume", 0.2),
+                bg_music_volume=job.request.music_volume,
                 burn_subtitles=job.plan.subtitles.burn_in,
                 subtitles_enabled=job.plan.subtitles.enabled,
                 watermark_path=label_path,
@@ -661,6 +735,8 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            if job.request.music_asset_id:
+                job.music_applied = True
             job.state = JobState.COMPLETED
 
         else:
@@ -785,6 +861,8 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            if job.request.music_asset_id:
+                job.music_applied = True
             job.state = JobState.COMPLETED
 
     except Exception as exc:
@@ -796,6 +874,10 @@ def run_job(job_id: str) -> None:
             logger.exception(f"Job execution failed for {job_id}: {exc}")
             job.state = JobState.FAILED
             job.error = f"{type(exc).__name__}: {exc}"
+            if job.music_applied is not True and job.request.music_asset_id:
+                job.music_applied = False
+                if not job.music_failure_reason:
+                    job.music_failure_reason = str(exc)
 
     finally:
         save_job_record(job)

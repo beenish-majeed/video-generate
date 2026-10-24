@@ -2,6 +2,7 @@ import json
 import math
 import struct
 import subprocess
+import uuid
 import wave
 import cv2
 import numpy as np
@@ -350,13 +351,7 @@ def finalize_video(
 
         if filter_parts:
             cmd.extend(["-filter_complex", ";".join(filter_parts)])
-
-        cmd.extend(
-            [
-                "-map",
-                current_video,
-                "-map",
-                "1:a",
+            video_codec = [
                 "-c:v",
                 "libx264",
                 "-crf",
@@ -365,6 +360,17 @@ def finalize_video(
                 "veryfast",
                 "-pix_fmt",
                 "yuv420p",
+            ]
+        else:
+            video_codec = ["-c:v", "copy"]
+
+        cmd.extend(
+            [
+                "-map",
+                current_video,
+                "-map",
+                "1:a",
+                *video_codec,
                 "-c:a",
                 "aac",
                 "-b:a",
@@ -404,3 +410,174 @@ def finalize_video(
 
     cap.release()
     writer.release()
+
+
+def loop_audio_to_duration(
+    audio_path: str | Path,
+    target_duration: float,
+    tmp_dir: str | Path,
+    crossfade_seconds: float = 1.0,
+) -> Path:
+    """
+    Loops audio using acrossfade (~1s) until it meets or exceeds target_duration,
+    then trims to target_duration to prevent click artifacts at loop boundaries.
+    """
+    audio_path = Path(audio_path)
+    tmp_dir = Path(tmp_dir)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    dur = probe_duration(audio_path)
+    if dur >= target_duration:
+        return audio_path
+
+    effective_per_loop = max(0.5, dur - crossfade_seconds)
+    repeats_needed = int(math.ceil(target_duration / effective_per_loop)) + 1
+    repeats_needed = min(repeats_needed, 60)
+
+    output_path = tmp_dir / f"looped_{uuid.uuid4().hex[:8]}.wav"
+
+    inputs = []
+    for _ in range(repeats_needed):
+        inputs.extend(["-i", str(audio_path)])
+
+    filter_chains = []
+    last_pad = "[0:a]"
+    for i in range(1, repeats_needed):
+        out_pad = f"[m{i}]"
+        cf = min(crossfade_seconds, max(0.2, dur * 0.2))
+        filter_chains.append(f"{last_pad}[{i}:a]acrossfade=d={cf:.2f}:c1=tri:c2=tri{out_pad}")
+        last_pad = out_pad
+
+    filter_chains.append(f"{last_pad}atrim=0:{target_duration:.3f}[out]")
+    full_filter = "; ".join(filter_chains)
+
+    cmd = [
+        settings.ffmpeg_bin,
+        "-y",
+        *inputs,
+        "-filter_complex",
+        full_filter,
+        "-map",
+        "[out]",
+        str(output_path),
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0 and output_path.exists():
+        return output_path
+
+    # Fallback to stream_loop
+    cmd_fallback = [
+        settings.ffmpeg_bin,
+        "-y",
+        "-stream_loop",
+        "-1",
+        "-i",
+        str(audio_path),
+        "-t",
+        f"{target_duration:.3f}",
+        str(output_path),
+    ]
+    run(cmd_fallback)
+    return output_path
+
+
+def mix_background_music(
+    speech_path: str | Path,
+    music_path: str | Path,
+    output_path: str | Path,
+    target_duration: float,
+    volume: float = 0.25,
+    ducking: bool = True,
+) -> Path:
+    """
+    Mix background music with speech audio:
+    - Loop music with crossfade if shorter than target_duration; trim if longer
+    - Fade in 1.5s at start and fade out 2.5s at end
+    - Normalize music loudness with loudnorm and scale by volume
+    - If ducking is True, compress music using sidechaincompress with speech as control signal
+    - Mix speech and music using amix (normalize off to keep speech intelligible on top)
+    - Peak limit using alimiter (<0 dBFS, never clips)
+    - Output as PCM WAV or AAC depending on output_path suffix
+    """
+    speech_path = Path(speech_path)
+    music_path = Path(music_path)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not speech_path.exists():
+        raise FileNotFoundError(f"Speech audio file '{speech_path}' not found.")
+    if not music_path.exists():
+        raise FileNotFoundError(f"Music audio file '{music_path}' not found.")
+
+    target_duration = max(0.1, float(target_duration))
+    clamped_vol = max(0.0, min(1.0, float(volume)))
+
+    tmp_dir = output_path.parent
+    looped_music = loop_audio_to_duration(
+        audio_path=music_path,
+        target_duration=target_duration,
+        tmp_dir=tmp_dir,
+    )
+
+    try:
+        fade_in_d = min(1.5, target_duration / 2.0)
+        fade_out_d = min(2.5, target_duration / 2.0)
+        fade_out_st = max(0.0, target_duration - fade_out_d)
+
+        music_filters = (
+            f"loudnorm=I=-24:LRA=7:TP=-2.0,volume={clamped_vol:.3f},"
+            f"afade=t=in:st=0:d={fade_in_d:.2f},"
+            f"afade=t=out:st={fade_out_st:.2f}:d={fade_out_d:.2f},"
+            f"atrim=0:{target_duration:.3f}"
+        )
+
+        filter_chain = [f"[1:a]{music_filters}[m_proc]"]
+
+        if ducking:
+            filter_chain.append(
+                "[m_proc][0:a]sidechaincompress=threshold=0.08:ratio=8:attack=20:release=400[m_ducked]"
+            )
+            music_stem = "[m_ducked]"
+        else:
+            music_stem = "[m_proc]"
+
+        filter_chain.append(
+            f"[0:a]{music_stem}amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]"
+        )
+        filter_chain.append("[mixed]alimiter=limit=0.95[aout]")
+
+        full_filter = "; ".join(filter_chain)
+
+        audio_codec = (
+            ["-c:a", "aac", "-b:a", "192k"]
+            if output_path.suffix.lower() in {".mp4", ".m4a", ".aac"}
+            else ["-c:a", "pcm_s16le"]
+        )
+
+        cmd = [
+            settings.ffmpeg_bin,
+            "-y",
+            "-i",
+            str(speech_path),
+            "-i",
+            str(looped_music),
+            "-filter_complex",
+            full_filter,
+            "-map",
+            "[aout]",
+            *audio_codec,
+            "-t",
+            f"{target_duration:.3f}",
+            str(output_path),
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0 or not output_path.exists():
+            raise RuntimeError(f"FFmpeg audio mixing failed: {res.stderr}")
+
+        return output_path
+    finally:
+        if looped_music != music_path and looped_music.exists():
+            try:
+                looped_music.unlink()
+            except Exception:
+                pass
