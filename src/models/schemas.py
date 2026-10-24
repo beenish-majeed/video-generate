@@ -162,6 +162,10 @@ class CompiledPlan(BaseModel):
     video: VideoParams = Field(default_factory=VideoParams)
     safety: SafetyParams = Field(default_factory=SafetyParams)
 
+    music_asset_id: Optional[str] = None
+    music_volume: float = 0.25
+    music_ducking: bool = True
+
     seed: int = 123456
     warnings: list[str] = Field(default_factory=list)
 
@@ -217,6 +221,10 @@ DURATION_PRESETS: dict[str, float] = {
 
 
 class JobCreate(BaseModel):
+    """
+    Job creation schema.
+    User must possess all necessary rights, licenses, and permissions for any uploaded music.
+    """
     photo_asset_id: Optional[str] = None
     voice_asset_id: Optional[str] = None
     avatar_preset_id: Optional[str] = None
@@ -230,8 +238,26 @@ class JobCreate(BaseModel):
     visual_mode: Literal["talking_head", "slideshow"] = "talking_head"
     burn_subtitles: Optional[bool] = None
     subtitles_enabled: Optional[bool] = None
+
+    # Background music options
+    music_asset_id: Optional[str] = Field(
+        default=None,
+        description="Optional asset ID of background music. User must possess all necessary rights to the music they upload.",
+    )
+    music_volume: float = Field(
+        default=0.25,
+        ge=0.0,
+        le=1.0,
+        description="Music volume scaling factor from 0.0 to 1.0 (default 0.25).",
+    )
+    music_ducking: bool = Field(
+        default=True,
+        description="Whether to duck background music under speech audio using sidechain compression (default True).",
+    )
+
+    # Backward compatibility aliases
     bg_music_asset_id: Optional[str] = None
-    bg_music_volume: float = 0.2
+    bg_music_volume: Optional[float] = None
     image_style: Optional[str] = "cinematic"
 
     # "My own images and audio" mode fields
@@ -240,6 +266,35 @@ class JobCreate(BaseModel):
     uploaded_audio_asset_id: Optional[str] = None
     prefer_lip_sync: bool = False
     auto_subtitles: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_music_fields(cls, data: any) -> any:
+        if isinstance(data, dict):
+            if data.get("bg_music_asset_id") and not data.get("music_asset_id"):
+                data["music_asset_id"] = data["bg_music_asset_id"]
+            elif data.get("music_asset_id") and not data.get("bg_music_asset_id"):
+                data["bg_music_asset_id"] = data["music_asset_id"]
+
+            if data.get("bg_music_volume") is not None and data.get("music_volume") is None:
+                data["music_volume"] = data["bg_music_volume"]
+            elif data.get("music_volume") is not None and data.get("bg_music_volume") is None:
+                data["bg_music_volume"] = data["music_volume"]
+        return data
+
+    @field_validator("music_asset_id")
+    @classmethod
+    def validate_music_asset_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip()
+        if not v_clean:
+            return None
+        from src.services.store import get_asset_path
+        asset_path = get_asset_path(v_clean)
+        if asset_path is None or not asset_path.exists():
+            raise ValueError(f"Unknown music_asset_id '{v}'. Asset does not exist.")
+        return v_clean
 
     @field_validator("visual_mode")
     @classmethod

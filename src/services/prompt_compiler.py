@@ -131,6 +131,9 @@ def compile_plan(
     explicit_duration_seconds: float | None = None,
     overrides: dict | None = None,
     max_duration_policy_seconds: float | None = None,
+    music_asset_id: str | None = None,
+    music_volume: float = 0.25,
+    music_ducking: bool = True,
 ) -> CompiledPlan:
     overrides = overrides or {}
     max_policy = float(max_duration_policy_seconds or settings.max_duration_policy_seconds)
@@ -302,6 +305,9 @@ def compile_plan(
         subtitles=subtitles,
         video=video,
         safety=safety,
+        music_asset_id=music_asset_id,
+        music_volume=music_volume,
+        music_ducking=music_ducking,
         seed=seed,
         warnings=warnings,
     )

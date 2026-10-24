@@ -313,6 +313,9 @@ def create_job(request: JobCreate) -> JobRecord:
         explicit_duration_seconds=explicit_dur,
         overrides=overrides,
         max_duration_policy_seconds=settings.max_duration_policy_seconds,
+        music_asset_id=request.music_asset_id,
+        music_volume=request.music_volume,
+        music_ducking=request.music_ducking,
     )
 
     timeline = build_timeline(script_text, plan)
