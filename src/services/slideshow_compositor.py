@@ -1,10 +1,13 @@
 import json
+import logging
 from pathlib import Path
 import subprocess
 from typing import Callable, Optional
 
 from src.config import settings
 from src.utils.ffmpeg import concat_wavs, make_silence_wav, probe_duration
+
+logger = logging.getLogger(__name__)
 
 
 class SlideshowCompositor:
@@ -441,14 +444,21 @@ class SlideshowCompositor:
         # 4. Background music ducking
         if bg_music_path and Path(bg_music_path).exists():
             mixed_audio = job_path / "final_mixed_audio.wav"
-            cls.duck_background_music(
-                speech_audio_path=aligned_speech,
-                bg_music_path=Path(bg_music_path),
-                volume=bg_music_volume,
-                output_path=mixed_audio,
-                ducking=getattr(plan, "music_ducking", True),
-            )
-            final_audio_path = mixed_audio
+            try:
+                cls.duck_background_music(
+                    speech_audio_path=aligned_speech,
+                    bg_music_path=Path(bg_music_path),
+                    volume=bg_music_volume,
+                    output_path=mixed_audio,
+                    ducking=getattr(plan, "music_ducking", True),
+                )
+                final_audio_path = mixed_audio
+                plan.music_applied = True
+            except Exception as exc:
+                logger.warning(f"Slideshow background music mixing failed: {exc}. Continuing without music.")
+                plan.music_applied = False
+                plan.music_error = str(exc)
+                final_audio_path = aligned_speech
         else:
             final_audio_path = aligned_speech
 
@@ -560,14 +570,18 @@ class SlideshowCompositor:
         # Background music ducking if provided
         if bg_music_path and Path(bg_music_path).exists():
             mixed_audio = job_path / "final_mixed_audio.wav"
-            cls.duck_background_music(
-                speech_audio_path=audio_path,
-                bg_music_path=Path(bg_music_path),
-                volume=bg_music_volume,
-                output_path=mixed_audio,
-                ducking=bg_music_ducking,
-            )
-            final_audio_path = mixed_audio
+            try:
+                cls.duck_background_music(
+                    speech_audio_path=audio_path,
+                    bg_music_path=Path(bg_music_path),
+                    volume=bg_music_volume,
+                    output_path=mixed_audio,
+                    ducking=bg_music_ducking,
+                )
+                final_audio_path = mixed_audio
+            except Exception as exc:
+                logger.warning(f"Background music mixing failed: {exc}. Continuing without music.")
+                final_audio_path = audio_path
         else:
             final_audio_path = audio_path
 

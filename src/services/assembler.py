@@ -50,24 +50,36 @@ def assemble(
     normalize_audio_duration(final_audio, final_audio, target_seconds=target_dur)
 
     audio_for_final = final_audio
-    if plan.music_asset_id:
-        from src.services.store import get_asset_path
-        from src.utils.ffmpeg import mix_background_music
+    music_id = getattr(plan, "music_preset_id", None) or getattr(plan, "music_asset_id", None)
+    if music_id and getattr(plan, "music_applied", None) is not False:
+        try:
+            from src.services.music_presets import resolve_job_music_path
+            from src.utils.ffmpeg import mix_background_music
 
-        music_path = get_asset_path(plan.music_asset_id)
-        if music_path is None or not music_path.exists():
-            raise RuntimeError(f"Background music asset '{plan.music_asset_id}' not found.")
+            music_path = resolve_job_music_path(
+                getattr(plan, "music_asset_id", None),
+                getattr(plan, "music_preset_id", None),
+                duration=target_dur,
+            )
+            if music_path is None or not music_path.exists():
+                raise RuntimeError(f"Background music file '{music_id}' not found.")
 
-        mixed_audio = job_path / "final_audio_with_music.wav"
-        mix_background_music(
-            speech_path=final_audio,
-            music_path=music_path,
-            output_path=mixed_audio,
-            target_duration=target_dur,
-            volume=plan.music_volume,
-            ducking=plan.music_ducking,
-        )
-        audio_for_final = mixed_audio
+            mixed_audio = job_path / "final_audio_with_music.wav"
+            mix_background_music(
+                speech_path=final_audio,
+                music_path=music_path,
+                output_path=mixed_audio,
+                target_duration=target_dur,
+                volume=plan.music_volume,
+                ducking=plan.music_ducking,
+            )
+            audio_for_final = mixed_audio
+            plan.music_applied = True
+        except Exception as exc:
+            logger.warning(f"Background music mixing failed: {exc}; falling back to speech only.")
+            plan.music_applied = False
+            plan.music_error = str(exc)
+            audio_for_final = final_audio
 
     video_paths = [s.video_path for s in segments if s.video_path and Path(s.video_path).exists()]
 

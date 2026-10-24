@@ -246,11 +246,12 @@ class TestMusicMixingLogic:
         assert abs(sp_stats["mean_volume"] - sil_stats["mean_volume"]) < 0.5
 
 
-class TestEarlyFailureBehavior:
-    def test_job_fails_early_before_rendering_when_music_corrupt(self, tmp_path, monkeypatch):
+class TestMusicFallbackBehavior:
+    def test_job_falls_back_without_music_when_music_corrupt(self, tmp_path, monkeypatch):
         """
-        Test our chosen failure behavior: fail early before rendering segments
-        if music asset is corrupt or cannot be decoded.
+        Verify fallback behavior: if music cannot be read or mixing fails,
+        continue without music, set music_applied: false and music_error with
+        the reason in the job result and manifest. Do not fail the job.
         """
         monkeypatch.setattr("src.services.store.ASSETS_DIR", tmp_path)
         monkeypatch.setattr("src.services.store.JOBS_DIR", tmp_path / "storage" / "jobs")
@@ -258,21 +259,18 @@ class TestEarlyFailureBehavior:
 
         from PIL import Image
         photo_file = tmp_path / "photo_valid.png"
-        img = Image.new("RGB", (100, 100), (120, 150, 180))
+        img = Image.new("RGB", (320, 240), (120, 150, 180))
         img.save(photo_file)
         voice_file = tmp_path / "voice_valid.wav"
-        make_sine_audio(voice_file, duration=2.0)
+        make_sine_audio(voice_file, duration=3.0)
 
         # Create a music asset that exists on disk but is corrupt binary
         corrupt_music = tmp_path / "music_corrupt.mp3"
         corrupt_music.write_bytes(b"ID3\x03\x00\x00\x00\x00\x00\x00corrupt garbage data")
 
         req = JobCreate(
-            photo_asset_id="photo_valid",
-            voice_asset_id="voice_valid",
-            script="Hello world, welcome to this video generation demonstration that tests early music failure behavior thoroughly.",
-            prompt="5s video",
-            target_duration_seconds=5.0,
+            uploaded_image_asset_ids=["photo_valid"],
+            uploaded_audio_asset_id="voice_valid",
             music_asset_id="music_corrupt",
             consent=ConsentRequest(
                 authorized=True,
@@ -285,18 +283,23 @@ class TestEarlyFailureBehavior:
         job = create_job(req)
         assert job.state == JobState.CONSENT_VERIFIED
 
-        # Run job
+        # Run job - must succeed with fallback instead of failing
         run_job(job.job_id)
 
         updated_job = get_job(job.job_id)
-        assert updated_job.state == JobState.FAILED
-        assert "could not be decoded" in updated_job.error.lower() or "corrupt" in updated_job.error.lower()
+        assert updated_job.state == JobState.COMPLETED, f"Job failed: {updated_job.error}"
         assert updated_job.music_applied is False
-        assert updated_job.music_failure_reason is not None
+        assert updated_job.music_error is not None
+        assert "preflight" in updated_job.music_error.lower() or "decode" in updated_job.music_error.lower() or "corrupt" in updated_job.music_error.lower()
 
-        # Manifest must reflect the failure reason and music fields without leaking paths
+        # Output video must exist and be valid
+        assert updated_job.output_path is not None
+        assert Path(updated_job.output_path).exists()
+
+        # Manifest must reflect the fallback fields
         manifest_file = tmp_path / "storage" / "jobs" / job.job_id / "manifest.json"
         assert manifest_file.exists()
         manifest_data = json.loads(manifest_file.read_text(encoding="utf-8"))
         assert manifest_data["music_asset_id"] == "music_corrupt"
         assert manifest_data["music_applied"] is False
+        assert manifest_data["music_error"] is not None

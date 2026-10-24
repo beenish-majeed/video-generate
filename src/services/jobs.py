@@ -365,15 +365,18 @@ def run_job(job_id: str) -> None:
     visual_mode = getattr(job.request, "visual_mode", "talking_head")
 
     try:
-        # Early pre-flight validation of music asset before rendering segments
-        if job.request.music_asset_id:
-            music_file = get_asset_path(job.request.music_asset_id)
-            if music_file is None or not music_file.exists():
-                job.music_applied = False
-                job.music_failure_reason = f"Music asset '{job.request.music_asset_id}' not found."
-                raise FileNotFoundError(job.music_failure_reason)
-
+        # Early pre-flight validation of music asset/preset before rendering segments
+        music_id = job.request.music_preset_id or job.request.music_asset_id
+        if music_id:
             try:
+                from src.services.music_presets import resolve_job_music_path
+                music_file = resolve_job_music_path(
+                    job.request.music_asset_id,
+                    job.request.music_preset_id,
+                )
+                if music_file is None or not music_file.exists():
+                    raise FileNotFoundError(f"Music file '{music_id}' not found.")
+
                 import subprocess
 
                 probe_cmd = [
@@ -414,8 +417,14 @@ def run_job(job_id: str) -> None:
                     raise ValueError(f"ffmpeg decode failed: {dec_proc.stderr.strip()[:100]}")
             except Exception as exc:
                 job.music_applied = False
-                job.music_failure_reason = f"Music asset '{job.request.music_asset_id}' could not be decoded: {exc}"
-                raise ValueError(job.music_failure_reason) from exc
+                job.music_error = f"Music asset '{music_id}' failed preflight: {exc}"
+                job.music_failure_reason = job.music_error
+                if job.plan:
+                    job.plan.music_applied = False
+                    job.plan.music_error = job.music_error
+                logger.warning(
+                    f"Job {job_id}: {job.music_error}; falling back to render without music."
+                )
         if is_my_own:
             image_paths = [get_asset_path(img_id) for img_id in job.request.uploaded_image_asset_ids]
 
@@ -536,19 +545,33 @@ def run_job(job_id: str) -> None:
                 from src.utils.ffmpeg import finalize_video, mix_background_music
 
                 final_speech_audio = speech_audio_path
-                if job.request.music_asset_id:
-                    m_path = get_asset_path(job.request.music_asset_id)
-                    if m_path and m_path.exists():
-                        mixed_audio = job_path / "final_audio_with_music.wav"
-                        mix_background_music(
-                            speech_path=speech_audio_path,
-                            music_path=m_path,
-                            output_path=mixed_audio,
-                            target_duration=audio_dur,
-                            volume=job.request.music_volume,
-                            ducking=job.request.music_ducking,
-                        )
-                        final_speech_audio = mixed_audio
+                music_id = job.request.music_preset_id or job.request.music_asset_id
+                if music_id and job.music_applied is not False:
+                    try:
+                        from src.services.music_presets import resolve_job_music_path
+                        m_path = resolve_job_music_path(job.request.music_asset_id, job.request.music_preset_id)
+                        if m_path and m_path.exists():
+                            mixed_audio = job_path / "final_audio_with_music.wav"
+                            mix_background_music(
+                                speech_path=speech_audio_path,
+                                music_path=m_path,
+                                output_path=mixed_audio,
+                                target_duration=audio_dur,
+                                volume=job.request.music_volume,
+                                ducking=job.request.music_ducking,
+                            )
+                            final_speech_audio = mixed_audio
+                            job.music_applied = True
+                        else:
+                            job.music_applied = False
+                            job.music_error = f"Music file '{music_id}' not found during assembly"
+                            job.music_failure_reason = job.music_error
+                    except Exception as exc:
+                        logger.warning(f"Background music mixing failed: {exc}; falling back to speech only.")
+                        job.music_applied = False
+                        job.music_error = str(exc)
+                        job.music_failure_reason = str(exc)
+                        final_speech_audio = speech_audio_path
 
                 finalize_video(
                     video_path=video_path,
@@ -575,8 +598,9 @@ def run_job(job_id: str) -> None:
                 save_job_record(job)
 
                 bg_music_path = None
-                if job.request.music_asset_id:
-                    bg_music_path = get_asset_path(job.request.music_asset_id)
+                if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
+                    from src.services.music_presets import resolve_job_music_path
+                    bg_music_path = resolve_job_music_path(job.request.music_asset_id, job.request.music_preset_id)
 
                 from src.services.slideshow_compositor import SlideshowCompositor
                 output_path = SlideshowCompositor.compose_user_slideshow(
@@ -606,7 +630,7 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
-            if job.request.music_asset_id:
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
                 job.music_applied = True
             job.state = JobState.COMPLETED
 
@@ -706,8 +730,9 @@ def run_job(job_id: str) -> None:
                 label_path = None
 
             bg_music_path = None
-            if job.request.music_asset_id:
-                bg_music_path = get_asset_path(job.request.music_asset_id)
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
+                from src.services.music_presets import resolve_job_music_path
+                bg_music_path = resolve_job_music_path(job.request.music_asset_id, job.request.music_preset_id)
 
             output_path, subtitle_path = SlideshowCompositor.compose_slideshow_job(
                 job_path=job_path,
@@ -737,7 +762,7 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
-            if job.request.music_asset_id:
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
                 job.music_applied = True
             job.state = JobState.COMPLETED
 
@@ -863,7 +888,7 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
-            if job.request.music_asset_id:
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
                 job.music_applied = True
             job.state = JobState.COMPLETED
 
@@ -876,9 +901,10 @@ def run_job(job_id: str) -> None:
             logger.exception(f"Job execution failed for {job_id}: {exc}")
             job.state = JobState.FAILED
             job.error = f"{type(exc).__name__}: {exc}"
-            if job.music_applied is not True and job.request.music_asset_id:
+            if job.music_applied is not True and (job.request.music_asset_id or job.request.music_preset_id):
                 job.music_applied = False
-                if not job.music_failure_reason:
+                if not job.music_error:
+                    job.music_error = str(exc)
                     job.music_failure_reason = str(exc)
 
     finally:
