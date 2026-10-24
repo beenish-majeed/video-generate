@@ -156,6 +156,64 @@ class TestMusicMixingLogic:
         # Music mean volume during active speech must be lower than during silence
         assert speech_window_stats["mean_volume"] < silence_window_stats["mean_volume"]
 
+    def test_ducking_attenuation_at_least_6db_and_recovers_in_silence(self, tmp_path):
+        """
+        Verify that ducking produces at least a 6 dB reduction in music level
+        during speech windows compared to ducking off, and recovers in silence.
+        """
+        sp_burst1 = tmp_path / "burst1.wav"
+        sil_gap = tmp_path / "silence_gap.wav"
+        sp_burst2 = tmp_path / "burst2.wav"
+        speech_track = tmp_path / "speech_track.wav"
+        music_track = tmp_path / "music_track.wav"
+
+        # Speech: 3s tone burst, 4s silence, 3s tone burst
+        make_sine_audio(sp_burst1, duration=3.0, freq=300)
+        make_silence_audio(sil_gap, duration=4.0)
+        make_sine_audio(sp_burst2, duration=3.0, freq=300)
+        concat_audios([sp_burst1, sil_gap, sp_burst2], speech_track)
+
+        # Constant music track (10s)
+        make_sine_audio(music_track, duration=10.0, freq=800)
+
+        stem_ducked = tmp_path / "stem_ducked.wav"
+        mix_ducked = tmp_path / "mix_ducked.wav"
+        mix_background_music(
+            speech_path=speech_track,
+            music_path=music_track,
+            output_path=mix_ducked,
+            target_duration=10.0,
+            volume=0.25,
+            ducking=True,
+            stem_output_path=stem_ducked,
+        )
+
+        stem_unducked = tmp_path / "stem_unducked.wav"
+        mix_unducked = tmp_path / "mix_unducked.wav"
+        mix_background_music(
+            speech_path=speech_track,
+            music_path=music_track,
+            output_path=mix_unducked,
+            target_duration=10.0,
+            volume=0.25,
+            ducking=False,
+            stem_output_path=stem_unducked,
+        )
+
+        # 1. Measure music stem inside speech window (1.0 to 2.5s)
+        sp_ducked_stats = get_volume_stats(stem_ducked, start=1.0, duration=1.5)
+        sp_unducked_stats = get_volume_stats(stem_unducked, start=1.0, duration=1.5)
+
+        ducking_drop = sp_unducked_stats["mean_volume"] - sp_ducked_stats["mean_volume"]
+        assert ducking_drop >= 6.0, f"Ducking reduction ({ducking_drop:.2f} dB) is less than required 6 dB"
+
+        # 2. Measure music stem inside silence window (4.5 to 6.0s)
+        sil_ducked_stats = get_volume_stats(stem_ducked, start=4.5, duration=1.5)
+        sil_unducked_stats = get_volume_stats(stem_unducked, start=4.5, duration=1.5)
+
+        silence_diff = abs(sil_unducked_stats["mean_volume"] - sil_ducked_stats["mean_volume"])
+        assert silence_diff < 1.0, f"Ducked music did not recover in silence (diff: {silence_diff:.2f} dB)"
+
     def test_ducking_off_maintains_consistent_volume(self, tmp_path):
         sp_part = tmp_path / "sp_part.wav"
         sil_part = tmp_path / "sil_part.wav"
