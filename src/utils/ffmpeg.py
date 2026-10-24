@@ -375,6 +375,10 @@ def finalize_video(
                 "aac",
                 "-b:a",
                 "192k",
+                "-ar",
+                "44100",
+                "-ac",
+                "2",
                 "-movflags",
                 "+faststart",
                 "-t",
@@ -488,16 +492,19 @@ def mix_background_music(
     target_duration: float,
     volume: float = 0.25,
     ducking: bool = True,
+    stem_output_path: str | Path | None = None,
 ) -> Path:
     """
     Mix background music with speech audio:
+    - Resamples speech and music to stereo 44.1 kHz
     - Loop music with crossfade if shorter than target_duration; trim if longer
     - Fade in 1.5s at start and fade out 2.5s at end
     - Normalize music loudness with loudnorm and scale by volume
-    - If ducking is True, compress music using sidechaincompress with speech as control signal
+    - If ducking is True, compress music using sidechaincompress with speech as control signal (>=6 dB ducking)
     - Mix speech and music using amix (normalize off to keep speech intelligible on top)
     - Peak limit using alimiter (<0 dBFS, never clips)
-    - Output as PCM WAV or AAC depending on output_path suffix
+    - Output stereo 44.1 kHz AAC or PCM WAV depending on output_path suffix
+    - Optionally outputs isolated processed/ducked music stem to stem_output_path
     """
     speech_path = Path(speech_path)
     music_path = Path(music_path)
@@ -524,34 +531,37 @@ def mix_background_music(
         fade_out_d = min(2.5, target_duration / 2.0)
         fade_out_st = max(0.0, target_duration - fade_out_d)
 
-        music_filters = (
-            f"loudnorm=I=-24:LRA=7:TP=-2.0,volume={clamped_vol:.3f},"
-            f"afade=t=in:st=0:d={fade_in_d:.2f},"
-            f"afade=t=out:st={fade_out_st:.2f}:d={fade_out_d:.2f},"
-            f"atrim=0:{target_duration:.3f}"
-        )
-
-        filter_chain = [f"[1:a]{music_filters}[m_proc]"]
+        # Resample both inputs to stereo 44.1 kHz to guarantee broadcast quality
+        filter_chain = [
+            "[0:a]aformat=sample_rates=44100:channel_layouts=stereo[sp_stereo]",
+            (
+                f"[1:a]aformat=sample_rates=44100:channel_layouts=stereo,"
+                f"loudnorm=I=-24:LRA=7:TP=-2.0,volume={clamped_vol:.3f},"
+                f"afade=t=in:st=0:d={fade_in_d:.2f},"
+                f"afade=t=out:st={fade_out_st:.2f}:d={fade_out_d:.2f},"
+                f"atrim=0:{target_duration:.3f}[m_proc]"
+            ),
+        ]
 
         if ducking:
             filter_chain.append(
-                "[m_proc][0:a]sidechaincompress=threshold=0.08:ratio=8:attack=20:release=400[m_ducked]"
+                "[m_proc][sp_stereo]sidechaincompress=threshold=0.03:ratio=10:attack=20:release=400:knee=1[m_ducked]"
             )
             music_stem = "[m_ducked]"
         else:
             music_stem = "[m_proc]"
 
         filter_chain.append(
-            f"[0:a]{music_stem}amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]"
+            f"[sp_stereo]{music_stem}amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]"
         )
         filter_chain.append("[mixed]alimiter=limit=0.95[aout]")
 
         full_filter = "; ".join(filter_chain)
 
         audio_codec = (
-            ["-c:a", "aac", "-b:a", "192k"]
+            ["-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2"]
             if output_path.suffix.lower() in {".mp4", ".m4a", ".aac"}
-            else ["-c:a", "pcm_s16le"]
+            else ["-c:a", "pcm_s16le", "-ar", "44100", "-ac", "2"]
         )
 
         cmd = [
@@ -570,6 +580,24 @@ def mix_background_music(
             f"{target_duration:.3f}",
             str(output_path),
         ]
+
+        if stem_output_path:
+            stem_p = Path(stem_output_path)
+            stem_p.parent.mkdir(parents=True, exist_ok=True)
+            stem_codec = (
+                ["-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2"]
+                if stem_p.suffix.lower() in {".mp4", ".m4a", ".aac"}
+                else ["-c:a", "pcm_s16le", "-ar", "44100", "-ac", "2"]
+            )
+            cmd.extend([
+                "-map",
+                music_stem,
+                *stem_codec,
+                "-t",
+                f"{target_duration:.3f}",
+                str(stem_p),
+            ])
+
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0 or not output_path.exists():
             raise RuntimeError(f"FFmpeg audio mixing failed: {res.stderr}")
