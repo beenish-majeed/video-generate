@@ -132,6 +132,7 @@ def compile_plan(
     overrides: dict | None = None,
     max_duration_policy_seconds: float | None = None,
     music_asset_id: str | None = None,
+    music_preset_id: str | None = None,
     music_volume: float = 0.25,
     music_ducking: bool = True,
 ) -> CompiledPlan:
@@ -306,6 +307,7 @@ def compile_plan(
         video=video,
         safety=safety,
         music_asset_id=music_asset_id,
+        music_preset_id=music_preset_id,
         music_volume=music_volume,
         music_ducking=music_ducking,
         seed=seed,

@@ -64,3 +64,9 @@
 | Tool | License | Commercial Use Allowed? | Notes |
 | :--- | :--- | :---: | :--- |
 | **FFmpeg** / **FFprobe** | LGPL v2.1+ / GPL v2+ (depending on build flags) | **YES** | Invoked strictly as an external subprocess / CLI binary. |
+
+---
+
+## 5. Audio & Media Assets
+
+Generated ambient music presets are produced by this project's own code and mathematical wave synthesis. They are 100% free, offline, license-free, and require no external audio asset distribution.

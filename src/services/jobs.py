@@ -314,6 +314,7 @@ def create_job(request: JobCreate) -> JobRecord:
         overrides=overrides,
         max_duration_policy_seconds=settings.max_duration_policy_seconds,
         music_asset_id=request.music_asset_id,
+        music_preset_id=request.music_preset_id,
         music_volume=request.music_volume,
         music_ducking=request.music_ducking,
     )
@@ -330,9 +331,10 @@ def create_job(request: JobCreate) -> JobRecord:
         plan=plan,
         timeline=timeline,
         music_asset_id=request.music_asset_id,
+        music_preset_id=request.music_preset_id,
         music_volume=request.music_volume,
         music_ducking=request.music_ducking,
-        music_applied=False if request.music_asset_id else None,
+        music_applied=False if (request.music_asset_id or request.music_preset_id) else None,
     )
 
     save_job_record(job)

@@ -163,8 +163,11 @@ class CompiledPlan(BaseModel):
     safety: SafetyParams = Field(default_factory=SafetyParams)
 
     music_asset_id: Optional[str] = None
+    music_preset_id: Optional[str] = None
     music_volume: float = 0.25
     music_ducking: bool = True
+    music_applied: Optional[bool] = None
+    music_error: Optional[str] = None
 
     seed: int = 123456
     warnings: list[str] = Field(default_factory=list)
@@ -244,6 +247,10 @@ class JobCreate(BaseModel):
         default=None,
         description="Optional asset ID of background music. User must possess all necessary rights to the music they upload.",
     )
+    music_preset_id: Optional[str] = Field(
+        default=None,
+        description="Optional ID of ambient music preset ('calm', 'warm', 'bright'). Alternative to music_asset_id.",
+    )
     music_volume: float = Field(
         default=0.25,
         ge=0.0,
@@ -294,6 +301,21 @@ class JobCreate(BaseModel):
         asset_path = get_asset_path(v_clean)
         if asset_path is None or not asset_path.exists():
             raise ValueError(f"Unknown music_asset_id '{v}'. Asset does not exist.")
+        return v_clean
+
+    @field_validator("music_preset_id")
+    @classmethod
+    def validate_music_preset_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v_clean = v.strip().lower()
+        if not v_clean:
+            return None
+        from src.services.music_presets import is_valid_music_preset_id, get_allowed_preset_ids
+        if not is_valid_music_preset_id(v_clean):
+            raise ValueError(
+                f"Unknown music_preset_id '{v}'. Allowed presets: {sorted(get_allowed_preset_ids())}"
+            )
         return v_clean
 
     @field_validator("visual_mode")
@@ -429,6 +451,15 @@ class JobCreate(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def validate_music_mutual_exclusion(self) -> "JobCreate":
+        if self.music_asset_id and self.music_preset_id:
+            raise ValueError(
+                "Providing both 'music_asset_id' and 'music_preset_id' is not allowed. "
+                "Choose either an uploaded asset or an ambient preset."
+            )
+        return self
+
 
 
 
@@ -454,9 +485,11 @@ class JobRecord(BaseModel):
     visual_mode_reason: Optional[str] = None
 
     music_asset_id: Optional[str] = None
+    music_preset_id: Optional[str] = None
     music_volume: Optional[float] = None
     music_ducking: Optional[bool] = None
     music_applied: Optional[bool] = None
+    music_error: Optional[str] = None
     music_failure_reason: Optional[str] = None
 
     output_path: Optional[str] = None

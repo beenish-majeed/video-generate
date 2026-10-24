@@ -151,6 +151,12 @@ def get_presets():
     return {"avatars": avatars, "voices": voices}
 
 
+@app.get("/v1/music-presets", dependencies=[Depends(verify_api_key)])
+def list_music_presets():
+    from src.services.music_presets import get_music_presets
+    return get_music_presets()
+
+
 @app.get("/v1/presets/avatars/{avatar_id}/thumbnail", dependencies=[Depends(verify_api_key)])
 def get_avatar_thumbnail(avatar_id: str):
     from src.services.presets import get_avatar_file_path, is_valid_avatar_preset_id
