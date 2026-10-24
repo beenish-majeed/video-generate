@@ -36,6 +36,8 @@ def test_capabilities_endpoint(client):
     assert "piper" in data["providers"]
     assert "cards" in data["providers"]
     assert "auto_subtitles" in data
+    assert "background_music" in data
+    assert data["background_music"] is True
 
 
 def test_capabilities_with_duration_estimate(client):

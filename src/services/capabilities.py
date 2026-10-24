@@ -117,6 +117,7 @@ def get_system_capabilities(
             "cards": True,
         },
         "auto_subtitles": whisper_ok,
+        "background_music": True,
         "image_provider_configured": settings.image_provider,
         "llm_provider_configured": settings.llm_provider,
     }

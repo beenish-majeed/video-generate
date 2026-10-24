@@ -98,6 +98,79 @@ Generation times depend on your local hardware (CPU vs. NVIDIA CUDA GPU). The fo
    * High-accuracy neural lip synchronization using local Piper TTS and Wav2Lip checkpoint.
 4. **Offline Subtitle Engine:**
    * Procedural aligner and faster-whisper support with burned-in styled captions.
+5. **Background Music Engine:**
+   * Offline mixed and ducked background audio with sidechain compression, loudness normalization, and peak limiting.
+
+---
+
+## Background Music (Mixed & Ducked)
+
+AvatarStudio supports adding background music to your generated videos across all generation modes (Text-to-Video, My Photos & Audio, and Talking-Head Avatar).
+
+### Specifications & Limits
+* **Supported Audio Formats:** `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac`.
+* **File Size Limit:** Up to 30 MB.
+* **Duration Limits:** Between 5 seconds and 20 minutes (validated by full audio decoding).
+* **Rights & Licensing Reminder:** The user must possess all necessary rights, licenses, and permissions for any background music uploaded.
+
+### How Mixing & Audio Processing Works
+* **Looped with Crossfade:** If the music file is shorter than the final video duration, it is looped automatically with a smooth ~1.0-second crossfade (`acrossfade`) so transitions have no audible clicks or seams. If longer, it is trimmed to the video duration.
+* **Fade In & Fade Out:** Background music smoothly fades in for 1.5 seconds at the start, and fades out for 2.5 seconds at the end (`afade`).
+* **Loudness Normalization & Volume Scaling:** Music loudness is normalized using standard broadcast loudness normalization (`loudnorm=I=-24:LRA=7:TP=-2.0`) before applying your custom `music_volume` scale factor (default: `0.25`, range: `0.0` to `1.0`).
+* **Sidechain Speech Ducking:** When `music_ducking: true` (default), an FFmpeg `sidechaincompress` filter monitors speech presence in real-time (attack: 20 ms, release: 400 ms, ratio: 8). The music volume automatically dips whenever speech is active and rises during pauses, keeping the narration crisp, intelligible, and on top.
+* **Zero Clipping:** Music and speech are mixed without downward normalization (`amix=normalize=0`) and passed through a peak limiter (`alimiter=limit=0.95`) ensuring output audio never clips (< 0 dBFS).
+* **Video Stream Copy:** During final assembly, the video stream is directly copied (`-c:v copy`) without re-encoding, preserving video fidelity and rendering within milliseconds. Output audio is clean AAC.
+* **Speech-Only Subtitles:** Subtitles generated or burned into the video remain strictly speech-only; background music is never captioned.
+
+### API & Curl Examples
+
+#### 1. Check System Capabilities
+```bash
+curl -X GET http://localhost:8000/v1/capabilities \
+  -H "X-API-Key: YOUR_API_KEY"
+```
+Response includes `"background_music": true`.
+
+#### 2. Upload Background Music
+```bash
+curl -X POST http://localhost:8000/v1/assets/upload \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "kind=music" \
+  -F "file=@/path/to/soundtrack.mp3"
+```
+Response:
+```json
+{
+  "asset_id": "music_a1b2c3d4e5f6",
+  "kind": "music",
+  "path": "storage/assets/music_a1b2c3d4e5f6.mp3",
+  "sha256": "3a7b...",
+  "duration_seconds": 124.5
+}
+```
+
+#### 3. Create Video Job with Background Music
+```bash
+curl -X POST http://localhost:8000/v1/jobs \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "avatar_preset_id": "avatar_default",
+    "voice_preset_id": "voice_piper_lessac",
+    "script": "Welcome to our product tour. Today we will walk through the key features and benefits of this release.",
+    "prompt": "30 second presentation video",
+    "target_duration_seconds": 30.0,
+    "music_asset_id": "music_a1b2c3d4e5f6",
+    "music_volume": 0.25,
+    "music_ducking": true,
+    "consent": {
+      "authorized": true,
+      "statement": "I authorize this video generation and accept the AI label.",
+      "ai_generated_accepted": true,
+      "ai_label_accepted": true
+    }
+  }'
+```
 
 ---
 
