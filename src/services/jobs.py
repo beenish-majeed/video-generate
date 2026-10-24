@@ -334,7 +334,7 @@ def create_job(request: JobCreate) -> JobRecord:
         music_preset_id=request.music_preset_id,
         music_volume=request.music_volume,
         music_ducking=request.music_ducking,
-        music_applied=False if (request.music_asset_id or request.music_preset_id) else None,
+        music_applied=None,
     )
 
     save_job_record(job)

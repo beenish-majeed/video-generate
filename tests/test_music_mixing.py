@@ -303,3 +303,77 @@ class TestMusicFallbackBehavior:
         assert manifest_data["music_asset_id"] == "music_corrupt"
         assert manifest_data["music_applied"] is False
         assert manifest_data["music_error"] is not None
+
+    def test_output_quality_stereo_44100_sync_under_100ms(self, tmp_path, monkeypatch):
+        """
+        Verify output quality when music is used:
+        - Stereo 44.1 kHz AAC
+        - A/V sync under 100 ms
+        - Final duration matches target duration
+        """
+        monkeypatch.setattr("src.services.store.ASSETS_DIR", tmp_path)
+        monkeypatch.setattr("src.services.store.JOBS_DIR", tmp_path / "storage" / "jobs")
+        monkeypatch.setattr(settings, "storage_dir", tmp_path / "storage")
+
+        from PIL import Image
+        photo_file = tmp_path / "img_valid.png"
+        img = Image.new("RGB", (320, 240), (100, 180, 140))
+        img.save(photo_file)
+
+        voice_file = tmp_path / "voice_speech.wav"
+        make_sine_audio(voice_file, duration=5.0, freq=300)
+
+        # Uploaded music asset
+        music_file = tmp_path / "music_asset.wav"
+        make_sine_audio(music_file, duration=8.0, freq=600)
+
+        req = JobCreate(
+            uploaded_image_asset_ids=["img_valid"],
+            uploaded_audio_asset_id="voice_speech",
+            music_asset_id="music_asset",
+            music_volume=0.25,
+            music_ducking=True,
+            consent=ConsentRequest(
+                authorized=True,
+                statement="I authorize this video generation and own all rights.",
+                face_rights_attested=True,
+                voice_rights_attested=True,
+            ),
+        )
+
+        job = create_job(req)
+        run_job(job.job_id)
+
+        updated_job = get_job(job.job_id)
+        assert updated_job.state == JobState.COMPLETED, f"Job failed: {updated_job.error}"
+        assert updated_job.music_applied is True
+        output_p = Path(updated_job.output_path)
+        assert output_p.exists()
+
+        # Probe streams with ffprobe
+        cmd = [
+            settings.ffprobe_bin,
+            "-v", "error",
+            "-show_entries", "stream=codec_type,codec_name,sample_rate,channels,duration:format=duration",
+            "-of", "json",
+            str(output_p),
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(res.stdout)
+
+        audio_stream = next((s for s in data.get("streams", []) if s.get("codec_type") == "audio"), None)
+        video_stream = next((s for s in data.get("streams", []) if s.get("codec_type") == "video"), None)
+
+        assert audio_stream is not None, "Audio stream not found in final video"
+        assert audio_stream["codec_name"] == "aac", f"Expected aac, got {audio_stream.get('codec_name')}"
+        assert int(audio_stream["sample_rate"]) == 44100, f"Expected 44100 Hz, got {audio_stream.get('sample_rate')}"
+        assert int(audio_stream["channels"]) == 2, f"Expected 2 channels (stereo), got {audio_stream.get('channels')}"
+
+        # Duration & A/V sync
+        fmt_dur = float(data.get("format", {}).get("duration", 0.0))
+        assert abs(fmt_dur - 5.0) < 0.5, f"Final duration {fmt_dur:.2f}s differs from target 5.0s"
+
+        v_dur = float(video_stream["duration"]) if video_stream and "duration" in video_stream else fmt_dur
+        a_dur = float(audio_stream["duration"]) if "duration" in audio_stream else fmt_dur
+        sync_diff_ms = abs(v_dur - a_dur) * 1000.0
+        assert sync_diff_ms < 100.0, f"A/V sync error ({sync_diff_ms:.1f} ms) exceeds 100 ms limit"
