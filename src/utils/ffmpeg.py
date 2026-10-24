@@ -551,8 +551,16 @@ def mix_background_music(
         else:
             music_stem = "[m_proc]"
 
+        if stem_output_path:
+            filter_chain.append(f"{music_stem}asplit=2[m_mix][m_stem]")
+            mix_music_pad = "[m_mix]"
+            stem_pad = "[m_stem]"
+        else:
+            mix_music_pad = music_stem
+            stem_pad = music_stem
+
         filter_chain.append(
-            f"[sp_stereo]{music_stem}amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]"
+            f"[sp_stereo]{mix_music_pad}amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]"
         )
         filter_chain.append("[mixed]alimiter=limit=0.95[aout]")
 
@@ -591,7 +599,7 @@ def mix_background_music(
             )
             cmd.extend([
                 "-map",
-                music_stem,
+                stem_pad,
                 *stem_codec,
                 "-t",
                 f"{target_duration:.3f}",
