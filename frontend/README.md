@@ -319,37 +319,3 @@ Full accessibility support for users sensitive to motion:
 * Total JavaScript gzip growth across all motion features and steps: **~2.41 kB gzip** (87.57 kB baseline -> 89.98 kB final).
 * Total CSS gzip growth: **~2.04 kB gzip** (2.95 kB baseline -> 4.99 kB final).
 * Total bundle impact is well below the 30 kB gzip budget.
-
-
----
-
-## 🎨 Painted-Landscape Background System
-
-Memory Studio features an original procedural **Painted Landscape** background inspired by oil and gouache landscape painting. It provides painterly depth while maintaining crisp WCAG AA text contrast on solid near-white cards.
-
-### 1. Procedural Layers (Back to Front)
-Rendered by `<PaintedLandscape />` (`src/components/ui/PaintedLandscape.tsx`):
-1. **Sky**: Soft vertical gouache gradient from gentle atmospheric blue (`#B9DDFF` / `#CDB8FF`) down to near white (`#FBF9FE`), accented with soft drifting cloud shapes.
-2. **Distant Hills Tier 1**: Pale misty blue-green mountain silhouettes (`#8CAEAF`, opacity 0.55) along the upper horizon.
-3. **Midground Hills Tier 2**: Layered undulating hazy teal-green slopes (`#619497`, opacity 0.75).
-4. **Foreground Hills Tier 3**: Rich textured rolling hills (`#43767B`, opacity 0.88) framing the lower viewport.
-5. **Warm Foreground Meadow**: Radiant glowing foothills in pastel lemon yellow (`#FFE8A3`), peach (`#FFC9B5`), and soft rose pink (`#FFD3E8`) with visible brush-stroke contours.
-6. **Grain & Brush-Texture Filter**: An inline SVG filter (`#painterly-brush-filter`) applying `feTurbulence` and `feDisplacementMap` to produce natural, non-vector painterly edges and paper tooth.
-
-### 2. Custom Painting Background Configuration
-You can substitute the procedural SVG landscape with a custom high-resolution painting image:
-
-1. **Place your painting image** in the `frontend/public/backgrounds/` directory (e.g. `frontend/public/backgrounds/custom-painting.webp` or `.jpg`, `.png`).
-2. **Open `src/config/background.ts`** and configure `BACKGROUND_IMAGE_URL`:
-   ```ts
-   // Set to a relative public URL or empty string '' for the procedural SVG landscape
-   export const BACKGROUND_IMAGE_URL: string = '/backgrounds/custom-painting.webp';
-   ```
-3. When `BACKGROUND_IMAGE_URL` is set:
-   * The custom painting is loaded as a fixed, full-viewport background with `object-fit: cover`.
-   * If the image is not found or fails to load, `<PaintedLandscape />` automatically falls back to the procedural SVG landscape without breaking the layout.
-   * The solid near-white cards (`rgba(255, 255, 255, 0.94)`) and floating frosted topbar retain their high readability and WCAG AA contrast (14.7:1 to 15.8:1) regardless of the custom artwork palette.
-
-### 3. Print & Accessibility Fallbacks
-* **Print Mode**: When printing or exporting (`@media print`), the painted landscape is omitted (`display: none !important`), resetting the background to pure clean white (`#ffffff`).
-* **Reduced Motion**: Under `@media (prefers-reduced-motion: reduce)`, heavy SVG displacement filters are disabled (`filter: none !important`) to conserve GPU resources while keeping the serene static landscape visible.

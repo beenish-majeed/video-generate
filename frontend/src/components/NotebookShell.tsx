@@ -3,7 +3,6 @@ import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
 import SoundToggle from './SoundToggle';
 import CursorGlow from './ui/CursorGlow';
 import { ToastProvider } from './ui/Toast';
-import PaintedLandscape from './ui/PaintedLandscape';
 
 interface NotebookShellProps {
   currentStep: JourneyStepId;
@@ -21,60 +20,58 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   return (
     <ToastProvider>
       <div className="app-shell">
-        {/* Procedural Painted Oil/Gouache Landscape Background */}
-        <PaintedLandscape isBrightened={currentStep === 'waiting' || currentStep === 'premiere'} />
+      {/* Desktop subtle cursor glow follower */}
+      <CursorGlow />
 
-        {/* Desktop subtle cursor glow follower */}
-        <CursorGlow />
+      {/* Modern Edge-to-Edge Top Bar */}
+      <header className="app-topbar" aria-label="Application Header">
+        <div
+          className="app-brand"
+          onClick={() => onSelectStep && onSelectStep('hero')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              onSelectStep && onSelectStep('hero');
+            }
+          }}
+          aria-label="Memory Studio Home"
+        >
+          <span className="app-brand-badge">M</span>
+          <span>Memory Studio</span>
+        </div>
 
-        {/* Modern Edge-to-Edge Top Bar */}
-        <header className="app-topbar" aria-label="Application Header">
-          <div
-            className="app-brand"
-            onClick={() => onSelectStep && onSelectStep('hero')}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onSelectStep && onSelectStep('hero');
-              }
+        {/* Clean Step Indicator */}
+        {currentStep !== 'hero' && currentStep !== 'choice' && (
+          <nav
+            aria-label="Step navigation"
+            style={{
+              flex: 1,
+              maxWidth: '840px',
+              margin: '0 16px',
+              overflow: 'hidden',
+              display: 'flex',
+              justifyContent: 'center',
             }}
-            aria-label="Memory Studio Home"
           >
-            <span className="app-brand-badge">M</span>
-            <span>Memory Studio</span>
-          </div>
+            <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
+          </nav>
+        )}
 
-          {/* Clean Step Indicator */}
-          {currentStep !== 'hero' && currentStep !== 'choice' && (
-            <nav
-              aria-label="Step navigation"
-              style={{
-                flex: 1,
-                maxWidth: '840px',
-                margin: '0 16px',
-                overflow: 'hidden',
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
-              <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
-            </nav>
-          )}
+        {/* Top-Right Sound & Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <SoundToggle />
+        </div>
+      </header>
 
-          {/* Top-Right Sound & Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
-            <SoundToggle />
-          </div>
-        </header>
-
-        {/* Main Content Area */}
-        <main id="main-content" className="app-main">
-          {children}
-        </main>
-      </div>
-    </ToastProvider>
+      {/* Main Content Area */}
+      <main id="main-content" className="app-main">
+        {children}
+      </main>
+    </div>
+  </ToastProvider>
   );
 };
 
 export default NotebookShell;
+

@@ -2,7 +2,6 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import { ToastProvider } from './components/ui/Toast';
-import PaintedLandscape from './components/ui/PaintedLandscape';
 import type { JourneyStepId, FlowMode } from './components/PageTabs';
 import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload } from './types/api';
 import apiClient from './api/client';
@@ -24,7 +23,6 @@ const ConsentStep = lazy(() => import('./components/steps/ConsentStep'));
 const WaitingStep = lazy(() => import('./components/steps/WaitingStep'));
 const PremiereStep = lazy(() => import('./components/steps/PremiereStep'));
 const FailedStep = lazy(() => import('./components/steps/FailedStep'));
-const NotFoundScreen = lazy(() => import('./components/steps/NotFoundScreen'));
 const StyleGuide = lazy(() => import('./components/StyleGuide'));
 
 const StepFallback: React.FC = () => (
@@ -311,21 +309,6 @@ export const App: React.FC = () => {
     }),
   };
 
-  const isRecognizedPath = (path: string): boolean => {
-    return (
-      path === '/' ||
-      path === '' ||
-      path === '/index.html' ||
-      path.endsWith('/index.html') ||
-      path.includes('styleguide')
-    );
-  };
-
-  const [isNotFound, setIsNotFound] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return !isRecognizedPath(window.location.pathname);
-  });
-
   const [isStyleGuide, setIsStyleGuide] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return (
@@ -344,7 +327,6 @@ export const App: React.FC = () => {
         window.location.hash === '#styleguide' ||
         window.location.search.includes('styleguide')
       );
-      setIsNotFound(!isRecognizedPath(window.location.pathname));
     };
     window.addEventListener('hashchange', handleRouteCheck);
     window.addEventListener('popstate', handleRouteCheck);
@@ -358,7 +340,6 @@ export const App: React.FC = () => {
     return (
       <ToastProvider>
         <div className="app-shell" style={{ overflowY: 'auto' }}>
-          <PaintedLandscape />
           <Suspense fallback={<StepFallback />}>
             <StyleGuide
               onClose={() => {
@@ -373,30 +354,6 @@ export const App: React.FC = () => {
           </Suspense>
         </div>
       </ToastProvider>
-    );
-  }
-
-  if (isNotFound) {
-    return (
-      <NotebookShell
-        currentStep="hero"
-        flowMode={flowMode}
-        onSelectStep={(step) => {
-          window.history.pushState(null, '', '/');
-          setIsNotFound(false);
-          changeStep(step);
-        }}
-      >
-        <Suspense fallback={<StepFallback />}>
-          <NotFoundScreen
-            onBackToStart={() => {
-              window.history.pushState(null, '', '/');
-              setIsNotFound(false);
-              changeStep('hero');
-            }}
-          />
-        </Suspense>
-      </NotebookShell>
     );
   }
 

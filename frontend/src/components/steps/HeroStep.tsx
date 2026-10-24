@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import BrushUnderline from '../ui/BrushUnderline';
 
 export interface HeroStepProps {
   onGetStarted: () => void;
@@ -11,7 +10,7 @@ export interface HeroStepProps {
   onSelectCustomMediaFlow?: () => void;
 }
 
-const HEADLINE_WORDS: Array<{ text: string; italic: boolean; underline?: boolean }> = [
+const HEADLINE_WORDS = [
   { text: 'Turn', italic: false },
   { text: 'your', italic: false },
   { text: 'ideas', italic: false },
@@ -20,7 +19,7 @@ const HEADLINE_WORDS: Array<{ text: string; italic: boolean; underline?: boolean
   { text: 'quiet,', italic: false },
   { text: 'living', italic: true },
   { text: 'video', italic: false },
-  { text: 'memory.', italic: false, underline: true },
+  { text: 'memory.', italic: false },
 ];
 
 export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
@@ -225,28 +224,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         />
       </div>
 
-      {/* Solid Near-White Canvas Sheet Card over the Painted Landscape */}
-      <div
-        className="card hero-welcome-card"
-        style={{
-          background: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-card)',
-          padding: 'clamp(28px, 4.5dvh, 52px) clamp(24px, 4vw, 56px)',
-          boxShadow: 'var(--shadow-card)',
-          border: '1px solid var(--border-light)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 'clamp(20px, 3dvh, 32px)',
-          maxWidth: '820px',
-          width: '100%',
-          position: 'relative',
-          zIndex: 1,
-          boxSizing: 'border-box',
-        }}
-      >
       <header
         style={{
           display: 'flex',
@@ -255,6 +232,8 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           alignItems: 'center',
           textAlign: 'center',
           width: '100%',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <h1
@@ -291,11 +270,9 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
                 style={{
                   display: 'inline-block',
                   marginRight: '0.28em',
-                  position: item.underline ? 'relative' : undefined,
                 }}
               >
-                <span style={{ position: 'relative', zIndex: 1 }}>{item.text}</span>
-                {item.underline && <BrushUnderline />}
+                {item.text}
               </motion.span>
             ))}
           </span>
@@ -354,22 +331,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </motion.button>
       </div>
-      </div>
-
-      {/* Subtle Footer Line (Welcome Page Only) */}
-      <footer
-        style={{
-          marginTop: 'clamp(8px, 1.5dvh, 16px)',
-          fontSize: '12.5px',
-          color: 'var(--text-muted)',
-          opacity: 0.85,
-          letterSpacing: '0.015em',
-          userSelect: 'none',
-          zIndex: 1,
-        }}
-      >
-        <span>Crafted with local neural models — 100% private &amp; offline at runtime</span>
-      </footer>
     </div>
   );
 };
