@@ -38,6 +38,8 @@ def test_capabilities_endpoint(client):
     assert "auto_subtitles" in data
     assert "background_music" in data
     assert data["background_music"] is True
+    assert "music_presets" in data
+    assert set(data["music_presets"]) == {"calm", "warm", "bright"}
 
 
 def test_capabilities_with_duration_estimate(client):

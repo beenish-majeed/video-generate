@@ -104,6 +104,8 @@ def get_system_capabilities(
     whisper_ok = is_whisper_available()
     piper_ok = is_piper_available()
 
+    from src.services.music_presets import get_allowed_preset_ids
+
     caps: Dict[str, Any] = {
         "gpu": {
             "available": gpu_ok,
@@ -118,6 +120,7 @@ def get_system_capabilities(
         },
         "auto_subtitles": whisper_ok,
         "background_music": True,
+        "music_presets": get_allowed_preset_ids(),
         "image_provider_configured": settings.image_provider,
         "llm_provider_configured": settings.llm_provider,
     }
