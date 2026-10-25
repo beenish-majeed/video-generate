@@ -26,6 +26,8 @@ Ensure you have:
 ### Step 2: Run Setup Script
 Run the automated environment setup script. It creates a `.venv`, installs Python dependencies, and downloads local models (Piper voice and Wav2Lip checkpoint):
 
+> **Model Integrity & Trust-On-First-Use:** Downloaded model weights (Piper ONNX, Wav2Lip checkpoint) are cryptographically validated against pinned SHA-256 digests in `models.sha256`. The pinned hashes represent a trust-on-first-use baseline from known-good reference weights. Any tampered or corrupted weights are deleted and rejected at download and load time.
+
 **Windows (PowerShell):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup.ps1

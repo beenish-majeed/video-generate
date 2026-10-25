@@ -15,6 +15,8 @@ import sys
 import urllib.request
 import shutil
 
+from src.utils.model_integrity import verify_model_file
+
 PIPER_MODEL_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
 PIPER_CONFIG_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"
 WAV2LIP_CKPT_URL = "https://huggingface.co/camenduru/Wav2Lip/resolve/main/wav2lip.pth"
@@ -23,8 +25,17 @@ WAV2LIP_CKPT_URL = "https://huggingface.co/camenduru/Wav2Lip/resolve/main/wav2li
 def download_file(url: str, dest: Path, desc: str) -> bool:
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() and dest.stat().st_size > 0:
-        print(f"  [OK] {desc} already present: {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
-        return True
+        is_valid, computed_hash, expected_hash = verify_model_file(dest)
+        if expected_hash:
+            if is_valid:
+                print(f"  [OK] {desc} already present and verified (SHA-256 match): {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
+                return True
+            else:
+                print(f"  [SECURITY WARNING] Existing {desc} failed integrity check! Expected {expected_hash}, got {computed_hash}. Deleting corrupted file...")
+                dest.unlink()
+        else:
+            print(f"  [OK] {desc} already present: {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
+            return True
 
     print(f"  Downloading {desc} from {url}...")
     temp_path = dest.with_suffix(dest.suffix + ".part")
@@ -32,9 +43,19 @@ def download_file(url: str, dest: Path, desc: str) -> bool:
         req = urllib.request.Request(url, headers={"User-Agent": "AvatarStudioSetup/1.0"})
         with urllib.request.urlopen(req) as resp, open(temp_path, "wb") as out_file:
             shutil.copyfileobj(resp, out_file)
+
+        is_valid, computed_hash, expected_hash = verify_model_file(temp_path, expected_name=dest.name)
+        if expected_hash and not is_valid:
+            if temp_path.exists():
+                temp_path.unlink()
+            print(f"  [SECURITY ABORT] Downloaded {desc} failed integrity check! Expected {expected_hash}, got {computed_hash}. Aborting setup.")
+            sys.exit(1)
+
         temp_path.rename(dest)
-        print(f"  [OK] Successfully saved {desc} to {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
+        print(f"  [OK] Successfully saved and verified {desc} to {dest} ({dest.stat().st_size / (1024*1024):.1f} MB)")
         return True
+    except SystemExit:
+        raise
     except Exception as exc:
         if temp_path.exists():
             temp_path.unlink()

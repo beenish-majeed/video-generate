@@ -19,6 +19,7 @@ from pathlib import Path
 
 from src.config import settings
 from src.models.schemas import CompiledPlan, SegmentSpec
+from src.utils.model_integrity import verify_model_file
 from src.utils.ffmpeg import probe_duration
 
 # Add Wav2Lip repo to path so we can import its modules
@@ -64,6 +65,13 @@ class RealWav2LipProvider:
             ckpt_path = Path(settings.wav2lip_ckpt_path)
             if not ckpt_path.exists():
                 raise FileNotFoundError(f"Wav2Lip checkpoint missing at '{ckpt_path}'")
+
+            is_valid, computed_hash, expected_hash = verify_model_file(ckpt_path)
+            if not is_valid:
+                raise RuntimeError(
+                    f"Wav2Lip checkpoint integrity verification failed for '{ckpt_path}'. "
+                    f"Expected SHA-256: {expected_hash or 'None'}, computed: {computed_hash}."
+                )
 
             self.model = Wav2LipModel()
             try:

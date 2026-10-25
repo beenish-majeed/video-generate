@@ -1,0 +1,3 @@
+5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f  src/models/piper/en_US-lessac-medium.onnx
+efe19c417bed055f2d69908248c6ba650fa135bc868b0e6abb3da181dab690a0  src/models/piper/en_US-lessac-medium.onnx.json
+b78b681b68ad9fe6c6fb1debc6ff43ad05834a8af8a62ffc4167b7b34ef63c37  src/models/wav2lip/wav2lip.pth
