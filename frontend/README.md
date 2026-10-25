@@ -52,7 +52,9 @@ npm run build
 ## 🔒 Security Architecture (API Key Proxy Protection)
 
 * **Vite Node Proxy**: Requests from client browser code target relative paths like `/api/v1/jobs`.
-* **Server-Side Header Injection**: The Vite development server proxy (`vite.config.ts`) intercepts `/api/*` traffic server-side and injects the `X-API-Key` header using Node process environment variables (`process.env.API_KEY`).
+* **Server-Side Header Injection (Localhost Only)**: The Vite development server binds explicitly to `127.0.0.1`. It injects `X-API-Key` strictly for local loopback connections (`127.0.0.1` / `::1`). If the server is launched with `--host` or accessed across the LAN, key injection is disabled and non-local requests will receive HTTP 401 Unauthorized.
+* **LAN Testing**: To test from mobile devices or other computers on the LAN, do not rely on dev proxy secret injection. Instead, run an authenticating reverse proxy or tunnel, or set `ALLOW_INSECURE_DEV=true` temporarily on a test backend.
+* **Production Deployment**: Production environments must **never** use the Vite dev proxy. Deploy a dedicated production server-side proxy or gateway (such as Nginx, Caddy, or a FastAPI BFF) that provides session/cookie-based user authentication and rate limiting before forwarding traffic to the pipeline backend.
 * **Zero Client Exposure**: Client JavaScript bundles (`dist/*.js`) and network request headers in the browser developer tools **never** contain or transmit `API_KEY`.
 
 To target a remote backend server, set `BACKEND_URL` in `.env`:
