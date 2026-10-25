@@ -1,7 +1,9 @@
 import json
 import logging
+import os
 import shutil
 import sqlite3
+import stat
 from pathlib import Path
 from uuid import uuid4
 from typing import Dict, List, Optional
@@ -64,8 +66,9 @@ _init_db()
 JOBS: BoundedJobCache = BoundedJobCache(maxsize=100)
 
 
-def save_job_record(job: JobRecord) -> None:
-    job.updated_at = utcnow()
+def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
+    if update_timestamp or not job.updated_at:
+        job.updated_at = utcnow()
     JOBS[job.job_id] = job
     try:
         data_json = job.model_dump_json()
@@ -111,9 +114,12 @@ def list_all_jobs() -> List[JobRecord]:
             cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
             for row in cursor.fetchall():
                 if row and row[0]:
-                    rec = JobRecord.model_validate_json(row[0])
-                    records.append(rec)
-                    JOBS[rec.job_id] = rec
+                    try:
+                        rec = JobRecord.model_validate_json(row[0])
+                        records.append(rec)
+                        JOBS[rec.job_id] = rec
+                    except Exception as row_exc:
+                        logger.warning(f"Skipping job record that failed validation: {row_exc}")
     except Exception as exc:
         logger.error(f"Error listing jobs from DB: {exc}")
 
@@ -232,6 +238,53 @@ def cancel_job(job_id: str) -> Optional[JobRecord]:
     job_path = job_dir(job_id)
     _cleanup_intermediate_job_files(job_path, is_failed=True, updated_at=utcnow())
     return job
+
+
+def safe_rmtree(path: Path) -> None:
+    """Safely remove a directory tree, clearing Windows read-only attributes on error."""
+    if not path.exists():
+        return
+
+    def _handle_readonly(func, p, exc):
+        try:
+            os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
+            func(p)
+        except Exception:
+            pass
+
+    try:
+        shutil.rmtree(path, onexc=_handle_readonly)
+    except Exception:
+        try:
+            shutil.rmtree(path, ignore_errors=True)
+        except Exception:
+            pass
+
+
+def delete_job_record(job_id: str) -> bool:
+    job = load_job_record(job_id)
+    if job is None:
+        return False
+
+    if job.state in NON_TERMINAL_STATES:
+        raise ValueError(f"Cannot delete active job '{job_id}' (state: {job.state}). Cancel the job first.")
+
+    # Remove job folder
+    path = job_dir(job_id)
+    safe_rmtree(path)
+
+    # Remove from in-memory cache
+    JOBS.pop(job_id, None)
+
+    # Remove from SQLite
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+            conn.commit()
+    except Exception as exc:
+        logger.error(f"Error deleting job '{job_id}' from DB: {exc}")
+
+    return True
 
 
 def create_job(request: JobCreate) -> JobRecord:

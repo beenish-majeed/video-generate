@@ -81,6 +81,13 @@ async def lifespan(app: FastAPI):
     count = recover_interrupted_jobs()
     if count > 0:
         logger.info(f"Startup recovery: marked {count} interrupted jobs as FAILED.")
+
+    try:
+        from src.services.storage_retention import clean_expired_storage
+        clean_expired_storage()
+    except Exception as exc:
+        logger.warning(f"Startup storage retention cleanup notice: {exc}")
+
     yield
 
 
@@ -342,3 +349,17 @@ def download_job_video(job_id: str):
         media_type="video/mp4",
         filename=f"{job_id}.mp4",
     )
+
+
+@app.delete("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
+def delete_video_job(job_id: str):
+    from src.services.jobs import delete_job_record
+    try:
+        success = delete_job_record(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    return {"ok": True, "deleted": True, "job_id": job_id}

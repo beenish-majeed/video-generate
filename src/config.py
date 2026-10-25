@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     upload_rate_limit_per_minute: int = 30
     job_create_rate_limit_per_minute: int = 10
 
+    # Storage Retention and Lifecycle
+    asset_retention_hours: float = 72.0
+    job_retention_hours: float = 48.0
+    total_storage_max_bytes: int = 10 * 1024 * 1024 * 1024  # 10 GB
+
 
 
     # LLM Provider Configs

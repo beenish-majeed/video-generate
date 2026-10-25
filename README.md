@@ -8,6 +8,7 @@ An offline-first, 100% free video creation suite that transforms ideas, scripts,
 
 * **Zero API Keys & Subscriptions:** No OpenAI, Anthropic, ElevenLabs, or cloud APIs required.
 * **100% Offline at Runtime:** Once setup is complete and models are cached, all generation (scripts, TTS, lip sync, transitions, subtitling) runs entirely on your local machine with no outbound network calls.
+* **Single-Tenant Architecture:** AvatarStudio is designed strictly as a single-tenant local studio. It does not provide per-user data isolation or multi-tenant permissions. The application must not be exposed to untrusted users as-is.
 * **License Caveats:** The software stack and models are provided for **personal and educational use**. Core models such as Wav2Lip and SD-Turbo carry non-commercial research licenses. For commercial deployment, review [LICENSES.md](LICENSES.md).
 
 ---
