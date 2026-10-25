@@ -135,6 +135,20 @@ NON_TERMINAL_STATES = {
 }
 
 
+def count_active_jobs() -> int:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute(
+                "SELECT COUNT(*) FROM jobs WHERE state NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')"
+            )
+            row = cursor.fetchone()
+            if row:
+                return int(row[0])
+    except Exception as exc:
+        logger.error(f"Error counting active jobs: {exc}")
+    return sum(1 for j in JOBS.values() if j.state in NON_TERMINAL_STATES)
+
+
 def recover_interrupted_jobs() -> int:
     interrupted_count = 0
     try:

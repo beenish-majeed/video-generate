@@ -12,6 +12,7 @@ from fastapi import (
     Header,
     HTTPException,
     Query,
+    Request,
     Security,
     UploadFile,
     status,
@@ -29,11 +30,17 @@ from src.models.schemas import (
     ScriptGenerateRequest,
     ScriptGenerateResponse,
 )
-from src.services.jobs import create_job, get_job, list_all_jobs, recover_interrupted_jobs, run_job
+from src.services.jobs import count_active_jobs, create_job, get_job, list_all_jobs, recover_interrupted_jobs, run_job
 from src.services.llm import LLMError
 from src.services.script_writer import ScriptWriterError, generate_script
 from src.services.store import save_upload
 from src.utils.body_limit_middleware import RequestBodyLimitMiddleware
+from src.utils.rate_limiter import (
+    JOB_CREATION_LIMITER,
+    SCRIPT_LIMITER,
+    UPLOAD_LIMITER,
+    get_client_ip,
+)
 
 import hmac
 from contextlib import asynccontextmanager
@@ -198,24 +205,6 @@ def get_avatar_thumbnail(avatar_id: str):
         )
     media_type = "image/png" if file_path.suffix.lower() == ".png" else "image/jpeg"
     return FileResponse(path=str(file_path), media_type=media_type)
-SCRIPT_RATE_LIMIT_MAX_REQUESTS = 10
-SCRIPT_RATE_LIMIT_WINDOW_SECONDS = 60.0
-_script_rate_limit_history: dict[str, list[float]] = defaultdict(list)
-
-
-def check_script_rate_limit(key: Optional[str] = None) -> None:
-    client_id = key or "anonymous"
-    now = time.time()
-    history = _script_rate_limit_history[client_id]
-    _script_rate_limit_history[client_id] = [t for t in history if now - t < SCRIPT_RATE_LIMIT_WINDOW_SECONDS]
-    if len(_script_rate_limit_history[client_id]) >= SCRIPT_RATE_LIMIT_MAX_REQUESTS:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Rate limit exceeded: maximum 10 script generation requests per minute per key.",
-        )
-    _script_rate_limit_history[client_id].append(now)
-
-
 @app.post(
     "/v1/scripts/generate",
     response_model=ScriptGenerateResponse,
@@ -223,9 +212,9 @@ def check_script_rate_limit(key: Optional[str] = None) -> None:
 )
 def generate_script_endpoint(
     payload: ScriptGenerateRequest,
-    api_key_token: Optional[str] = Depends(verify_api_key),
+    request: Request,
 ):
-    check_script_rate_limit(api_key_token)
+    SCRIPT_LIMITER.check(get_client_ip(request))
 
     try:
         target_seconds = payload.resolve_target_duration_seconds()
@@ -263,9 +252,11 @@ def generate_script_endpoint(
 
 @app.post("/v1/assets/upload", dependencies=[Depends(verify_api_key)])
 async def upload_asset(
+    request: Request,
     kind: str = Form(...),
     file: UploadFile = File(...),
 ):
+    UPLOAD_LIMITER.check(get_client_ip(request))
     if kind not in {"photo", "voice", "image", "audio", "music"}:
         raise HTTPException(
             status_code=400,
@@ -276,7 +267,16 @@ async def upload_asset(
 
 
 @app.post("/v1/jobs", status_code=202, dependencies=[Depends(verify_api_key)])
-def create_video_job(payload: JobCreate):
+def create_video_job(payload: JobCreate, request: Request):
+    JOB_CREATION_LIMITER.check(get_client_ip(request))
+
+    active_count = count_active_jobs()
+    if active_count >= settings.max_active_jobs_cap:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Server busy: maximum capacity of {settings.max_active_jobs_cap} running or queued jobs reached. Please try again later.",
+        )
+
     try:
         job = create_job(payload)
     except ValueError as exc:

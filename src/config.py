@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     max_image_pixels: int = 16_777_216
     max_request_body_bytes: int = 55 * 1024 * 1024
 
+    # Concurrency and Rate Limits
+    max_active_jobs_cap: int = 16
+    script_rate_limit_per_minute: int = 10
+    upload_rate_limit_per_minute: int = 30
+    job_create_rate_limit_per_minute: int = 10
+
 
 
     # LLM Provider Configs
