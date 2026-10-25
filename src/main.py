@@ -17,7 +17,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import FileResponse
-from fastapi.security import APIKeyHeader, APIKeyQuery
+from fastapi.security import APIKeyHeader
 
 import time
 from collections import defaultdict
@@ -35,18 +35,41 @@ from src.services.script_writer import ScriptWriterError, generate_script
 from src.services.store import save_upload
 from src.utils.body_limit_middleware import RequestBodyLimitMiddleware
 
+import hmac
 from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
+DISALLOWED_KEY_PLACEHOLDERS = {
+    "your_secret_api_key_here",
+    "change_me",
+    "placeholder",
+    "secret",
+    "admin",
+    "dev_key_123",
+    "1234567890123456",
+}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not settings.api_key and not settings.allow_insecure_dev:
-        raise RuntimeError(
-            "CRITICAL SECURITY RISK: API_KEY is not configured and ALLOW_INSECURE_DEV is False. "
-            "Application refused to start. Set API_KEY or set ALLOW_INSECURE_DEV=true for local dev."
-        )
+    key = (settings.api_key or "").strip()
+    if not settings.allow_insecure_dev:
+        if not key:
+            raise RuntimeError(
+                "CRITICAL SECURITY RISK: API_KEY is not configured and ALLOW_INSECURE_DEV is False. "
+                "Application refused to start. Set API_KEY or set ALLOW_INSECURE_DEV=true for local dev."
+            )
+        if key.lower() in DISALLOWED_KEY_PLACEHOLDERS:
+            raise RuntimeError(
+                f"CRITICAL SECURITY RISK: API_KEY uses an insecure placeholder ('{key[:4]}...'). "
+                "Application refused to start with insecure credentials. Set a strong random API key."
+            )
+        if len(key) < 16:
+            raise RuntimeError(
+                f"CRITICAL SECURITY RISK: API_KEY is too short ({len(key)} chars; minimum 16 required). "
+                "Application refused to start. Set a longer API key or set ALLOW_INSECURE_DEV=true for local dev."
+            )
 
     count = recover_interrupted_jobs()
     if count > 0:
@@ -54,7 +77,18 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Avatar Pipeline Backend", version="0.1.0", lifespan=lifespan)
+docs_url = "/docs" if settings.allow_insecure_dev else None
+redoc_url = "/redoc" if settings.allow_insecure_dev else None
+openapi_url = "/openapi.json" if settings.allow_insecure_dev else None
+
+app = FastAPI(
+    title="Avatar Pipeline Backend",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
+)
 app.add_middleware(RequestBodyLimitMiddleware)
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
@@ -62,12 +96,10 @@ JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
 
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-api_key_query = APIKeyQuery(name="api_key", auto_error=False)
 
 
 def verify_api_key(
     header_key: Optional[str] = Security(api_key_header),
-    query_key: Optional[str] = Security(api_key_query),
 ) -> Optional[str]:
     if not settings.api_key:
         if settings.allow_insecure_dev:
@@ -77,27 +109,18 @@ def verify_api_key(
             detail="Authentication failed: API key is not configured on the server.",
         )
 
-    token = header_key or query_key
-    if token != settings.api_key:
+    if not header_key or not hmac.compare_digest(header_key, settings.api_key):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API key.",
         )
-    return token
+    return header_key
 
 
 
 @app.get("/health")
 def health():
-    from src.services.speech_to_text import is_whisper_available
-    return {
-        "ok": True,
-        "mock_mode": settings.mock_mode,
-        "storage_dir": str(settings.storage_dir),
-        "max_duration_policy_seconds": settings.max_duration_policy_seconds,
-        "max_segment_seconds": settings.max_segment_seconds,
-        "auto_subtitles_available": is_whisper_available(),
-    }
+    return {"ok": True}
 
 
 @app.get("/v1/capabilities", dependencies=[Depends(verify_api_key)])

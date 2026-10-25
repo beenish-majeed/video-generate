@@ -49,14 +49,15 @@ For AI script generation, install Ollama and pull the recommended local 3B model
 *Note: If Ollama is not installed or running, AvatarStudio automatically falls back to the built-in rule-based template writer. No configuration needed!*
 
 ### Step 4: Start Backend
-Activate the virtual environment and start the FastAPI service:
+Activate the virtual environment and start the FastAPI service. By default, the service binds securely to `127.0.0.1` (localhost):
 ```bash
 # Windows
-.venv\Scripts\uvicorn src.main:app --port 8000
+.venv\Scripts\uvicorn src.main:app --host 127.0.0.1 --port 8000
 
 # Linux / macOS
-source .venv/bin/activate && uvicorn src.main:app --port 8000
+source .venv/bin/activate && uvicorn src.main:app --host 127.0.0.1 --port 8000
 ```
+> **Network Bind Notice:** The backend defaults to `127.0.0.1` to prevent unauthorized exposure over local networks (LAN). To bind to other interfaces (e.g. `--host 0.0.0.0`), you must run behind a secure, authenticating reverse proxy with TLS and never expose raw backend ports directly to untrusted networks.
 
 ### Step 5: Start Frontend
 In a separate terminal:
