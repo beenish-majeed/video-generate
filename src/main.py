@@ -33,6 +33,7 @@ from src.services.jobs import create_job, get_job, list_all_jobs, recover_interr
 from src.services.llm import LLMError
 from src.services.script_writer import ScriptWriterError, generate_script
 from src.services.store import save_upload
+from src.utils.body_limit_middleware import RequestBodyLimitMiddleware
 
 from contextlib import asynccontextmanager
 
@@ -54,6 +55,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Avatar Pipeline Backend", version="0.1.0", lifespan=lifespan)
+app.add_middleware(RequestBodyLimitMiddleware)
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")

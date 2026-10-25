@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     max_image_width: int = 4096
     max_image_height: int = 4096
     max_image_pixels: int = 16_777_216
+    max_request_body_bytes: int = 55 * 1024 * 1024
 
 
 
