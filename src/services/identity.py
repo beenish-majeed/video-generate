@@ -18,7 +18,7 @@ def build_identity_pack(photo_path: Path, job_path: Path) -> dict:
     - lighting/color profile extraction
     """
 
-    identity_pack_id = f"idpack_{uuid4().hex[:12]}"
+    identity_pack_id = f"idpack_{uuid4().hex}"
     photo_hash = sha256_file(photo_path)
 
     seed = int(photo_hash[:8], 16) % 1000000007

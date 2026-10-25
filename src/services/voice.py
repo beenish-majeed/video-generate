@@ -12,7 +12,7 @@ def build_voice_pack(voice_path: Path, job_path: Path) -> dict:
     Preserves uploaded voice sample reference while explicitly documenting
     engine voice cloning capabilities.
     """
-    voice_pack_id = f"voicepack_{uuid4().hex[:12]}"
+    voice_pack_id = f"voicepack_{uuid4().hex}"
     voice_hash = sha256_file(voice_path)
 
     try:

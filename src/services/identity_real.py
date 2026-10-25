@@ -122,7 +122,7 @@ class RealIdentityBuilder:
         cv2.imwrite(str(crop_path), face_crop)
 
         pack = {
-            "identity_pack_id": f"idpack_{uuid4().hex[:12]}",
+            "identity_pack_id": f"idpack_{uuid4().hex}",
             "source_photo_path": str(photo_path),
             "source_photo_sha256": sha256_file(photo_path),
             "embedding": embedding,

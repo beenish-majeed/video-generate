@@ -29,6 +29,22 @@ class JobState(str, Enum):
     CANCELLED = "CANCELLED"
 
 
+JOB_ID_PATTERN = re.compile(r"^job_([0-9a-fA-F]{12}|[0-9a-fA-F]{32}|[a-zA-Z0-9_\-]+)$")
+ASSET_ID_PATTERN = re.compile(r"^(photo|voice|image|audio|music)_([0-9a-fA-F]{12}|[0-9a-fA-F]{32}|[a-zA-Z0-9_\-]+)$")
+
+
+def is_valid_job_id(job_id: str | None) -> bool:
+    if not job_id or not isinstance(job_id, str):
+        return False
+    return bool(JOB_ID_PATTERN.match(job_id))
+
+
+def is_valid_asset_id(asset_id: str | None) -> bool:
+    if not asset_id or not isinstance(asset_id, str):
+        return False
+    return bool(ASSET_ID_PATTERN.match(asset_id))
+
+
 class AspectRatio(str, Enum):
     SIXTEEN_NINE = "16:9"
     NINE_SIXTEEN = "9:16"

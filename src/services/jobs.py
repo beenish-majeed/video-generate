@@ -221,7 +221,7 @@ def cancel_job(job_id: str) -> Optional[JobRecord]:
 
 
 def create_job(request: JobCreate) -> JobRecord:
-    job_id = f"job_{uuid4().hex[:12]}"
+    job_id = f"job_{uuid4().hex}"
 
     is_my_own = bool(request.uploaded_image_asset_ids)
     is_preset_path = bool((request.avatar_preset_id or request.visual_mode == "slideshow") and request.voice_preset_id)

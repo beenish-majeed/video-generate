@@ -259,7 +259,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
 def save_upload(file: UploadFile, kind: str) -> dict:
     validate_upload(file, kind)
 
-    asset_id = f"{kind}_{uuid.uuid4().hex[:12]}"
+    asset_id = f"{kind}_{uuid.uuid4().hex}"
     ext = Path(file.filename or "").suffix.lower() or ".bin"
     path = ASSETS_DIR / f"{asset_id}{ext}"
 

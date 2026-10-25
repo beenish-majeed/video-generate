@@ -73,7 +73,7 @@ def verify_consent(
             )
 
     return ConsentRecord(
-        consent_id=f"consent_{uuid4().hex[:12]}",
+        consent_id=f"consent_{uuid4().hex}",
         job_id=job_id,
         authorized=True,
         statement=consent.statement,
