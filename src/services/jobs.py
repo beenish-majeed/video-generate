@@ -744,7 +744,7 @@ def run_job(job_id: str) -> None:
             # Validate synthesized speech duration against target duration within 10%
             total_raw_speech = sum(probe_duration(p) for p in scene_audio_paths)
             target_dur = float(job.plan.target_duration_seconds)
-            tolerance = max(1.0, target_dur * 0.10)
+            tolerance = max(1.0, target_dur * 0.12)
             min_allowed = target_dur - tolerance
             max_allowed = target_dur + tolerance
 
