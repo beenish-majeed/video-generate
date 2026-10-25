@@ -66,7 +66,16 @@ class RealWav2LipProvider:
                 raise FileNotFoundError(f"Wav2Lip checkpoint missing at '{ckpt_path}'")
 
             self.model = Wav2LipModel()
-            checkpoint = torch.load(str(ckpt_path), map_location=self.device)
+            try:
+                checkpoint = torch.load(str(ckpt_path), map_location=self.device, weights_only=True)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Failed to securely load Wav2Lip checkpoint from '{ckpt_path}' (weights_only=True required): {exc}"
+                ) from exc
+
+            if not isinstance(checkpoint, dict) or "state_dict" not in checkpoint:
+                raise RuntimeError(f"Invalid Wav2Lip checkpoint format: 'state_dict' key missing in '{ckpt_path}'.")
+
             checkpoint_state = checkpoint["state_dict"]
 
             checkpoint_state = {
