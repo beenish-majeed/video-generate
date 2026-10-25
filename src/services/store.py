@@ -5,6 +5,9 @@ from fastapi import HTTPException, UploadFile
 from PIL import Image, ImageOps
 
 from src.config import settings
+
+# Enforce strict pixel cap on Pillow to protect against decompression bombs
+Image.MAX_IMAGE_PIXELS = settings.max_image_pixels
 from src.utils.hash import sha256_file
 
 ASSETS_DIR = settings.storage_dir / "assets"
@@ -132,16 +135,44 @@ def validate_upload(file: UploadFile, kind: str) -> None:
         if size == 0:
             raise HTTPException(status_code=400, detail="Uploaded photo file is empty.")
 
-        # Verify image can be decoded
+        # Verify image dimensions and structural integrity BEFORE any full decode
         try:
-            img = Image.open(file.file)
-            img.verify()
+            with Image.open(file.file) as img:
+                # Reject animated or multi-frame formats (APNG, animated WebP, animated GIF)
+                if getattr(img, "is_animated", False) or getattr(img, "n_frames", 1) > 1:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Animated or multi-frame images are not supported.",
+                    )
+
+                w, h = img.size
+                if w <= 0 or h <= 0:
+                    raise HTTPException(status_code=400, detail="Invalid image dimensions.")
+
+                pixels = w * h
+                if w > settings.max_image_width or h > settings.max_image_height or pixels > settings.max_image_pixels:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Image dimensions ({w}x{h}, {pixels} pixels) exceed allowed limit "
+                               f"({settings.max_image_width}x{settings.max_image_height}, {settings.max_image_pixels} pixels).",
+                    )
+                img.verify()
+        except HTTPException:
             file.file.seek(0)
+            raise
+        except Image.DecompressionBombError as exc:
+            file.file.seek(0)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Image exceeds allowed limit: {exc}",
+            ) from exc
         except Exception as exc:
             file.file.seek(0)
             raise HTTPException(
                 status_code=400, detail=f"Invalid image file format or corrupt image: {exc}"
             ) from exc
+        finally:
+            file.file.seek(0)
 
     elif kind in {"voice", "audio"}:
         if ext not in ALLOWED_VOICE_EXTS:
@@ -163,14 +194,26 @@ def validate_upload(file: UploadFile, kind: str) -> None:
         if size == 0:
             raise HTTPException(status_code=400, detail="Uploaded voice file is empty.")
 
-        # Verify real audio content structure and header
+        # Verify real audio content structure and duration
         try:
-            _verify_audio_and_get_duration(file, ext)
+            duration = _verify_audio_and_get_duration(file, ext)
         except Exception as exc:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid audio file format or corrupt audio: {exc}",
             ) from exc
+
+        if duration < settings.min_duration_seconds:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio duration ({duration:.2f}s) is below minimum allowed ({settings.min_duration_seconds}s).",
+            )
+
+        if duration > settings.max_voice_duration_seconds:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Audio duration ({duration:.2f}s) exceeds maximum allowed ({settings.max_voice_duration_seconds}s).",
+            )
 
     elif kind == "music":
         if ext not in ALLOWED_MUSIC_EXTS:
@@ -227,9 +270,11 @@ def save_upload(file: UploadFile, kind: str) -> dict:
     if kind in {"photo", "image"}:
         try:
             with Image.open(path) as img:
-                transposed = ImageOps.exif_transpose(img)
-                if transposed is not None:
-                    transposed.save(path)
+                w, h = img.size
+                if w <= settings.max_image_width and h <= settings.max_image_height and (w * h) <= settings.max_image_pixels:
+                    transposed = ImageOps.exif_transpose(img)
+                    if transposed is not None:
+                        transposed.save(path)
         except Exception:
             pass
 

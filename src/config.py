@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     subprocess_render_timeout_seconds: float = 600.0
     subprocess_piper_timeout_seconds: float = 60.0
 
+    # Upload Media Bounds
+    max_voice_duration_seconds: float = 300.0
+    max_image_width: int = 4096
+    max_image_height: int = 4096
+    max_image_pixels: int = 16_777_216
+
 
 
     # LLM Provider Configs
