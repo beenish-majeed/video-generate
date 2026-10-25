@@ -1,5 +1,7 @@
 import json
 import logging
+import shutil
+import uuid
 from pathlib import Path
 from src.utils.subprocess_runner import run_subprocess
 from typing import Callable, Optional
@@ -284,12 +286,21 @@ class SlideshowCompositor:
             )
             current_video = "[vwatermarked]"
 
+        safe_sub_temp: Path | None = None
         if burn_subtitles and subtitle_path and Path(subtitle_path).exists():
-            # Use relative path or posix path for ffmpeg subtitles filter
+            out_p = Path(output_path)
+            safe_sub = out_p.parent / f"subtitles_safe_{uuid.uuid4().hex[:8]}.vtt"
             try:
-                rel_sub = str(subtitle_path.relative_to(Path.cwd())).replace("\\", "/")
+                shutil.copyfile(subtitle_path, safe_sub)
+                safe_sub_temp = safe_sub
+                target_sub = safe_sub
             except Exception:
-                rel_sub = subtitle_path.resolve().as_posix().replace(":", "\\:")
+                target_sub = Path(subtitle_path)
+
+            try:
+                rel_sub = str(target_sub.relative_to(Path.cwd())).replace("\\", "/")
+            except Exception:
+                rel_sub = target_sub.resolve().as_posix().replace(":", "\\:")
 
             style_str = "FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=1,Alignment=2,MarginV=30"
             in_label = current_video or "[0:v]"
@@ -332,11 +343,17 @@ class SlideshowCompositor:
             ]
         )
 
-        res = run_subprocess(cmd)
-        if res.returncode != 0:
-            raise RuntimeError(f"FFmpeg multiplex_final failed: {res.stderr[-400:]}")
-
-        return output_path
+        try:
+            res = run_subprocess(cmd)
+            if res.returncode != 0:
+                raise RuntimeError(f"FFmpeg multiplex_final failed: {res.stderr[-400:]}")
+            return output_path
+        finally:
+            if safe_sub_temp and safe_sub_temp.exists():
+                try:
+                    safe_sub_temp.unlink()
+                except Exception:
+                    pass
 
     @classmethod
     def probe_av_sync_error(cls, video_path: Path) -> tuple[float, float, float]:

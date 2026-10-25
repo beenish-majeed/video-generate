@@ -1,5 +1,6 @@
 import json
 import math
+import shutil
 import struct
 import uuid
 import wave
@@ -261,6 +262,8 @@ def concat_videos(paths: list[str], output_path: str | Path) -> None:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-protocol_whitelist",
+            "file",
             "-f",
             "concat",
             "-safe",
@@ -335,9 +338,19 @@ def finalize_video(
             )
             current_video = "[vwatermarked]"
 
+        safe_sub_temp: Path | None = None
         if burn_subtitles and subtitle_path and Path(subtitle_path).exists():
+            out_p = Path(output_path)
+            safe_sub = out_p.parent / f"subtitles_safe_{uuid.uuid4().hex[:8]}.vtt"
+            try:
+                shutil.copyfile(subtitle_path, safe_sub)
+                safe_sub_temp = safe_sub
+                target_sub = safe_sub
+            except Exception:
+                target_sub = Path(subtitle_path)
+
             escaped = (
-                Path(subtitle_path)
+                target_sub
                 .resolve()
                 .as_posix()
                 .replace("\\", "/")
@@ -387,9 +400,16 @@ def finalize_video(
             ]
         )
 
-        run(cmd)
-        if output_path.exists() and output_path.stat().st_size > 0:
-            return
+        try:
+            run(cmd)
+            if output_path.exists() and output_path.stat().st_size > 0:
+                return
+        finally:
+            if safe_sub_temp and safe_sub_temp.exists():
+                try:
+                    safe_sub_temp.unlink()
+                except Exception:
+                    pass
     except Exception:
         pass
 

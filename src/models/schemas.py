@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Literal, Optional
@@ -137,6 +138,25 @@ class VideoParams(BaseModel):
     codec: str = "h264"
     audio_codec: str = "aac"
     pixel_format: str = "yuv420p"
+
+    @classmethod
+    def validate_resolution_str(cls, v: str) -> str:
+        if not isinstance(v, str):
+            raise ValueError("resolution must be a string")
+        m = re.match(r"^(\d{2,4})x(\d{2,4})$", v.strip())
+        if not m:
+            raise ValueError(
+                f"Invalid resolution format '{v}'. Expected format 'WIDTHxHEIGHT' with digits only (e.g. '1280x720')."
+            )
+        w, h = int(m.group(1)), int(m.group(2))
+        if w < 64 or w > 4096 or h < 64 or h > 4096:
+            raise ValueError(f"Resolution {w}x{h} outside acceptable bounds [64-4096].")
+        return f"{w}x{h}"
+
+    def __init__(self, **data):
+        if "resolution" in data and isinstance(data["resolution"], str):
+            data["resolution"] = self.validate_resolution_str(data["resolution"])
+        super().__init__(**data)
 
 
 class SafetyParams(BaseModel):
@@ -349,6 +369,18 @@ class JobCreate(BaseModel):
         if not is_valid_voice_preset_id(v_clean):
             raise ValueError(f"Unknown voice_preset_id '{v}'. Allowed presets: {sorted(get_allowed_voice_preset_ids())}")
         return v_clean
+
+    @field_validator("overrides")
+    @classmethod
+    def validate_overrides(cls, v: dict) -> dict:
+        if not isinstance(v, dict):
+            raise ValueError("overrides must be a dictionary")
+        res = v.get("video.resolution")
+        if res is None and isinstance(v.get("video"), dict):
+            res = v.get("video", {}).get("resolution")
+        if res is not None:
+            VideoParams.validate_resolution_str(str(res))
+        return v
 
     @model_validator(mode="after")
     def validate_asset_sources(self) -> "JobCreate":
