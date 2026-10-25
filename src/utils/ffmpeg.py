@@ -1,7 +1,6 @@
 import json
 import math
 import struct
-import subprocess
 import uuid
 import wave
 import cv2
@@ -9,10 +8,11 @@ import numpy as np
 from pathlib import Path
 
 from src.config import settings
+from src.utils.subprocess_runner import run_subprocess
 
 
-def run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, check=True, capture_output=True, text=True)
+def run(cmd: list[str], timeout: float | None = None) -> object:
+    return run_subprocess(cmd, timeout=timeout, check=True)
 
 
 def probe_duration(path: str | Path) -> float:
@@ -465,7 +465,7 @@ def loop_audio_to_duration(
         "[out]",
         str(output_path),
     ]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = run_subprocess(cmd)
     if res.returncode == 0 and output_path.exists():
         return output_path
 
@@ -606,7 +606,7 @@ def mix_background_music(
                 str(stem_p),
             ])
 
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = run_subprocess(cmd)
         if res.returncode != 0 or not output_path.exists():
             raise RuntimeError(f"FFmpeg audio mixing failed: {res.stderr}")
 

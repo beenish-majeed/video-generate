@@ -59,7 +59,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
     # 3. For formats soundfile doesn't support directly (e.g. .m4a / AAC) or fallback:
     # Use temporary file with ffprobe and ffmpeg decode check
     import tempfile
-    import subprocess
+    from src.utils.subprocess_runner import run_subprocess
     import json
     tmp_path = None
     try:
@@ -76,7 +76,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
             "-of", "json",
             str(tmp_path),
         ]
-        probe_res = subprocess.run(probe_cmd, capture_output=True, text=True)
+        probe_res = run_subprocess(probe_cmd)
         if probe_res.returncode == 0:
             data = json.loads(probe_res.stdout)
             streams = data.get("streams", [])
@@ -90,7 +90,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
                     "-f", "null",
                     "-",
                 ]
-                decode_res = subprocess.run(decode_cmd, capture_output=True, text=True)
+                decode_res = run_subprocess(decode_cmd)
                 if decode_res.returncode == 0:
                     dur = float(dur_str)
                     if dur > 0:

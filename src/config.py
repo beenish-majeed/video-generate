@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     allow_insecure_dev: bool = False
     api_key: str | None = None
 
+    # Subprocess Timeouts
+    subprocess_default_timeout_seconds: float = 120.0
+    subprocess_ffprobe_timeout_seconds: float = 15.0
+    subprocess_render_timeout_seconds: float = 600.0
+    subprocess_piper_timeout_seconds: float = 60.0
+
 
 
     # LLM Provider Configs

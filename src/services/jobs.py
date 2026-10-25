@@ -377,7 +377,7 @@ def run_job(job_id: str) -> None:
                 if music_file is None or not music_file.exists():
                     raise FileNotFoundError(f"Music file '{music_id}' not found.")
 
-                import subprocess
+                from src.utils.subprocess_runner import run_subprocess
 
                 probe_cmd = [
                     settings.ffprobe_bin,
@@ -391,7 +391,7 @@ def run_job(job_id: str) -> None:
                     "json",
                     str(music_file),
                 ]
-                probe_res = subprocess.run(probe_cmd, capture_output=True, text=True)
+                probe_res = run_subprocess(probe_cmd)
                 if probe_res.returncode != 0:
                     raise ValueError(f"ffprobe failed: {probe_res.stderr.strip()[:100]}")
                 data = json.loads(probe_res.stdout)
@@ -412,7 +412,7 @@ def run_job(job_id: str) -> None:
                     "null",
                     "-",
                 ]
-                dec_proc = subprocess.run(dec_cmd, capture_output=True, text=True)
+                dec_proc = run_subprocess(dec_cmd)
                 if dec_proc.returncode != 0:
                     raise ValueError(f"ffmpeg decode failed: {dec_proc.stderr.strip()[:100]}")
             except Exception as exc:

@@ -1,5 +1,5 @@
 import logging
-import subprocess
+from src.utils.subprocess_runner import run_subprocess, SubprocessTimeoutError
 import wave
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -143,18 +143,16 @@ class PiperTTSProvider(BaseTTSProvider):
                 ]
 
                 try:
-                    process = subprocess.Popen(
+                    res = run_subprocess(
                         cmd,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.PIPE,
+                        input=(event.text.strip() + "\n").encode("utf-8"),
+                        timeout=settings.subprocess_piper_timeout_seconds,
                     )
-                    _, err = process.communicate(input=(event.text.strip() + "\n").encode("utf-8"))
-                    if process.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
+                    if res.returncode == 0 and output_path.exists() and output_path.stat().st_size > 0:
                         piper_success = True
                     else:
-                        err_msg = err.decode("utf-8", errors="ignore")
-                        logger.warning(f"Piper execution warning (code {process.returncode}): {err_msg}")
+                        err_msg = res.stderr if isinstance(res.stderr, str) else (res.stderr.decode("utf-8", errors="ignore") if res.stderr else "")
+                        logger.warning(f"Piper execution warning (code {res.returncode}): {err_msg}")
                 except Exception as exc:
                     logger.warning(f"Piper binary execution warning ({exc}). Generating clean acoustic audio.")
 

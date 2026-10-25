@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-import subprocess
+from src.utils.subprocess_runner import run_subprocess
 from typing import Callable, Optional
 
 from src.config import settings
@@ -110,7 +110,7 @@ class SlideshowCompositor:
             f"{duration_s:.3f}",
             str(output_path),
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = run_subprocess(cmd)
         if res.returncode != 0:
             raise RuntimeError(f"FFmpeg render_scene_clip failed: {res.stderr[-400:]}")
         return output_path
@@ -145,7 +145,7 @@ class SlideshowCompositor:
                 "copy",
                 str(output_path),
             ]
-            res = subprocess.run(cmd, capture_output=True, text=True)
+            res = run_subprocess(cmd)
             if res.returncode != 0:
                 raise RuntimeError(f"FFmpeg copy single clip failed: {res.stderr[-400:]}")
             return output_path, 0
@@ -188,7 +188,7 @@ class SlideshowCompositor:
             ]
         )
 
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = run_subprocess(cmd)
         if res.returncode != 0:
             raise RuntimeError(f"FFmpeg xfade failed: {res.stderr[-400:]}")
 
@@ -332,7 +332,7 @@ class SlideshowCompositor:
             ]
         )
 
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = run_subprocess(cmd)
         if res.returncode != 0:
             raise RuntimeError(f"FFmpeg multiplex_final failed: {res.stderr[-400:]}")
 
@@ -355,7 +355,7 @@ class SlideshowCompositor:
             "json",
             str(video_path),
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        res = run_subprocess(cmd, check=True)
         data = json.loads(res.stdout)
 
         v_dur = None
