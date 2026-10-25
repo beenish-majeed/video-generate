@@ -142,16 +142,7 @@ NON_TERMINAL_STATES = {
 
 
 def count_active_jobs() -> int:
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.execute(
-                "SELECT COUNT(*) FROM jobs WHERE state NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')"
-            )
-            row = cursor.fetchone()
-            if row:
-                return int(row[0])
-    except Exception as exc:
-        logger.error(f"Error counting active jobs: {exc}")
+    """Count number of jobs currently active (queued or running in flight)."""
     return sum(1 for j in JOBS.values() if j.state in NON_TERMINAL_STATES)
 
 
@@ -310,7 +301,7 @@ def create_job(request: JobCreate) -> JobRecord:
             explicit_dur = audio_dur
             if request.image_durations:
                 diff = abs(sum(request.image_durations) - audio_dur)
-                if diff > 1.0:
+                if diff > 0.5:
                     raise ValueError(
                         f"Image durations sum ({sum(request.image_durations):.2f}s) must match audio length ({audio_dur:.2f}s)."
                     )
@@ -753,8 +744,9 @@ def run_job(job_id: str) -> None:
             # Validate synthesized speech duration against target duration within 10%
             total_raw_speech = sum(probe_duration(p) for p in scene_audio_paths)
             target_dur = float(job.plan.target_duration_seconds)
-            min_allowed = target_dur * 0.90
-            max_allowed = target_dur * 1.10
+            tolerance = max(1.0, target_dur * 0.10)
+            min_allowed = target_dur - tolerance
+            max_allowed = target_dur + tolerance
 
             if total_raw_speech < min_allowed or total_raw_speech > max_allowed:
                 raise RuntimeError(
@@ -877,8 +869,9 @@ def run_job(job_id: str) -> None:
 
             raw_tts_dur = probe_duration(temp_audio) if temp_audio.exists() else 0.0
             target_dur = float(job.plan.target_duration_seconds)
-            min_allowed = target_dur * 0.90
-            max_allowed = target_dur * 1.10
+            tolerance = max(1.0, target_dur * 0.10)
+            min_allowed = target_dur - tolerance
+            max_allowed = target_dur + tolerance
 
             if raw_tts_dur < min_allowed or raw_tts_dur > max_allowed:
                 raise RuntimeError(

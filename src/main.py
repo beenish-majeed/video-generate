@@ -42,6 +42,8 @@ from src.utils.rate_limiter import (
     get_client_ip,
 )
 
+_script_rate_limit_history = SCRIPT_LIMITER
+
 import hmac
 from contextlib import asynccontextmanager
 

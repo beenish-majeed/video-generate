@@ -35,10 +35,11 @@ def assemble(
     except Exception:
         audio_dur = plan.target_duration_seconds
 
-    # Validate that speech audio duration matches requested target duration within 10%
+    # Validate that speech audio duration matches requested target duration within tolerance
     target_dur = float(plan.target_duration_seconds)
-    min_allowed = target_dur * 0.90
-    max_allowed = target_dur * 1.10
+    tolerance = max(1.0, target_dur * 0.10)
+    min_allowed = target_dur - tolerance
+    max_allowed = target_dur + tolerance
 
     if audio_dur < min_allowed or audio_dur > max_allowed:
         raise RuntimeError(

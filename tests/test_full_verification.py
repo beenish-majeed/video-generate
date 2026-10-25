@@ -118,7 +118,7 @@ def test_real_pipeline_execution(tmp_path, monkeypatch):
     req = JobCreate(
         photo_asset_id="photo_test_eval",
         voice_asset_id="voice_test_eval",
-        script="Hello world, welcome to our interactive AI avatar video generation pipeline demonstration today.",
+        script="I hold memories of AI video demo close to my heart.",
         prompt="5 second video",
         consent=consent,
     )

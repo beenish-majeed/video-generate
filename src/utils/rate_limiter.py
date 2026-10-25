@@ -57,6 +57,10 @@ class BoundedSlidingWindowLimiter:
         self._history[client_id] = timestamps
         self._history.move_to_end(client_id)
 
+    def clear(self) -> None:
+        """Clear all rate limit history (useful for testing)."""
+        self._history.clear()
+
 
 def get_client_ip(request: Request) -> str:
     """Extract client IP address for rate limiting."""

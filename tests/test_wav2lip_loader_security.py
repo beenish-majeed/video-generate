@@ -34,6 +34,7 @@ def test_wav2lip_loader_fails_closed_on_untrusted_pickle(tmp_path, monkeypatch):
         pickle.dump(ExploitPayload(str(marker_file)), f)
 
     monkeypatch.setattr(settings, "wav2lip_ckpt_path", str(malicious_ckpt))
+    monkeypatch.setattr("src.services.animation_wav2lip.verify_model_file", lambda p: (True, "dummy_hash", "dummy_hash"))
 
     # Reset singleton state
     RealWav2LipProvider._instance = None
