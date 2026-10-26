@@ -1,0 +1,47 @@
+# Secrets and credentials
+.env
+.env.*
+*.env
+
+# Version control
+.git
+.gitignore
+
+# Storage and runtime data
+storage/
+storage
+*.db
+*.sqlite
+*.sqlite3
+
+# Models and checkpoints
+models/
+models
+
+# Node and frontend build artifacts
+node_modules/
+**/node_modules
+dist/
+**/dist
+
+# Scratch, screenshots, and test artifacts
+scratch/
+scratch
+screenshots/
+screenshots
+tests/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.coverage
+htmlcov/
+
+# Media files
+*.mp4
+*.wav
+*.mp3
+*.jpg
+*.png
+*.vtt
