@@ -232,11 +232,29 @@ from datetime import datetime, timezone
 def _cleanup_intermediate_job_files(
     job_path: Path,
     is_failed: bool = False,
+    is_cancelled: bool = False,
     updated_at: Optional[datetime] = None,
 ) -> None:
     if not job_path.exists():
         return
 
+    # Cancelled jobs: delete intermediate segments and stems right away
+    if is_cancelled:
+        keep_files = {"manifest.json", "ai_label.png"}
+        try:
+            for item in job_path.iterdir():
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                elif item.is_file() and item.name not in keep_files:
+                    try:
+                        item.unlink()
+                    except Exception:
+                        pass
+        except Exception as exc:
+            logger.warning(f"Error during cancelled job cleanup for {job_path}: {exc}")
+        return
+
+    # Failed jobs: retain files for debugging only during the configured retention period
     if is_failed:
         if updated_at is not None:
             age_seconds = (utcnow() - updated_at).total_seconds()
@@ -284,7 +302,7 @@ def cancel_job(job_id: str) -> Optional[JobRecord]:
     save_job_record(job)
 
     job_path = job_dir(job_id)
-    _cleanup_intermediate_job_files(job_path, is_failed=True, updated_at=utcnow())
+    _cleanup_intermediate_job_files(job_path, is_cancelled=True)
     return job
 
 
@@ -1033,6 +1051,7 @@ def run_job(job_id: str) -> None:
             pass
         _cleanup_intermediate_job_files(
             job_path,
-            is_failed=(job.state in {JobState.FAILED, JobState.CANCELLED}),
+            is_failed=(job.state == JobState.FAILED),
+            is_cancelled=(job.state == JobState.CANCELLED),
             updated_at=job.updated_at,
         )
