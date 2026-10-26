@@ -1,4 +1,5 @@
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -106,6 +107,19 @@ app = FastAPI(
     openapi_url=openapi_url,
 )
 app.add_middleware(RequestBodyLimitMiddleware)
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Frame-Options"] = "DENY"
+    if "Content-Security-Policy" not in response.headers:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'"
+        )
+    return response
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
@@ -346,10 +360,18 @@ def download_job_video(job_id: str):
             detail="Output file not found.",
         )
 
+    safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "", job_id)
+    safe_filename = f"{safe_name}.mp4"
+
     return FileResponse(
         path=str(path),
         media_type="video/mp4",
-        filename=f"{job_id}.mp4",
+        filename=safe_filename,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Content-Type": "video/mp4",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 
