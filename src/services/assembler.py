@@ -91,11 +91,8 @@ def assemble(
     concat_videos(video_paths, joined_video)
 
     label_path = job_path / "ai_label.png"
-
-    if plan.safety.visible_label:
-        create_ai_label_png(label_path, plan.safety.label_text)
-    else:
-        label_path = None
+    label_text = (plan.safety.label_text if plan.safety and plan.safety.label_text else "AI-generated")
+    create_ai_label_png(label_path, label_text)
 
     subtitle_path = None
 

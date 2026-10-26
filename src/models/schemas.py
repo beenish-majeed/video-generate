@@ -391,6 +391,24 @@ class JobCreate(BaseModel):
     def validate_overrides(cls, v: dict) -> dict:
         if not isinstance(v, dict):
             raise ValueError("overrides must be a dictionary")
+
+        def _check_key(key: str, path: str = "") -> None:
+            full_key = f"{path}.{key}" if path else str(key)
+            k_norm = re.sub(r"[._\- ]+", "", str(key).lower())
+            forbidden = ("safety", "label", "watermark", "consent")
+            if any(term in k_norm for term in forbidden):
+                raise ValueError(
+                    f"Overrides cannot modify safety, label, watermark, or consent settings: '{full_key}'"
+                )
+
+        def _traverse(d: dict, path: str = "") -> None:
+            for k, val in d.items():
+                _check_key(k, path)
+                if isinstance(val, dict):
+                    _traverse(val, f"{path}.{k}" if path else str(k))
+
+        _traverse(v)
+
         res = v.get("video.resolution")
         if res is None and isinstance(v.get("video"), dict):
             res = v.get("video", {}).get("resolution")

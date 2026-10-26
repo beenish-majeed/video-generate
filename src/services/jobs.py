@@ -546,11 +546,9 @@ def run_job(job_id: str) -> None:
                     subtitle_path = sub_p
 
             label_path = job_path / "ai_label.png"
-            if job.plan.safety.visible_label:
-                from src.utils.images import create_ai_label_png
-                create_ai_label_png(label_path, job.plan.safety.label_text)
-            else:
-                label_path = None
+            from src.utils.images import create_ai_label_png
+            label_text = (job.plan.safety.label_text if job.plan and job.plan.safety and job.plan.safety.label_text else "AI-generated")
+            create_ai_label_png(label_path, label_text)
 
             if mode_used == "talking_head" and face_image_path is not None:
                 # Talking head lip-sync branch (Wav2Lip)
@@ -783,10 +781,9 @@ def run_job(job_id: str) -> None:
             save_job_record(job)
 
             label_path = job_path / "ai_label.png"
-            if job.plan.safety.visible_label:
-                create_ai_label_png(label_path, job.plan.safety.label_text)
-            else:
-                label_path = None
+            from src.utils.images import create_ai_label_png
+            label_text = (job.plan.safety.label_text if job.plan and job.plan.safety and job.plan.safety.label_text else "AI-generated")
+            create_ai_label_png(label_path, label_text)
 
             bg_music_path = None
             if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:

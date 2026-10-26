@@ -104,6 +104,11 @@ def _apply_overrides(plan: CompiledPlan, overrides: dict) -> CompiledPlan:
     data = plan.model_dump()
 
     for key, value in overrides.items():
+        k_norm = re.sub(r"[._\- ]+", "", str(key).lower())
+        if any(term in k_norm for term in ("safety", "label", "watermark", "consent")):
+            plan.warnings.append(f"Safety override rejected: {key}")
+            continue
+
         try:
             parts = key.split(".")
 
@@ -116,6 +121,8 @@ def _apply_overrides(plan: CompiledPlan, overrides: dict) -> CompiledPlan:
 
     try:
         new_plan = CompiledPlan(**data)
+        new_plan.safety.visible_label = True
+        new_plan.safety.label_text = "AI-generated"
         merged_warnings = list(dict.fromkeys(plan.warnings + new_plan.warnings))
         new_plan.warnings = merged_warnings
         return new_plan
@@ -329,5 +336,7 @@ def compile_plan(
     )
 
     plan.language = plan.voice.language
+    plan.safety.visible_label = True
+    plan.safety.label_text = "AI-generated"
 
     return plan

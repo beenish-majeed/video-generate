@@ -331,6 +331,13 @@ def finalize_video(
         filter_parts = []
         current_video = "[0:v]"
 
+        if watermark_path is None or not Path(watermark_path).exists():
+            fallback_label = output_path.parent / "ai_label.png"
+            if not fallback_label.exists():
+                from src.utils.images import create_ai_label_png
+                create_ai_label_png(fallback_label, "AI-generated")
+            watermark_path = fallback_label
+
         if watermark_path and Path(watermark_path).exists():
             cmd.extend(["-i", str(watermark_path)])
             filter_parts.append(
