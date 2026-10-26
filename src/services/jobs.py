@@ -48,6 +48,16 @@ def _init_db() -> None:
 from collections import OrderedDict
 
 TERMINAL_JOB_STATES = {JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED}
+RUNNING_JOB_STATES = {
+    JobState.COMPILING_PROMPT,
+    JobState.PLANNING_TIMELINE,
+    JobState.PREPARING_IDENTITY,
+    JobState.SYNTHESIZING_AUDIO,
+    JobState.SCHEDULING_SEGMENTS,
+    JobState.GENERATING_SEGMENTS,
+    JobState.QA_CHECKING,
+    JobState.ASSEMBLING,
+}
 
 
 class BoundedJobCache:
@@ -67,11 +77,21 @@ class BoundedJobCache:
             self._cache[key] = value
 
             if len(self._cache) > self.maxsize:
-                # Evict oldest terminal job only; never evict active jobs
+                evicted_key = None
+                # 1. First priority: oldest terminal job
                 for k, v in list(self._cache.items()):
                     if getattr(v, "state", None) in TERMINAL_JOB_STATES:
-                        del self._cache[k]
+                        evicted_key = k
                         break
+                # 2. Second priority: oldest non-running job
+                if not evicted_key:
+                    for k, v in list(self._cache.items()):
+                        if getattr(v, "state", None) not in RUNNING_JOB_STATES:
+                            evicted_key = k
+                            break
+                # 3. If all cached jobs are in flight, do not evict (expand temporarily)
+                if evicted_key:
+                    del self._cache[evicted_key]
 
     def __getitem__(self, key: str) -> JobRecord:
         with self._lock:
@@ -217,20 +237,38 @@ def count_active_jobs() -> int:
 def recover_interrupted_jobs() -> int:
     interrupted_count = 0
     try:
-        with sqlite3.connect(DB_PATH) as conn:
+        now_iso = utcnow().isoformat()
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
             cursor = conn.execute(
-                "SELECT data FROM jobs WHERE state NOT IN (?, ?, ?)",
+                "SELECT job_id, data FROM jobs WHERE state NOT IN (?, ?, ?)",
                 (JobState.COMPLETED.value, JobState.FAILED.value, JobState.CANCELLED.value),
             )
             rows = cursor.fetchall()
             for row in rows:
-                if row and row[0]:
-                    job = JobRecord.model_validate_json(row[0])
+                if not row or not row[0]:
+                    continue
+                jid, raw_data = row[0], row[1]
+                try:
+                    job = JobRecord.model_validate_json(raw_data)
                     if job.state in NON_TERMINAL_STATES:
                         job.state = JobState.FAILED
                         job.error = "Job was interrupted by a server restart."
-                        save_job_record(job)
+                        job.updated_at = utcnow()
+                        JOBS[job.job_id] = job
+                        conn.execute(
+                            "UPDATE jobs SET state = ?, data = ?, updated_at = ? WHERE job_id = ?",
+                            (job.state.value, job.model_dump_json(), job.updated_at.isoformat(), job.job_id),
+                        )
                         interrupted_count += 1
+                except Exception:
+                    conn.execute(
+                        "UPDATE jobs SET state = ?, updated_at = ? WHERE job_id = ?",
+                        (JobState.FAILED.value, now_iso, jid),
+                    )
+                    if jid in JOBS:
+                        del JOBS[jid]
+                    interrupted_count += 1
+            conn.commit()
     except Exception as exc:
         logger.error(f"Error during startup job recovery: {exc}")
     return interrupted_count
