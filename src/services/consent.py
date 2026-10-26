@@ -76,7 +76,7 @@ def verify_consent(
         consent_id=f"consent_{uuid4().hex}",
         job_id=job_id,
         authorized=True,
-        statement=consent.statement,
+        consent_version=getattr(consent, "consent_version", "v1.0") or "v1.0",
         photo_sha256=sha256_file(photo_path),
         voice_sha256=sha256_file(voice_path),
     )

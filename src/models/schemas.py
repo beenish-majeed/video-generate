@@ -55,7 +55,8 @@ class AspectRatio(str, Enum):
 
 class ConsentRequest(BaseModel):
     authorized: bool
-    statement: str
+    statement: str = Field(default="", exclude=True)
+    consent_version: str = "v1.0"
     face_rights_attested: Optional[bool] = None
     voice_rights_attested: Optional[bool] = None
     ai_generated_accepted: Optional[bool] = None
@@ -66,10 +67,11 @@ class ConsentRecord(BaseModel):
     consent_id: str
     job_id: str
     authorized: bool
-    statement: str
+    consent_version: str = "v1.0"
     timestamp: datetime = Field(default_factory=utcnow)
     photo_sha256: str
     voice_sha256: str
+    statement: Optional[str] = Field(default=None, exclude=True)
 
 
 class PausePolicy(BaseModel):
