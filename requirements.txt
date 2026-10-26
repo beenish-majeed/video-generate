@@ -22,3 +22,6 @@ ffmpeg-python==0.2.0
 pytest==8.3.3
 urllib3==2.8.0
 certifi==2026.10.23
+setuptools==84.2.1
+filelock==4.2.4
+PyJWT==2.15.1
