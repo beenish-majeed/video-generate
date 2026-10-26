@@ -18,7 +18,8 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import FileResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import APIKeyHeader
 
 import time
@@ -120,6 +121,24 @@ async def security_headers_middleware(request: Request, call_next):
             "default-src 'none'; frame-ancestors 'none'"
         )
     return response
+
+
+@app.exception_handler(RequestValidationError)
+async def sanitized_validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Log field names and error types only; redact all user-supplied input values, scripts, PII
+    field_errors = []
+    for err in exc.errors():
+        field_errors.append(f"{'.'.join(str(loc) for loc in err.get('loc', []))}: {err.get('type')}")
+    logger.warning(f"Validation error on {request.method} {request.url.path}: {'; '.join(field_errors)}")
+
+    sanitized_details = []
+    for err in exc.errors():
+        sanitized_details.append({
+            "loc": err.get("loc"),
+            "msg": err.get("msg"),
+            "type": err.get("type"),
+        })
+    return JSONResponse(status_code=422, content={"detail": sanitized_details})
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")

@@ -176,7 +176,18 @@ def list_all_jobs() -> List[JobRecord]:
                         records.append(rec)
                         JOBS[rec.job_id] = rec
                     except Exception as row_exc:
-                        logger.warning(f"Skipping job record that failed validation: {row_exc}")
+                        if hasattr(row_exc, "errors"):
+                            fields_summary = ", ".join(
+                                f"{'.'.join(str(p) for p in err.get('loc', []))}: {err.get('type')}"
+                                for err in row_exc.errors()
+                            )
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__} ({fields_summary})"
+                            )
+                        else:
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__}"
+                            )
     except Exception as exc:
         logger.error(f"Error listing jobs from DB: {exc}")
 
