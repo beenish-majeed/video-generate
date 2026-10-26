@@ -4,6 +4,7 @@ import os
 import shutil
 import sqlite3
 import stat
+import threading
 from pathlib import Path
 from uuid import uuid4
 from typing import Dict, List, Optional
@@ -46,20 +47,76 @@ def _init_db() -> None:
 
 from collections import OrderedDict
 
+TERMINAL_JOB_STATES = {JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED}
 
-class BoundedJobCache(OrderedDict):
+
+class BoundedJobCache:
     """
-    LRU cache for recent JobRecords with max size to prevent memory leaks.
+    Thread-safe LRU cache for recent JobRecords with max size to prevent memory leaks.
+    Never evicts jobs that are in non-terminal (running / active) states.
     """
     def __init__(self, maxsize: int = 100):
-        super().__init__()
+        self._cache: OrderedDict[str, JobRecord] = OrderedDict()
         self.maxsize = maxsize
+        self._lock = threading.RLock()
 
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        self.move_to_end(key)
-        if len(self) > self.maxsize:
-            self.popitem(last=False)
+    def __setitem__(self, key: str, value: JobRecord) -> None:
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+            self._cache[key] = value
+
+            if len(self._cache) > self.maxsize:
+                # Evict oldest terminal job only; never evict active jobs
+                for k, v in list(self._cache.items()):
+                    if getattr(v, "state", None) in TERMINAL_JOB_STATES:
+                        del self._cache[k]
+                        break
+
+    def __getitem__(self, key: str) -> JobRecord:
+        with self._lock:
+            val = self._cache[key]
+            self._cache.move_to_end(key)
+            return val
+
+    def __contains__(self, key: str) -> bool:
+        with self._lock:
+            return key in self._cache
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._cache)
+
+    def __iter__(self):
+        with self._lock:
+            return iter(list(self._cache.keys()))
+
+    def get(self, key: str, default: Optional[JobRecord] = None) -> Optional[JobRecord]:
+        with self._lock:
+            if key in self._cache:
+                self._cache.move_to_end(key)
+                return self._cache[key]
+            return default
+
+    def pop(self, key: str, default=None):
+        with self._lock:
+            return self._cache.pop(key, default)
+
+    def __delitem__(self, key: str) -> None:
+        with self._lock:
+            del self._cache[key]
+
+    def values(self) -> list[JobRecord]:
+        with self._lock:
+            return list(self._cache.values())
+
+    def items(self) -> list[tuple[str, JobRecord]]:
+        with self._lock:
+            return list(self._cache.items())
+
+    def clear(self) -> None:
+        with self._lock:
+            self._cache.clear()
 
 
 _init_db()
@@ -72,7 +129,7 @@ def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
     JOBS[job.job_id] = job
     try:
         data_json = job.model_dump_json()
-        with sqlite3.connect(DB_PATH) as conn:
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
             conn.execute(
                 """
                 INSERT INTO jobs (job_id, state, data, updated_at)
@@ -94,7 +151,7 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
         return JOBS[job_id]
 
     try:
-        with sqlite3.connect(DB_PATH) as conn:
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
             cursor = conn.execute("SELECT data FROM jobs WHERE job_id = ?", (job_id,))
             row = cursor.fetchone()
             if row and row[0]:
