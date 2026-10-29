@@ -7,13 +7,16 @@ from src.services.jobs import DB_PATH, _init_db, list_all_jobs, delete_job_recor
 
 
 client = TestClient(app, raise_server_exceptions=False)
-AUTH_HEADERS = {"X-API-Key": settings.api_key}
+
+
+def get_auth_headers():
+    return {"X-API-Key": settings.api_key or "test_key"}
 
 
 def test_unhandled_exception_sanitized():
     # Patch an endpoint to simulate an unexpected internal runtime crash
     with patch("src.main.list_all_jobs", side_effect=RuntimeError("internal secret connection leak: password=topsecret /var/data")):
-        resp = client.get("/v1/jobs", headers=AUTH_HEADERS)
+        resp = client.get("/v1/jobs", headers=get_auth_headers())
         assert resp.status_code == 500
         data = resp.json()
         assert data == {"detail": "An internal server error occurred."}
@@ -24,7 +27,7 @@ def test_unhandled_exception_sanitized():
 
 
 def test_standard_http_exception_preserved():
-    resp = client.get("/v1/jobs/job_nonexistent1234567890ab", headers=AUTH_HEADERS)
+    resp = client.get("/v1/jobs/job_nonexistent1234567890ab", headers=get_auth_headers())
     assert resp.status_code == 404
     assert resp.json() == {"detail": "Job not found."}
 
