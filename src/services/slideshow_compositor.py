@@ -304,14 +304,20 @@ class SlideshowCompositor:
             except Exception:
                 target_sub = Path(subtitle_path)
 
-            try:
-                rel_sub = str(target_sub.relative_to(Path.cwd())).replace("\\", "/")
-            except Exception:
-                rel_sub = target_sub.resolve().as_posix().replace(":", "\\:")
+            escaped_sub = (
+                target_sub
+                .resolve()
+                .as_posix()
+                .replace("\\", "/")
+                .replace(":", "\\:")
+                .replace("'", "'\\''")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+            )
 
             style_str = "FontSize=20,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,Outline=2,Shadow=1,Alignment=2,MarginV=30"
             in_label = current_video or "[0:v]"
-            filter_parts.append(f"{in_label}subtitles='{rel_sub}':force_style='{style_str}'[vsubtitled]")
+            filter_parts.append(f"{in_label}subtitles='{escaped_sub}':force_style='{style_str}'[vsubtitled]")
             current_video = "[vsubtitled]"
 
         if filter_parts:
