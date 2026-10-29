@@ -564,6 +564,27 @@ class JobRecord(BaseModel):
     subtitle_path: Optional[str] = None
     error: Optional[str] = None
 
+    estimated_render_seconds: Optional[float] = None
+    retention_expires_at: Optional[datetime] = None
+    voice_cloning_disclaimer: str = (
+        "Local Piper TTS synthesizes scripts using built-in offline voices; uploaded voice samples are not cloned."
+    )
+
+
+class JobEstimateRequest(BaseModel):
+    target_duration_seconds: float = Field(..., ge=1.0, le=900.0)
+    visual_mode: str = Field("talking_head", pattern="^(talking_head|slideshow)$")
+
+
+class JobEstimateResponse(BaseModel):
+    target_duration_seconds: float
+    visual_mode: str
+    estimated_render_seconds: float
+    estimated_render_human: str
+    compute_advisory: str
+    retention_policy_hours: float
+    voice_cloning_note: str
+
 
 class ScriptGenerateRequest(BaseModel):
     prompt: str = Field(..., max_length=1000)

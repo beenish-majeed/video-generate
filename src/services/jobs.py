@@ -519,6 +519,12 @@ def create_job(request: JobCreate) -> JobRecord:
         music_applied=None,
     )
 
+    from datetime import timedelta
+    dur = float(plan.target_duration_seconds)
+    render_mult = 2.7 if getattr(request, "visual_mode", "talking_head") == "talking_head" else 0.85
+    job.estimated_render_seconds = round(dur * render_mult, 1)
+    job.retention_expires_at = job.created_at + timedelta(hours=settings.job_retention_hours)
+
     save_job_record(job)
     return job
 

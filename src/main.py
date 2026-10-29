@@ -28,6 +28,8 @@ from collections import defaultdict
 from src.config import settings
 from src.models.schemas import (
     JobCreate,
+    JobEstimateRequest,
+    JobEstimateResponse,
     JobState,
     ScriptGenerateRequest,
     ScriptGenerateResponse,
@@ -306,6 +308,34 @@ async def upload_asset(
         )
 
     return save_upload(file=file, kind=kind)
+
+
+@app.post(
+    "/v1/jobs/estimate",
+    response_model=JobEstimateResponse,
+    dependencies=[Depends(verify_api_key)],
+)
+def estimate_job_render(payload: JobEstimateRequest):
+    mult = 2.7 if payload.visual_mode == "talking_head" else 0.85
+    est_s = round(payload.target_duration_seconds * mult, 1)
+    mins = int(est_s // 60)
+    secs = int(est_s % 60)
+    human_str = f"{mins} min {secs} sec" if mins > 0 else f"{secs} sec"
+    return JobEstimateResponse(
+        target_duration_seconds=payload.target_duration_seconds,
+        visual_mode=payload.visual_mode,
+        estimated_render_seconds=est_s,
+        estimated_render_human=human_str,
+        compute_advisory=(
+            f"{payload.visual_mode.capitalize()} mode estimated render duration is ~{mult}x video duration on CPU. "
+            f"A {payload.target_duration_seconds:.0f}s video takes approximately {human_str}."
+        ),
+        retention_policy_hours=settings.job_retention_hours,
+        voice_cloning_note=(
+            "Offline Piper TTS synthesizes typed scripts using built-in voices (Lessac); "
+            "uploaded voice samples are used directly in 'My Own Audio' mode and are not cloned."
+        ),
+    )
 
 
 @app.post("/v1/jobs", status_code=202, dependencies=[Depends(verify_api_key)])
