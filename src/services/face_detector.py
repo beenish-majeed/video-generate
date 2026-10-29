@@ -20,19 +20,29 @@ def clear_face_count_overrides() -> None:
     _FACE_COUNT_OVERRIDES.clear()
 
 
-def count_faces_in_image(image_path: Path) -> int:
+def count_faces_in_image(image_path: Optional[Path]) -> int:
     """
     Detect the number of clear human faces in an image.
     Uses test overrides if registered, then neural / feature detection.
     """
-    path_key = image_path.name
-    stem_key = image_path.stem
+    if image_path is None:
+        return 0
+
+    try:
+        p = Path(image_path)
+        if not p.is_file():
+            return 0
+    except Exception:
+        return 0
+
+    path_key = p.name
+    stem_key = p.stem
     if path_key in _FACE_COUNT_OVERRIDES:
         return _FACE_COUNT_OVERRIDES[path_key]
     if stem_key in _FACE_COUNT_OVERRIDES:
         return _FACE_COUNT_OVERRIDES[stem_key]
 
-    img = cv2.imread(str(image_path))
+    img = cv2.imread(str(p))
     if img is None:
         return 0
 
@@ -85,7 +95,8 @@ def evaluate_visual_mode(
             None,
         )
 
-    if not image_paths:
+    valid_paths = [Path(p) for p in (image_paths or []) if p is not None and Path(p).is_file()]
+    if not valid_paths:
         return (
             "slideshow",
             "Ken Burns slideshow compositor used (no images provided).",
@@ -97,7 +108,7 @@ def evaluate_visual_mode(
     total_faces = 0
     face_images = []
 
-    for p in image_paths:
+    for p in valid_paths:
         c = count_faces_in_image(p)
         face_counts_per_image.append((p, c))
         total_faces += c
