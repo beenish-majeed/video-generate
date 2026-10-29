@@ -250,8 +250,9 @@ def delete_job_record(job_id: str) -> bool:
     path = job_dir(job_id)
     safe_rmtree(path)
 
-    # Remove from in-memory cache
+    # Remove from in-memory cache and cancellation tracking
     JOBS.pop(job_id, None)
+    CANCELLED_JOB_IDS.discard(job_id)
 
     # Remove from SQLite
     try:
