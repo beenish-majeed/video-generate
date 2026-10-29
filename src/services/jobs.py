@@ -31,7 +31,7 @@ DB_PATH = settings.storage_dir / "jobs.db"
 
 def _init_db() -> None:
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute(
@@ -104,7 +104,7 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
 def list_all_jobs() -> List[JobRecord]:
     records: List[JobRecord] = []
     try:
-        with sqlite3.connect(DB_PATH) as conn:
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
             cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
             for row in cursor.fetchall():
                 if row and row[0]:
@@ -256,7 +256,7 @@ def delete_job_record(job_id: str) -> bool:
 
     # Remove from SQLite
     try:
-        with sqlite3.connect(DB_PATH) as conn:
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
             conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
             conn.commit()
     except Exception as exc:

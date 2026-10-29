@@ -22,6 +22,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import APIKeyHeader
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import time
 from collections import defaultdict
@@ -142,6 +143,17 @@ async def sanitized_validation_exception_handler(request: Request, exc: RequestV
             "type": err.get("type"),
         })
     return JSONResponse(status_code=422, content={"detail": sanitized_details})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, StarletteHTTPException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    logger.exception(f"Unhandled server error on {request.method} {request.url.path}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."},
+    )
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
