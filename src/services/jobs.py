@@ -32,11 +32,13 @@ DB_PATH = settings.storage_dir / "jobs.db"
 def _init_db() -> None:
     settings.storage_dir.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS jobs (
                 job_id TEXT PRIMARY KEY,
-                state TEXT NOTIGNOR,
+                state TEXT NOT NULL,
                 data TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
