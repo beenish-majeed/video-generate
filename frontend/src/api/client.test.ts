@@ -146,4 +146,48 @@ describe('MemoryStudioAPIClient.createJob', () => {
     );
     expect(result.state).toBe('CANCELLED');
   });
+
+  it('fetches music presets from GET /v1/music-presets', async () => {
+    const mockMusicPresets = [
+      { id: 'calm', name: 'Calm Piano', description: 'Gentle acoustic ambient', tempo_bpm: 80, mood: 'peaceful' },
+      { id: 'warm', name: 'Warm Strings', description: 'Relaxed acoustic', tempo_bpm: 90, mood: 'warm' },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockMusicPresets,
+    } as any);
+
+    const result = await apiClient.getMusicPresets();
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/v1/music-presets', expect.objectContaining({ headers: expect.any(Object) }));
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe('calm');
+  });
+
+  it('submits estimate request to POST /v1/jobs/estimate', async () => {
+    const mockEstimate = {
+      target_duration_seconds: 30,
+      visual_mode: 'talking_head',
+      estimated_render_seconds: 81.0,
+      estimated_render_human: '1 min 21 sec',
+      compute_advisory: 'Estimated render duration',
+      retention_policy_hours: 48,
+      voice_cloning_note: 'Synthesizes with Piper Lessac',
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockEstimate,
+    } as any);
+
+    const result = await apiClient.estimateJob({ target_duration_seconds: 30, visual_mode: 'talking_head' });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/v1/jobs/estimate',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ target_duration_seconds: 30, visual_mode: 'talking_head' }),
+      })
+    );
+    expect(result.estimated_render_seconds).toBe(81.0);
+  });
 });

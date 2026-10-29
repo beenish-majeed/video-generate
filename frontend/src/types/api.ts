@@ -17,7 +17,30 @@ export interface DurationsResponse {
   allowed_presets: DurationOption[];
 }
 
-export type AssetKind = 'photo' | 'voice' | 'image' | 'audio';
+export type AssetKind = 'photo' | 'voice' | 'image' | 'audio' | 'music';
+
+export interface MusicPreset {
+  id: string;
+  name: string;
+  description: string;
+  tempo_bpm: number;
+  mood: string;
+}
+
+export interface JobEstimateRequest {
+  target_duration_seconds: number;
+  visual_mode?: 'talking_head' | 'slideshow';
+}
+
+export interface JobEstimateResponse {
+  target_duration_seconds: number;
+  visual_mode: string;
+  estimated_render_seconds: number;
+  estimated_render_human: string;
+  compute_advisory: string;
+  retention_policy_hours: number;
+  voice_cloning_note: string;
+}
 
 export interface AssetUploadResponse {
   asset_id: string;

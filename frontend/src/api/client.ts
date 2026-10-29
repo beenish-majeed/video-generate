@@ -5,6 +5,9 @@ import type {
   JobCreatePayload,
   JobRecord,
   PresetsResponse,
+  MusicPreset,
+  JobEstimateRequest,
+  JobEstimateResponse,
   ScriptGeneratePayload,
   ScriptGenerateResponse,
 } from '../types/api';
@@ -163,6 +166,25 @@ class MemoryStudioAPIClient {
    */
   async getPresets(): Promise<PresetsResponse> {
     return this.request<PresetsResponse>('/v1/presets');
+  }
+
+  /**
+   * GET /v1/music-presets
+   * Retrieves available offline ambient music presets.
+   */
+  async getMusicPresets(): Promise<MusicPreset[]> {
+    return this.request<MusicPreset[]>('/v1/music-presets');
+  }
+
+  /**
+   * POST /v1/jobs/estimate
+   * Calculates render time estimate and retention schedule for target duration.
+   */
+  async estimateJob(payload: JobEstimateRequest): Promise<JobEstimateResponse> {
+    return this.request<JobEstimateResponse>('/v1/jobs/estimate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   /**
