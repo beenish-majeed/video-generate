@@ -59,6 +59,26 @@ def probe_duration(path: str | Path) -> float:
     return 1.0
 
 
+def probe_format_tags(path: Path | str) -> dict[str, str]:
+    """Extract format tags/metadata from media container."""
+    try:
+        cmd = [
+            settings.ffprobe_bin,
+            "-v",
+            "error",
+            "-show_entries",
+            "format_tags",
+            "-of",
+            "json",
+            str(path),
+        ]
+        proc = run(cmd)
+        data = json.loads(proc.stdout)
+        return data.get("format", {}).get("tags", {})
+    except Exception:
+        return {}
+
+
 def make_silence_wav(
     path: str | Path,
     seconds: float,
@@ -399,6 +419,16 @@ def finalize_video(
                 "44100",
                 "-ac",
                 "2",
+                "-metadata",
+                "title=AI Generated Video",
+                "-metadata",
+                "artist=Local AI Video Generator",
+                "-metadata",
+                "comment=AI-generated synthetic media; personal and educational use only",
+                "-metadata",
+                "description=Synthetic media created with AI Video Generator. Not a real recording.",
+                "-metadata",
+                "copyright=AI-generated synthetic media",
                 "-movflags",
                 "+faststart",
                 "-t",
