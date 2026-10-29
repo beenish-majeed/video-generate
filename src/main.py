@@ -1,5 +1,6 @@
 import logging
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -144,6 +145,7 @@ async def sanitized_validation_exception_handler(request: Request, exc: RequestV
 
 settings.storage_dir.mkdir(parents=True, exist_ok=True)
 JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
+JOB_CREATION_LOCK = threading.Lock()
 
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -342,17 +344,18 @@ def estimate_job_render(payload: JobEstimateRequest):
 def create_video_job(payload: JobCreate, request: Request):
     JOB_CREATION_LIMITER.check(get_client_ip(request))
 
-    active_count = count_active_jobs()
-    if active_count >= settings.max_active_jobs_cap:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Server busy: maximum capacity of {settings.max_active_jobs_cap} running or queued jobs reached. Please try again later.",
-        )
+    with JOB_CREATION_LOCK:
+        active_count = count_active_jobs()
+        if active_count >= settings.max_active_jobs_cap:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Server busy: maximum capacity of {settings.max_active_jobs_cap} running or queued jobs reached. Please try again later.",
+            )
 
-    try:
-        job = create_job(payload)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            job = create_job(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     JOB_EXECUTOR.submit(run_job, job.job_id)
     return job
