@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     max_duration_policy_seconds: float = 900.0
 
     min_duration_seconds: float = 1.0
-    mock_mode: bool = False  # Changed default to False
 
     ffmpeg_bin: str = "ffmpeg"
     ffprobe_bin: str = "ffprobe"
