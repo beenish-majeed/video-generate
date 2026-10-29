@@ -188,3 +188,46 @@ def test_slideshow_compositor_applies_ai_label_unconditionally(tmp_path):
     diff = cv2.absdiff(badge_region, background_sample)
     assert np.mean(diff) > 5.0, "Slideshow video must include AI label badge"
 
+
+def test_ai_badge_contains_explicit_white_text_glyphs(tmp_path):
+    from src.utils.ffmpeg import finalize_video, create_placeholder_video, make_silence_wav
+    from src.utils.images import create_ai_label_png
+
+    # Use black background video so white glyph text is unambiguously clear
+    raw_video = tmp_path / "black_bg.mp4"
+    audio_wav = tmp_path / "silent.wav"
+    out_video = tmp_path / "watermarked.mp4"
+    label_png = tmp_path / "ai_label.png"
+
+    create_placeholder_video(raw_video, duration=1.0, resolution="640x480", fps=25, color="0x000000")
+    make_silence_wav(audio_wav, seconds=1.0)
+    create_ai_label_png(label_png, "AI-generated")
+
+    finalize_video(
+        video_path=raw_video,
+        audio_path=audio_wav,
+        watermark_path=label_png,
+        output_path=out_video,
+        duration=1.0,
+    )
+
+    cap = cv2.VideoCapture(str(out_video))
+    ret, frame = cap.read()
+    cap.release()
+    assert ret and frame is not None
+
+    h, w, _ = frame.shape
+    # Badge placement: 280x60 badge at (w - 280 - 24, h - 60 - 24)
+    badge = frame[h - 84 : h - 24, w - 304 : w - 24]
+    assert badge.shape == (60, 280, 3)
+
+    # Count high-luminance white text pixels in badge area
+    white_text_pixels = int(np.sum((badge[:, :, 0] > 180) & (badge[:, :, 1] > 180) & (badge[:, :, 2] > 180)))
+    assert white_text_pixels >= 40, f"Expected at least 40 white text pixels for 'AI-generated', found {white_text_pixels}"
+
+    # Verify background area has zero white pixels
+    bg_sample = frame[100:160, 100:380]
+    bg_white_pixels = int(np.sum((bg_sample[:, :, 0] > 180) & (bg_sample[:, :, 1] > 180) & (bg_sample[:, :, 2] > 180)))
+    assert bg_white_pixels == 0, f"Background must not have false white pixels, found {bg_white_pixels}"
+
+
