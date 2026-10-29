@@ -145,6 +145,27 @@ def validate_upload(file: UploadFile, kind: str) -> None:
                         detail="Animated or multi-frame images are not supported.",
                     )
 
+                fmt = (img.format or "").upper()
+                allowed_formats = {"JPEG", "PNG", "WEBP"}
+                if fmt not in allowed_formats:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Disallowed underlying image format '{img.format}'. Allowed: JPEG, PNG, WebP.",
+                    )
+
+                ext_map = {
+                    ".jpg": "JPEG",
+                    ".jpeg": "JPEG",
+                    ".png": "PNG",
+                    ".webp": "WEBP",
+                }
+                expected_format = ext_map.get(ext)
+                if expected_format and fmt != expected_format:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Image extension '{ext}' does not match real image codec '{fmt}'.",
+                    )
+
                 w, h = img.size
                 if w <= 0 or h <= 0:
                     raise HTTPException(status_code=400, detail="Invalid image dimensions.")
