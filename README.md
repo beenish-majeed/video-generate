@@ -8,9 +8,11 @@ An offline-first, 100% free video creation suite that transforms ideas, scripts,
 
 * **Zero API Keys & Subscriptions:** No OpenAI, Anthropic, ElevenLabs, or cloud APIs required.
 * **100% Offline at Runtime:** Once setup is complete and models are cached, all generation (scripts, TTS, lip sync, transitions, subtitling) runs entirely on your local machine with no outbound network calls.
-* **Single-Tenant Architecture:** AvatarStudio is designed strictly as a single-tenant local studio. It does not provide per-user data isolation or multi-tenant permissions. The application must not be exposed to untrusted users as-is.
-* **License & Distribution Terms:** The project is strictly for **personal or educational use** unless every license is thoroughly reviewed:
-  * **piper-tts** is licensed under **GPL-3.0-or-later**; distributing binary packages or combined works may carry reciprocal GPL obligations (requiring corresponding source distribution under GPLv3).
+* **Single-Tenant Architecture:** AvatarStudio is designed strictly as a single-tenant local studio bound to `127.0.0.1`. It uses a shared cryptographic API key and does not provide multi-user accounts or granular user role isolation. Do not expose this service directly to the public internet.
+* **OneDrive & Cloud Sync Advisory:** If this repository is stored inside a cloud-synced folder (such as `OneDrive\Documents\...`), local media in `storage/` (photos, audio recordings, rendered MP4s) may automatically sync to the cloud. For strict offline privacy and optimal performance, store the project in a non-synced directory (such as `C:\dev\video-generate`) or configure OneDrive to exclude the `storage/` directory.
+* **Voice Synthesis vs. Voice Cloning:** Offline speech generation uses local built-in Piper neural voices (e.g. Lessac). Uploaded user voice files are used directly as audio tracks in 'My Own Audio' mode; uploaded voices are not dynamically cloned onto novel typed scripts.
+* **License & Distribution Terms:** The project is strictly for **personal or educational research use** unless every license is thoroughly reviewed:
+  * **piper-tts** is licensed under **GPL-3.0-or-later**; distributing binary packages or combined works carries reciprocal GPL obligations (requiring corresponding source distribution under GPLv3). See root [LICENSE](LICENSE).
   * **insightface** models are strictly for **non-commercial research use only**.
   * **Wav2Lip** is strictly for **non-commercial research use**.
   For complete details, see [LICENSES.md](LICENSES.md).
