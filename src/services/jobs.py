@@ -22,7 +22,7 @@ from src.services.store import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
 from src.services.tts_piper import PiperTTSProvider
 from src.services.voice import build_voice_pack
-from src.utils.ffmpeg import probe_duration
+from src.utils.ffmpeg import probe_duration, adapt_audio_tempo
 
 
 logger = logging.getLogger(__name__)
@@ -863,17 +863,37 @@ def run_job(job_id: str) -> None:
                 )
                 scene_audio_paths.append(Path(tts_res.audio_path))
 
-            # Validate synthesized speech duration against target duration within 10%
+            # Validate synthesized speech duration against target duration with automatic tempo adaptation
             total_raw_speech = sum(probe_duration(p) for p in scene_audio_paths)
             target_dur = float(job.plan.target_duration_seconds)
             tolerance = max(1.0, target_dur * 0.12)
             min_allowed = target_dur - tolerance
             max_allowed = target_dur + tolerance
 
+            if (total_raw_speech < min_allowed or total_raw_speech > max_allowed) and target_dur > 0:
+                speech_ratio = total_raw_speech / target_dur
+                if 0.75 <= speech_ratio <= 1.35:
+                    logger.info(
+                        f"Slideshow speech duration ({total_raw_speech:.2f}s) is slightly off target ({target_dur:.2f}s); "
+                        f"automatically adapting scene speech tempos..."
+                    )
+                    adapted_paths = []
+                    for idx, sp in enumerate(scene_audio_paths):
+                        sc_dur = probe_duration(sp)
+                        target_sc_dur = sc_dur / speech_ratio
+                        adapted_sc = job_path / f"adapted_scene_audio_{idx:04d}.wav"
+                        if adapt_audio_tempo(sp, adapted_sc, target_sc_dur):
+                            adapted_paths.append(adapted_sc)
+                        else:
+                            adapted_paths.append(sp)
+                    scene_audio_paths = adapted_paths
+                    total_raw_speech = sum(probe_duration(p) for p in scene_audio_paths)
+
             if total_raw_speech < min_allowed or total_raw_speech > max_allowed:
                 raise RuntimeError(
-                    f"TTS speech audio duration ({total_raw_speech:.2f}s) is outside 10% tolerance "
-                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+                    f"TTS speech audio duration ({total_raw_speech:.2f}s) is outside tolerance "
+                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]. "
+                    f"Consider adjusting script length ({len(job.plan.script.split())} words)."
                 )
 
             # 4. Generate Images for each scene
@@ -994,10 +1014,26 @@ def run_job(job_id: str) -> None:
             min_allowed = target_dur - tolerance
             max_allowed = target_dur + tolerance
 
+            # If speech duration is moderately off (0.75x to 1.35x), automatically adapt tempo
+            if (raw_tts_dur < min_allowed or raw_tts_dur > max_allowed) and target_dur > 0:
+                speech_ratio = raw_tts_dur / target_dur
+                if 0.75 <= speech_ratio <= 1.35:
+                    logger.info(
+                        f"Speech duration ({raw_tts_dur:.2f}s) is slightly off target ({target_dur:.2f}s); "
+                        f"automatically adapting speech tempo to fit within tolerance..."
+                    )
+                    adapted_speech = job_path / "tts_speech_adapted.wav"
+                    if adapt_audio_tempo(temp_audio, adapted_speech, target_dur):
+                        adapted_dur = probe_duration(adapted_speech)
+                        if min_allowed <= adapted_dur <= max_allowed:
+                            raw_tts_dur = adapted_dur
+                            temp_audio = adapted_speech
+
             if raw_tts_dur < min_allowed or raw_tts_dur > max_allowed:
                 raise RuntimeError(
-                    f"TTS speech audio duration ({raw_tts_dur:.2f}s) is outside 10% tolerance "
-                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]."
+                    f"TTS speech audio duration ({raw_tts_dur:.2f}s) is outside tolerance "
+                    f"of requested duration ({target_dur:.2f}s) [{min_allowed:.2f}s - {max_allowed:.2f}s]. "
+                    f"Consider adjusting script length ({len(job.plan.script.split())} words)."
                 )
 
             # 4. Segment Scheduling

@@ -151,6 +151,45 @@ def make_tone_wav(
             remaining -= write_frames
 
 
+def adapt_audio_tempo(
+    input_path: Path | str,
+    output_path: Path | str,
+    target_duration: float,
+    min_ratio: float = 0.75,
+    max_ratio: float = 1.35,
+) -> bool:
+    """
+    Adjust audio tempo using ffmpeg atempo filter to fit target_duration while preserving pitch.
+    Returns True if adaptation was performed, False if outside acceptable ratio or failed.
+    """
+    inp = Path(input_path)
+    outp = Path(output_path)
+    if not inp.exists():
+        return False
+    current_dur = probe_duration(inp)
+    if current_dur <= 0.0 or target_duration <= 0.0:
+        return False
+    tempo = current_dur / target_duration
+    if not (min_ratio <= tempo <= max_ratio):
+        return False
+    if abs(current_dur - target_duration) / target_duration < 0.02:
+        return False
+    try:
+        cmd = [
+            settings.ffmpeg_bin,
+            "-y",
+            "-i",
+            str(inp),
+            "-filter:a",
+            f"atempo={tempo:.4f}",
+            str(outp),
+        ]
+        res = run(cmd)
+        return outp.exists() and outp.stat().st_size > 0
+    except Exception:
+        return False
+
+
 def concat_wavs(paths: list[str], out_path: str | Path) -> None:
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
