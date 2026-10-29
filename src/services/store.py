@@ -319,6 +319,12 @@ def get_asset_path(asset_id: str) -> Path | None:
 
 
 def job_dir(job_id: str) -> Path:
-    path = JOBS_DIR / job_id
+    from src.models.schemas import is_valid_job_id
+    if not is_valid_job_id(job_id):
+        raise ValueError(f"Invalid job_id: '{job_id}'")
+    safe_name = Path(job_id).name
+    path = (JOBS_DIR / safe_name).resolve()
+    if not path.is_relative_to(JOBS_DIR.resolve()):
+        raise ValueError(f"Path traversal detected in job_id: '{job_id}'")
     path.mkdir(parents=True, exist_ok=True)
     return path

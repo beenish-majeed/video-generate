@@ -401,7 +401,13 @@ def download_job_video(job_id: str):
             detail="Output file is missing.",
         )
 
-    path = Path(job.output_path)
+    path = Path(job.output_path).resolve()
+
+    if not path.is_relative_to(settings.storage_dir.resolve()):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: invalid file location.",
+        )
 
     if not path.exists():
         raise HTTPException(
