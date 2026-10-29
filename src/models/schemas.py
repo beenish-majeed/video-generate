@@ -645,6 +645,18 @@ class ScriptGenerateRequest(BaseModel):
             raise ValueError(f"Invalid tone '{v}'. Allowed tones: {sorted(allowed)}")
         return v_clean
 
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, v: Optional[str]) -> str:
+        if v is None:
+            return "en"
+        clean = v.strip()
+        if not clean:
+            return "en"
+        if len(clean) > 16 or not re.match(r"^[a-zA-Z]{2,4}(-[a-zA-Z0-9]{2,4})?$", clean):
+            raise ValueError(f"Invalid language '{v}'. Must be a valid language code (e.g. 'en', 'en-US').")
+        return clean
+
     def resolve_target_duration_seconds(self) -> float:
         if self.target_duration_seconds is not None:
             return self.target_duration_seconds

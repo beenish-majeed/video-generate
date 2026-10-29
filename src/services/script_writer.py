@@ -149,6 +149,10 @@ def generate_script(
     if selected_tone not in ALLOWED_TONES:
         raise ScriptWriterError(f"Invalid tone '{tone}'. Allowed tones: {sorted(ALLOWED_TONES)}")
 
+    clean_lang = (language or "en").strip()
+    if len(clean_lang) > 16 or not re.match(r"^[a-zA-Z]{2,4}(-[a-zA-Z0-9]{2,4})?$", clean_lang):
+        raise ScriptWriterError(f"Invalid language '{language}'. Must be a valid language code (e.g. 'en', 'en-US').")
+
     if llm_provider is not None:
         provider = llm_provider
         script_source = getattr(llm_provider, "provider_name", "custom")
