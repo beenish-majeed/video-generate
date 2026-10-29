@@ -1,4 +1,7 @@
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from src.models.schemas import CompiledPlan, SegmentSpec, Timeline, TTSSegment
 from src.services.subtitles import generate_webvtt
