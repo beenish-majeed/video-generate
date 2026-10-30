@@ -126,24 +126,25 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
       }}
     >
       {/* Top Bar Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '10px' }}>
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
           aria-label="Back to script step"
+          style={{ minHeight: '44px', minWidth: '44px' }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
         </button>
 
         {scenePlan && (
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={handleCopyAll}
               className="btn-secondary"
-              style={{ fontSize: '13px', padding: '6px 12px' }}
+              style={{ fontSize: '13px', padding: '10px 16px', minHeight: '44px', minWidth: '44px' }}
             >
               {copiedAll ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
               <span>{copiedAll ? 'Copied All' : 'Copy All Prompts'}</span>
@@ -152,7 +153,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
               type="button"
               onClick={handleDownloadPlanJson}
               className="btn-secondary"
-              style={{ fontSize: '13px', padding: '6px 12px' }}
+              style={{ fontSize: '13px', padding: '10px 16px', minHeight: '44px', minWidth: '44px' }}
             >
               <Download size={14} />
               <span>Download Scene Plan</span>
@@ -178,10 +179,16 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'var(--text-muted)',
-                display: 'flex',
+                color: 'var(--text-secondary)',
+                display: 'inline-flex',
                 alignItems: 'center',
-                padding: '4px',
+                justifyContent: 'center',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
+                padding: 0,
+                borderRadius: '8px',
               }}
             >
               <Info size={18} />
@@ -232,7 +239,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
           }}
         >
           <span>{error}</span>
-          <button type="button" onClick={loadPlan} className="btn-secondary" style={{ padding: '4px 10px' }}>
+          <button type="button" onClick={loadPlan} className="btn-secondary" style={{ padding: '8px 16px', minHeight: '44px', minWidth: '44px' }}>
             Retry
           </button>
         </div>
@@ -283,22 +290,22 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                   gap: '10px',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <span
                       style={{
                         fontSize: '12px',
                         fontWeight: 700,
                         textTransform: 'uppercase',
-                        padding: '3px 8px',
+                        padding: '4px 10px',
                         borderRadius: '6px',
-                        background: 'rgba(108, 77, 255, 0.15)',
-                        color: 'var(--accent)',
+                        background: '#5835ea',
+                        color: '#ffffff',
                       }}
                     >
                       Scene {scene.scene_index + 1}
                     </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       {(scene.start_seconds ?? 0).toFixed(1)}s – {(scene.end_seconds ?? scene.duration_seconds ?? 5.0).toFixed(1)}s ({(scene.duration_seconds ?? 5.0).toFixed(1)}s duration) • {scene.aspect_ratio || '16:9'}
                     </span>
                   </div>
@@ -307,7 +314,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                     type="button"
                     onClick={() => handleCopyPrompt(scene.visual_prompt, idx)}
                     className="btn-secondary"
-                    style={{ fontSize: '12px', padding: '4px 10px', height: '30px' }}
+                    style={{ fontSize: '12px', padding: '8px 14px', minHeight: '44px', minWidth: '44px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
                     {isCopied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
                     <span>{isCopied ? 'Copied' : 'Copy Prompt'}</span>
@@ -331,8 +338,8 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                   <strong style={{ color: 'var(--text-primary)' }}>Visual Prompt:</strong> {scene.visual_prompt}
                 </div>
 
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  <strong>Negative:</strong> {scene.negative_prompt}
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Negative:</strong> {scene.negative_prompt}
                 </div>
               </motion.div>
             );
@@ -347,6 +354,8 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
             paddingTop: '16px',
             borderTop: '1px solid var(--glass-border)',
           }}
@@ -355,7 +364,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
             type="button"
             onClick={handleDownloadNotebook}
             className="btn-secondary"
-            style={{ fontSize: '13.5px' }}
+            style={{ fontSize: '13.5px', minHeight: '44px', minWidth: '44px', padding: '10px 18px' }}
           >
             <Film size={15} />
             <span>Colab Notebook</span>
@@ -365,7 +374,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
             type="button"
             onClick={() => onNext(scenePlan)}
             className="btn-primary"
-            style={{ minWidth: '220px' }}
+            style={{ minWidth: '220px', minHeight: '44px' }}
           >
             <span>Continue to Upload Clips</span>
             <ArrowRight size={16} />

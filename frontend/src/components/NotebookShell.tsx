@@ -35,7 +35,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
               onSelectStep && onSelectStep('hero');
             }
           }}
-          aria-label="Memory Studio Home"
+          aria-label="Memory Studio"
         >
           <span className="app-brand-badge">M</span>
           <span>Memory Studio</span>

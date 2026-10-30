@@ -193,7 +193,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                     ? 'var(--bg-surface)'
                     : 'transparent',
                   color: isActive
-                    ? 'var(--accent-primary)'
+                    ? '#4f2ee8'
                     : isCompleted
                     ? 'var(--text-secondary)'
                     : 'var(--text-muted)',

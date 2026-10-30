@@ -168,19 +168,20 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
       }}
     >
       {/* Top Bar Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '8px' }}>
         <button
           type="button"
           onClick={onBack}
           className="btn-secondary"
           aria-label="Back to scene plan step"
+          style={{ minHeight: '44px', minWidth: '44px' }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Back</span>
         </button>
 
         {sceneCount > 0 && (
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             Uploaded: <strong>{clips.length}</strong> of <strong>{sceneCount}</strong> planned scenes
           </span>
         )}
@@ -203,10 +204,16 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'var(--text-muted)',
-                display: 'flex',
+                color: 'var(--text-secondary)',
+                display: 'inline-flex',
                 alignItems: 'center',
-                padding: '4px',
+                justifyContent: 'center',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
+                padding: 0,
+                borderRadius: '8px',
               }}
             >
               <Info size={18} />
@@ -323,6 +330,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                   border: '1px solid var(--glass-border)',
                   display: 'flex',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: '14px',
                 }}
               >
@@ -353,16 +361,16 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                 </div>
 
                 {/* Details */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ flex: '1 1 200px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span
                       style={{
                         fontSize: '11px',
                         fontWeight: 700,
-                        padding: '2px 6px',
+                        padding: '3px 8px',
                         borderRadius: '4px',
-                        background: 'rgba(108, 77, 255, 0.12)',
-                        color: 'var(--accent)',
+                        background: '#5835ea',
+                        color: '#ffffff',
                       }}
                     >
                       Clip {idx + 1}
@@ -381,14 +389,14 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', gap: '10px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     <span>{clip.duration.toFixed(1)}s</span>
                     <span>•</span>
                     <span>{clip.width}x{clip.height}{clip.fps ? ` • ${clip.fps}fps` : ''}</span>
                     {matchedScene && (
                       <>
                         <span>•</span>
-                        <span style={{ color: 'var(--accent)', fontWeight: 500 }}>
+                        <span style={{ color: '#4f2ee8', fontWeight: 600 }}>
                           Matches Scene {(matchedScene.scene_index ?? idx) + 1} ({((matchedScene.target_clip_seconds ?? matchedScene.duration_seconds) ?? 5.0).toFixed(1)}s)
                         </span>
                       </>
@@ -397,46 +405,46 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
                   <button
                     type="button"
                     onClick={() => moveClip(idx, 'up')}
                     disabled={idx === 0}
                     className="btn-secondary"
-                    style={{ padding: '6px', height: '32px', width: '32px' }}
+                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     aria-label={`Move clip ${idx + 1} up`}
                   >
-                    <ChevronUp size={16} />
+                    <ChevronUp size={18} />
                   </button>
                   <button
                     type="button"
                     onClick={() => moveClip(idx, 'down')}
                     disabled={idx === clips.length - 1}
                     className="btn-secondary"
-                    style={{ padding: '6px', height: '32px', width: '32px' }}
+                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     aria-label={`Move clip ${idx + 1} down`}
                   >
-                    <ChevronDown size={16} />
+                    <ChevronDown size={18} />
                   </button>
                   <button
                     type="button"
                     onClick={() => triggerReplace(idx)}
                     className="btn-secondary"
-                    style={{ padding: '6px', height: '32px', width: '32px' }}
+                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Replace with another video file"
                     aria-label={`Replace clip ${idx + 1}`}
                   >
-                    <RefreshCw size={14} />
+                    <RefreshCw size={16} />
                   </button>
                   <button
                     type="button"
                     onClick={() => removeClip(idx)}
                     className="btn-secondary"
-                    style={{ padding: '6px', height: '32px', width: '32px', color: '#ef4444' }}
+                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}
                     title="Remove clip"
                     aria-label={`Remove clip ${idx + 1}`}
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </motion.div>
@@ -451,11 +459,13 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
           paddingTop: '16px',
           borderTop: '1px solid var(--glass-border)',
         }}
       >
-        <button type="button" onClick={onBack} className="btn-secondary">
+        <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', minWidth: '44px' }}>
           <span>Back</span>
         </button>
 
@@ -464,7 +474,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
           onClick={() => onNext(clips)}
           disabled={clips.length === 0}
           className="btn-primary"
-          style={{ minWidth: '180px' }}
+          style={{ minWidth: '180px', minHeight: '44px' }}
         >
           <span>Continue to Voice</span>
           <ArrowRight size={16} />
