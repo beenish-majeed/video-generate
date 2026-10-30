@@ -34,6 +34,8 @@ from src.models.schemas import (
     JobEstimateRequest,
     JobEstimateResponse,
     JobState,
+    ScenePlanRequest,
+    ScenePlanResponse,
     ScriptGenerateRequest,
     ScriptGenerateResponse,
 )
@@ -307,6 +309,53 @@ def generate_script_endpoint(
         target_words=result.target_words,
         script_source=result.script_source,
     )
+
+
+@app.post(
+    "/v1/scene-plans",
+    response_model=ScenePlanResponse,
+    dependencies=[Depends(verify_api_key)],
+)
+def create_scene_plan_endpoint(
+    payload: ScenePlanRequest,
+    request: Request,
+    format: Optional[str] = Query("json"),
+):
+    SCRIPT_LIMITER.check(get_client_ip(request))
+    from src.services.scene_planner import build_clip_scene_plan
+    from src.services.llm import get_llm_provider
+
+    try:
+        response = build_clip_scene_plan(
+            script=payload.script,
+            style=payload.style or "cinematic",
+            audio_asset_id=payload.audio_asset_id,
+            target_duration_seconds=payload.target_duration_seconds,
+            llm_provider=get_llm_provider(),
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        if "not found" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg) from exc
+    except Exception as exc:
+        logger.exception(f"Scene plan generation failed: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate scene plan.",
+        ) from exc
+
+    if format == "text" or request.headers.get("accept") == "text/plain":
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(
+            content=response.plain_text_prompts,
+            media_type="text/plain",
+            headers={
+                "Content-Disposition": f'inline; filename="{response.plan_id}.txt"',
+            },
+        )
+
+    return response
 
 
 @app.post("/v1/assets/upload", dependencies=[Depends(verify_api_key)])

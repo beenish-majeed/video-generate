@@ -676,4 +676,51 @@ class ScriptGenerateResponse(BaseModel):
     word_count: int
     estimated_seconds: float
     target_words: int
-    script_source: str = "template"
+    script_source: str = "template"
+
+
+class SceneClipItem(BaseModel):
+    id: str
+    scene_index: int
+    narration: str
+    visual_prompt: str
+    negative_prompt: str
+    target_clip_seconds: float
+    aspect_ratio: str = "16:9"
+
+
+class ScenePlanRequest(BaseModel):
+    script: str = Field(..., max_length=5000)
+    style: Optional[str] = "cinematic"
+    audio_asset_id: Optional[str] = None
+    target_duration_seconds: Optional[float] = None
+
+    @field_validator("script")
+    @classmethod
+    def validate_script(cls, v: str) -> str:
+        clean = v.strip() if v else ""
+        if not clean:
+            raise ValueError("script cannot be empty.")
+        if len(clean) > 5000:
+            raise ValueError(f"script length ({len(clean)}) exceeds maximum allowed 5000 characters.")
+        return clean
+
+    @field_validator("style")
+    @classmethod
+    def validate_style(cls, v: Optional[str]) -> str:
+        if v is None:
+            return "cinematic"
+        clean = v.strip().lower()
+        from src.services.scene_planner import ALLOWED_STYLES
+        if clean not in ALLOWED_STYLES:
+            raise ValueError(f"Invalid style '{v}'. Allowed styles: {sorted(ALLOWED_STYLES.keys())}")
+        return clean
+
+
+class ScenePlanResponse(BaseModel):
+    plan_id: str
+    style: str
+    total_duration_seconds: float
+    scenes: list[SceneClipItem]
+    plain_text_prompts: str
+
