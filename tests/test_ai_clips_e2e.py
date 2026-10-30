@@ -133,9 +133,21 @@ def test_ai_clips_validation_failures(tmp_path):
     assert "must contain between 1 and 60 clips" in resp.text
 
     # 4. Missing clips rights consent
+    valid_clip = tmp_path / "valid_clip_for_consent.mp4"
+    generate_synthetic_clip(valid_clip, duration_s=2.0)
+    with open(valid_clip, "rb") as f:
+        up_resp = client.post(
+            "/v1/assets/upload",
+            headers=headers,
+            data={"kind": "clip"},
+            files={"file": ("valid_clip.mp4", f, "video/mp4")},
+        )
+    assert up_resp.status_code == 200
+    valid_asset_id = up_resp.json()["asset_id"]
+
     no_consent_payload = {
         "visual_mode": "ai_clips",
-        "clip_asset_ids": ["dummy_asset_id"],
+        "clip_asset_ids": [valid_asset_id],
         "voice_preset_id": "voice_piper_lessac",
         "script": (
             "Dawn breaks gently across the quiet mountain valley as morning arrives. "
@@ -153,8 +165,8 @@ def test_ai_clips_validation_failures(tmp_path):
         },
     }
     resp = client.post("/v1/jobs", headers=headers, json=no_consent_payload)
-    assert resp.status_code in [400, 422]
-    assert "clips_rights_attested" in resp.text
+    assert resp.status_code == 400
+    assert "clip rights" in resp.text.lower()
 
 
 def test_ai_clips_e2e_full_job_without_music(tmp_path):

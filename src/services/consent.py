@@ -21,8 +21,10 @@ def verify_consent(
     use_ai_consent = is_preset_path or is_clips_mode or bool(consent.ai_generated_accepted or consent.ai_label_accepted)
 
     if is_clips_mode:
-        if not (consent.clips_rights_attested or consent.ai_generated_accepted or consent.ai_label_accepted):
-            raise ValueError("Confirmation of clip rights and AI-generated content acceptance is required.")
+        if not consent.clips_rights_attested:
+            raise ValueError("Confirmation of clip rights is required for uploaded clips.")
+        if not (consent.ai_generated_accepted or consent.ai_label_accepted):
+            raise ValueError("Confirmation of AI-generated content acceptance is required.")
 
         statement = consent.statement.strip().lower()
         if len(statement) < 20:

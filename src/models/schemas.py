@@ -434,8 +434,6 @@ class JobCreate(BaseModel):
                 raise ValueError(f"clip_asset_ids must contain between 1 and 60 clips (got {n_clips}).")
             if not self.uploaded_audio_asset_id and not self.voice_asset_id and not self.voice_preset_id and not (self.script and self.script.strip()):
                 raise ValueError("Either an audio asset, voice preset, or typed script must be provided for ai_clips mode.")
-            if not self.consent or not getattr(self.consent, "clips_rights_attested", False):
-                raise ValueError("consent.clips_rights_attested required for ai_clips visual mode.")
             return self
 
         has_uploads = bool(self.photo_asset_id and self.voice_asset_id)

@@ -1,6 +1,8 @@
 import io
 import json
 from pathlib import Path
+import cv2
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
@@ -166,6 +168,66 @@ class TestClipCompositorStandardize:
         dur = probe_duration(out_clip)
         assert dur == pytest.approx(3.0, abs=0.1)
 
+    def test_standardize_slight_slowdown_under_1_25x(self, tmp_path):
+        # 2.5s clip for 3.0s scene: ratio = 1.2 <= 1.25 -> slow down cleanly without hold
+        clip_25s = tmp_path / "clip_25s.mp4"
+        create_synthetic_mp4(clip_25s, duration=2.5, width=1280, height=720, fps=30)
+
+        out_clip = tmp_path / "std_30s.mp4"
+        ClipCompositor.standardize_clip(clip_25s, target_visual_duration=3.0, output_path=out_clip)
+
+        assert out_clip.exists()
+        dur = probe_duration(out_clip)
+        assert dur == pytest.approx(3.0, abs=0.1)
+
+    def test_standardize_never_loops_holds_last_frame(self, tmp_path):
+        # 2.0s clip stretched to 5.0s: slows down by 1.25x (to 2.5s) and clones/holds last frame for 2.5s
+        short_clip = tmp_path / "short_20s.mp4"
+        create_synthetic_mp4(short_clip, duration=2.0, width=640, height=360, fps=30)
+
+        out_clip = tmp_path / "std_50s.mp4"
+        ClipCompositor.standardize_clip(short_clip, target_visual_duration=5.0, output_path=out_clip)
+
+        assert out_clip.exists()
+        dur = probe_duration(out_clip)
+        assert dur == pytest.approx(5.0, abs=0.1)
+
+        # Verify probe info: 1280x720, 30fps, h264, yuv420p
+        probe_cmd = [
+            settings.ffprobe_bin,
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height,r_frame_rate,codec_name,pix_fmt",
+            "-of", "json",
+            str(out_clip),
+        ]
+        info = json.loads(run_subprocess(probe_cmd).stdout)
+        vst = info["streams"][0]
+        assert vst["width"] == 1280
+        assert vst["height"] == 720
+        assert vst["r_frame_rate"] == "30/1"
+        assert vst["codec_name"] == "h264"
+        assert vst["pix_fmt"] == "yuv420p"
+
+        # Extract frame at 2.8s and frame at 4.5s; verify pixels match (held last frame, NO looping)
+        f_mid = tmp_path / "frame_mid.png"
+        f_end = tmp_path / "frame_end.png"
+        f_early = tmp_path / "frame_early.png"
+        cmd1 = [settings.ffmpeg_bin, "-y", "-ss", "2.8", "-i", str(out_clip), "-vframes", "1", str(f_mid)]
+        cmd2 = [settings.ffmpeg_bin, "-y", "-ss", "4.5", "-i", str(out_clip), "-vframes", "1", str(f_end)]
+        cmd3 = [settings.ffmpeg_bin, "-y", "-ss", "0.5", "-i", str(out_clip), "-vframes", "1", str(f_early)]
+        run_subprocess(cmd1)
+        run_subprocess(cmd2)
+        run_subprocess(cmd3)
+        assert f_mid.exists() and f_end.exists() and f_early.exists()
+        im_mid = cv2.imread(str(f_mid))
+        im_end = cv2.imread(str(f_end))
+        im_early = cv2.imread(str(f_early))
+        diff_held = float(np.mean(cv2.absdiff(im_mid, im_end)))
+        diff_looped = float(np.mean(cv2.absdiff(im_early, im_end)))
+        assert diff_held < 0.1, f"Trailing frames must be identical held frames, got diff {diff_held}"
+        assert diff_looped > 5.0, f"Clip must not loop back to beginning, got diff {diff_looped}"
+
 
 class TestAiClipsJobCreationAndConsent:
     def test_create_ai_clips_job_success(self, tmp_path, monkeypatch):
@@ -219,11 +281,35 @@ class TestAiClipsJobCreationAndConsent:
             consent=ConsentRequest(
                 authorized=False,
                 statement="I own and authorize these clips.",
-                clips_rights_attested=True,
             ),
         )
 
         with pytest.raises(ValueError, match="Authorization is required"):
+            create_job(job_req)
+
+    def test_create_ai_clips_job_missing_rights_attestation_fails(self, tmp_path, monkeypatch):
+        assets_dir = tmp_path / "assets"
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(settings, "storage_dir", tmp_path)
+        monkeypatch.setattr("src.services.store.ASSETS_DIR", assets_dir)
+
+        c1 = assets_dir / "clip_001.mp4"
+        create_synthetic_mp4(c1, duration=3.0)
+
+        job_req = JobCreate(
+            visual_mode="ai_clips",
+            clip_asset_ids=["clip_001"],
+            voice_preset_id="voice_piper_lessac",
+            script="Short scene.",
+            consent=ConsentRequest(
+                authorized=True,
+                statement="I own and authorize these clips.",
+                clips_rights_attested=False,
+                ai_generated_accepted=True,
+            ),
+        )
+
+        with pytest.raises(ValueError, match="Confirmation of clip rights is required"):
             create_job(job_req)
 
     def test_create_ai_clips_job_zero_clips_validation_error(self):
