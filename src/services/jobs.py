@@ -268,10 +268,39 @@ def delete_job_record(job_id: str) -> bool:
 def create_job(request: JobCreate) -> JobRecord:
     job_id = f"job_{uuid4().hex}"
 
+    is_clips_mode = bool(request.visual_mode == "ai_clips")
     is_my_own = bool(request.uploaded_image_asset_ids)
-    is_preset_path = bool((request.avatar_preset_id or request.visual_mode == "slideshow") and request.voice_preset_id)
+    is_preset_path = bool((request.avatar_preset_id or request.visual_mode in ("slideshow", "ai_clips")) and request.voice_preset_id)
 
-    if is_my_own:
+    clip_paths = []
+    if is_clips_mode:
+        for cid in request.clip_asset_ids:
+            p = get_asset_path(cid)
+            if p is None or not p.exists():
+                raise ValueError(f"Uploaded clip asset '{cid}' not found.")
+            clip_paths.append(p)
+        photo_path = clip_paths[0] if clip_paths else None
+
+        if request.uploaded_audio_asset_id or request.voice_asset_id:
+            voice_path = get_asset_path(request.uploaded_audio_asset_id or request.voice_asset_id)
+            if voice_path is None or not voice_path.exists():
+                raise ValueError("Uploaded audio asset not found.")
+            explicit_dur = probe_duration(voice_path)
+        else:
+            from src.services.presets import get_allowed_voice_preset_ids, get_voice_sample_path
+            if request.voice_preset_id:
+                voice_path = get_voice_sample_path(request.voice_preset_id)
+            else:
+                voice_ids = get_allowed_voice_preset_ids()
+                voice_path = get_voice_sample_path(voice_ids[0]) if voice_ids else None
+            if voice_path is None or not voice_path.exists():
+                raise ValueError("Default voice sample for Piper synthesis not found.")
+            explicit_dur = request.resolve_target_duration_seconds()
+            if explicit_dur is None:
+                words = len(request.script.split()) if request.script else 0
+                explicit_dur = (words / settings.words_per_minute) * 60.0 if words > 0 else 5.0
+
+    elif is_my_own:
         image_paths = []
         for img_id in request.uploaded_image_asset_ids:
             p = get_asset_path(img_id)
@@ -342,6 +371,7 @@ def create_job(request: JobCreate) -> JobRecord:
         voice_path=voice_path,
         job_id=job_id,
         is_preset_path=is_preset_path,
+        clip_paths=clip_paths if is_clips_mode else None,
     )
 
     overrides = dict(request.overrides or {})
@@ -370,11 +400,13 @@ def create_job(request: JobCreate) -> JobRecord:
         job_id=job_id,
         state=JobState.CONSENT_VERIFIED,
         request=request,
-        photo_path=str(photo_path),
-        voice_path=str(voice_path),
+        photo_path=str(photo_path) if photo_path else None,
+        voice_path=str(voice_path) if voice_path else None,
         consent=consent,
         plan=plan,
         timeline=timeline,
+        clip_asset_ids=request.clip_asset_ids,
+        plan_id=request.plan_id,
         music_asset_id=request.music_asset_id,
         music_preset_id=request.music_preset_id,
         music_volume=request.music_volume,
@@ -384,7 +416,13 @@ def create_job(request: JobCreate) -> JobRecord:
 
     from datetime import timedelta
     dur = float(plan.target_duration_seconds)
-    render_mult = 2.7 if getattr(request, "visual_mode", "talking_head") == "talking_head" else 0.85
+    v_mode = getattr(request, "visual_mode", "talking_head")
+    if v_mode == "talking_head":
+        render_mult = 2.7
+    elif v_mode == "ai_clips":
+        render_mult = 0.5
+    else:
+        render_mult = 0.85
     job.estimated_render_seconds = round(dur * render_mult, 1)
     job.retention_expires_at = job.created_at + timedelta(hours=settings.job_retention_hours)
 
@@ -828,6 +866,104 @@ def run_job(job_id: str) -> None:
 
             if not final_qa.get("passed"):
                 raise RuntimeError(f"Final QA failed: {final_qa}")
+
+            job.output_path = str(output_path)
+            job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
+                job.music_applied = True
+            job.state = JobState.COMPLETED
+
+        elif visual_mode == "ai_clips":
+            # 1. Voice Pack
+            voice_pack = build_voice_pack(Path(job.voice_path), job_path)
+            job.voice_pack = voice_pack
+
+            # 2. Scene Planning / Resolution
+            job.state = JobState.SCHEDULING_SEGMENTS
+            save_job_record(job)
+
+            from src.services.scene_planner import plan_scenes
+            from src.services.clip_compositor import ClipCompositor
+
+            clip_paths = []
+            for cid in job.clip_asset_ids:
+                p = get_asset_path(cid)
+                if p and p.exists():
+                    clip_paths.append(p)
+            if not clip_paths:
+                raise RuntimeError("No valid clip files found for ai_clips job.")
+
+            script_text = job.plan.script if job.plan and job.plan.script else ""
+            scene_plan = plan_scenes(
+                script=script_text or "Visual scene narration.",
+                style=getattr(job.request, "image_style", "cinematic"),
+                words_per_minute=settings.words_per_minute,
+            )
+
+            # 3. Audio synthesis / alignment per scene
+            job.state = JobState.SYNTHESIZING_AUDIO
+            save_job_record(job)
+
+            if settings.tts_provider.lower() == "cosyvoice":
+                from src.services.tts_cosyvoice import CosyVoiceTTSProvider
+                tts_provider = CosyVoiceTTSProvider()
+            else:
+                tts_provider = PiperTTSProvider()
+
+            scene_audio_paths = []
+            scene_texts = []
+            for i, scene in enumerate(scene_plan.scenes):
+                from src.models.schemas import TimelineEvent
+                ev = TimelineEvent(
+                    event_id=f"scene_event_{i:04d}",
+                    type="speech",
+                    start_s=scene.start_time,
+                    end_s=scene.end_time,
+                    text=scene.text,
+                )
+                tts_res = tts_provider.synthesize_event(
+                    event=ev,
+                    plan=job.plan,
+                    job_path=job_path,
+                    voice_sample_path=job.voice_path,
+                )
+                scene_audio_paths.append(Path(tts_res.audio_path))
+                scene_texts.append(scene.text)
+
+            scene_durations = [round(probe_duration(p), 2) for p in scene_audio_paths]
+
+            # 4. Assembly
+            job.state = JobState.ASSEMBLING
+            save_job_record(job)
+
+            label_path = job_path / "ai_label.png"
+            from src.utils.images import create_ai_label_png
+            label_text = (
+                job.plan.safety.label_text
+                if job.plan and job.plan.safety and job.plan.safety.label_text
+                else "AI-generated"
+            )
+            create_ai_label_png(label_path, label_text)
+
+            bg_music_path = None
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
+                from src.services.music_presets import resolve_job_music_path
+                bg_music_path = resolve_job_music_path(job.request.music_asset_id, job.request.music_preset_id)
+
+            output_path, subtitle_path = ClipCompositor.compose_clips_job(
+                job_path=job_path,
+                plan=job.plan,
+                clip_paths=clip_paths,
+                scene_durations=scene_durations,
+                scene_audio_paths=scene_audio_paths,
+                scene_texts=scene_texts,
+                bg_music_path=bg_music_path,
+                bg_music_volume=job.request.music_volume,
+                burn_subtitles=job.plan.subtitles.burn_in,
+                subtitles_enabled=job.plan.subtitles.enabled,
+                watermark_path=label_path,
+                cancel_check=lambda: is_job_cancelled(job_id),
+            )
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None

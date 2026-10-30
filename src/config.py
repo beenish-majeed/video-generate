@@ -34,7 +34,15 @@ class Settings(BaseSettings):
     max_image_width: int = 4096
     max_image_height: int = 4096
     max_image_pixels: int = 16_777_216
-    max_request_body_bytes: int = 55 * 1024 * 1024
+    max_request_body_bytes: int = 210 * 1024 * 1024
+
+    # Clip Upload Bounds
+    max_clip_size_bytes: int = 200 * 1024 * 1024
+    max_clips_per_job: int = 60
+    max_clip_duration_seconds: float = 30.0
+    max_clip_width: int = 1920
+    max_clip_height: int = 1080
+    max_clip_fps: float = 60.0
 
     # Concurrency and Rate Limits
     max_active_jobs_cap: int = 16

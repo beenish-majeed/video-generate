@@ -365,10 +365,10 @@ async def upload_asset(
     file: UploadFile = File(...),
 ):
     UPLOAD_LIMITER.check(get_client_ip(request))
-    if kind not in {"photo", "voice", "image", "audio", "music"}:
+    if kind not in {"photo", "voice", "image", "audio", "music", "clip"}:
         raise HTTPException(
             status_code=400,
-            detail="kind must be 'photo', 'voice', 'image', 'audio', or 'music'.",
+            detail="kind must be 'photo', 'voice', 'image', 'audio', 'music', or 'clip'.",
         )
 
     return save_upload(file=file, kind=kind)

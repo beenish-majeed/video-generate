@@ -61,6 +61,7 @@ class ConsentRequest(BaseModel):
     voice_rights_attested: Optional[bool] = None
     ai_generated_accepted: Optional[bool] = None
     ai_label_accepted: Optional[bool] = None
+    clips_rights_attested: Optional[bool] = None
 
 
 class ConsentRecord(BaseModel):
@@ -72,6 +73,7 @@ class ConsentRecord(BaseModel):
     photo_sha256: str
     voice_sha256: str
     statement: Optional[str] = Field(default=None, exclude=True)
+    clips_sha256: list[str] = Field(default_factory=list)
 
 
 class PausePolicy(BaseModel):
@@ -276,7 +278,9 @@ class JobCreate(BaseModel):
     target_duration_seconds: Optional[float] = None
     duration_preset: Optional[str] = None
     overrides: dict = Field(default_factory=dict)
-    visual_mode: Literal["talking_head", "slideshow"] = "talking_head"
+    visual_mode: Literal["talking_head", "slideshow", "ai_clips"] = "talking_head"
+    clip_asset_ids: list[str] = Field(default_factory=list, description="Ordered clip asset IDs for ai_clips mode.")
+    plan_id: Optional[str] = Field(default=None, description="Optional associated scene plan ID.")
     burn_subtitles: Optional[bool] = None
     subtitles_enabled: Optional[bool] = None
 
@@ -362,8 +366,8 @@ class JobCreate(BaseModel):
         if not v:
             return "talking_head"
         norm = v.strip().lower().replace(" ", "_")
-        if norm not in ("talking_head", "slideshow"):
-            raise ValueError(f"Invalid visual_mode '{v}'. Allowed modes: 'talking_head', 'slideshow'")
+        if norm not in ("talking_head", "slideshow", "ai_clips"):
+            raise ValueError(f"Invalid visual_mode '{v}'. Allowed modes: 'talking_head', 'slideshow', 'ai_clips'")
         return norm
 
     @field_validator("avatar_preset_id")
@@ -420,6 +424,14 @@ class JobCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_asset_sources(self) -> "JobCreate":
+        if self.visual_mode == "ai_clips":
+            n_clips = len(self.clip_asset_ids) if self.clip_asset_ids is not None else 0
+            if n_clips < 1 or n_clips > 60:
+                raise ValueError(f"clip_asset_ids must contain between 1 and 60 clips (got {n_clips}).")
+            if not self.uploaded_audio_asset_id and not self.voice_asset_id and not self.voice_preset_id and not (self.script and self.script.strip()):
+                raise ValueError("Either an audio asset, voice preset, or typed script must be provided for ai_clips mode.")
+            return self
+
         has_uploads = bool(self.photo_asset_id and self.voice_asset_id)
         has_presets = bool(self.avatar_preset_id and self.voice_preset_id)
         has_prompt_flow = bool(self.visual_mode == "slideshow" and (self.voice_preset_id or self.voice_asset_id))
@@ -551,6 +563,8 @@ class JobRecord(BaseModel):
 
     visual_mode_used: Optional[str] = None
     visual_mode_reason: Optional[str] = None
+    clip_asset_ids: list[str] = Field(default_factory=list)
+    plan_id: Optional[str] = None
 
     music_asset_id: Optional[str] = None
     music_preset_id: Optional[str] = None
@@ -573,7 +587,7 @@ class JobRecord(BaseModel):
 
 class JobEstimateRequest(BaseModel):
     target_duration_seconds: float = Field(..., ge=1.0, le=900.0)
-    visual_mode: str = Field("talking_head", pattern="^(talking_head|slideshow)$")
+    visual_mode: str = Field("talking_head", pattern="^(talking_head|slideshow|ai_clips)$")
 
 
 class JobEstimateResponse(BaseModel):

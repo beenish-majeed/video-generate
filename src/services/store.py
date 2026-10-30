@@ -23,6 +23,8 @@ MAX_MUSIC_SIZE_BYTES = 30 * 1024 * 1024  # 30MB
 ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_VOICE_EXTS = {".wav", ".mp3", ".ogg", ".flac", ".m4a"}
 ALLOWED_MUSIC_EXTS = {".mp3", ".wav", ".ogg", ".m4a", ".flac"}
+ALLOWED_CLIP_EXTS = {".mp4", ".mov", ".webm", ".mkv"}
+ALLOWED_CLIP_CODECS = {"h264", "hevc", "h265", "vp9", "av1"}
 
 MIN_MUSIC_DURATION_SECONDS = 5.0
 MAX_MUSIC_DURATION_SECONDS = 1200.0  # 20 minutes
@@ -276,6 +278,144 @@ def validate_upload(file: UploadFile, kind: str) -> None:
                 detail=f"Music duration ({duration:.2f}s) exceeds maximum of {int(MAX_MUSIC_DURATION_SECONDS / 60)} minutes.",
             )
 
+    if kind == "clip":
+        if ext not in ALLOWED_CLIP_EXTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid clip extension '{ext}'. Allowed: {sorted(ALLOWED_CLIP_EXTS)}",
+            )
+
+        file.file.seek(0, 2)
+        size = file.file.tell()
+        file.file.seek(0)
+
+        if size == 0:
+            raise HTTPException(status_code=400, detail="Uploaded clip file is empty.")
+
+        if size > settings.max_clip_size_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Clip file size ({size} bytes) exceeds limit ({settings.max_clip_size_bytes} bytes).",
+            )
+
+        import json
+        import tempfile
+        from src.utils.subprocess_runner import run_subprocess
+
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+                tmp_path = Path(tmp.name)
+                shutil.copyfileobj(file.file, tmp)
+            file.file.seek(0)
+
+            probe_cmd = [
+                settings.ffprobe_bin,
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration:format=duration",
+                "-of", "json",
+                str(tmp_path),
+            ]
+            probe_res = run_subprocess(probe_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
+            if probe_res.returncode != 0:
+                raise HTTPException(status_code=400, detail="Could not read video clip metadata or file is corrupt.")
+
+            data = json.loads(probe_res.stdout)
+            streams = data.get("streams", [])
+            if not streams:
+                raise HTTPException(status_code=400, detail="No video stream found in uploaded clip.")
+
+            v_stream = streams[0]
+            codec = (v_stream.get("codec_name") or "").lower()
+            if codec not in ALLOWED_CLIP_CODECS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported video codec '{codec}'. Allowed codecs: {sorted(ALLOWED_CLIP_CODECS)}",
+                )
+
+            dur_str = data.get("format", {}).get("duration") or v_stream.get("duration")
+            try:
+                dur = float(dur_str)
+            except (TypeError, ValueError):
+                dur = 0.0
+
+            if dur <= 0.0:
+                raise HTTPException(status_code=400, detail="Uploaded clip duration is zero or could not be determined.")
+
+            if dur > settings.max_clip_duration_seconds:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Clip duration ({dur:.2f}s) exceeds maximum allowed {settings.max_clip_duration_seconds} seconds.",
+                )
+
+            width = int(v_stream.get("width") or 0)
+            height = int(v_stream.get("height") or 0)
+            if width <= 0 or height <= 0:
+                raise HTTPException(status_code=400, detail="Invalid video dimensions in clip.")
+
+            if width > settings.max_clip_width or height > settings.max_clip_height:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Clip resolution ({width}x{height}) exceeds maximum allowed {settings.max_clip_width}x{settings.max_clip_height}.",
+                )
+
+            fps_str = v_stream.get("r_frame_rate", "30/1")
+            try:
+                if "/" in str(fps_str):
+                    num, den = str(fps_str).split("/")
+                    fps = float(num) / float(den) if float(den) > 0 else 30.0
+                else:
+                    fps = float(fps_str)
+            except Exception:
+                fps = 30.0
+
+            if fps > settings.max_clip_fps:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Clip frame rate ({fps:.1f} fps) exceeds maximum allowed {settings.max_clip_fps} fps.",
+                )
+
+            # First second decode check
+            d1_cmd = [
+                settings.ffmpeg_bin,
+                "-v", "error",
+                "-ss", "0",
+                "-t", "1",
+                "-i", str(tmp_path),
+                "-f", "null",
+                "-",
+            ]
+            d1_res = run_subprocess(d1_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
+            if d1_res.returncode != 0:
+                raise HTTPException(status_code=400, detail="Corrupt video stream detected at beginning of clip.")
+
+            # Last second decode check if duration > 1.0s
+            if dur > 1.0:
+                d2_cmd = [
+                    settings.ffmpeg_bin,
+                    "-v", "error",
+                    "-sseof", "-1",
+                    "-i", str(tmp_path),
+                    "-f", "null",
+                    "-",
+                ]
+                d2_res = run_subprocess(d2_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
+                if d2_res.returncode != 0:
+                    raise HTTPException(status_code=400, detail="Corrupt video stream detected at end of clip.")
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Failed to validate video clip: {exc}") from exc
+        finally:
+            if tmp_path and tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except Exception:
+                    pass
+            file.file.seek(0)
+
 
 def save_upload(file: UploadFile, kind: str) -> dict:
     validate_upload(file, kind)
@@ -284,8 +424,36 @@ def save_upload(file: UploadFile, kind: str) -> dict:
     ext = Path(file.filename or "").suffix.lower() or ".bin"
     path = ASSETS_DIR / f"{asset_id}{ext}"
 
-    with path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    if kind == "clip":
+        # Save to temp file first, then strip audio and container metadata
+        import tempfile
+        from src.utils.subprocess_runner import run_subprocess
+        import json
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp_up:
+            tmp_up_path = Path(tmp_up.name)
+            shutil.copyfileobj(file.file, tmp_up)
+
+        strip_cmd = [
+            settings.ffmpeg_bin,
+            "-y",
+            "-i", str(tmp_up_path),
+            "-an",  # Strip audio
+            "-map_metadata", "-1",  # Strip metadata
+            "-c:v", "copy",
+            str(path),
+        ]
+        try:
+            res = run_subprocess(strip_cmd, timeout=settings.subprocess_default_timeout_seconds)
+            if res.returncode != 0 or not path.exists():
+                shutil.copyfile(tmp_up_path, path)
+        except Exception:
+            shutil.copyfile(tmp_up_path, path)
+        finally:
+            if tmp_up_path.exists():
+                tmp_up_path.unlink(missing_ok=True)
+    else:
+        with path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
     # Fix EXIF rotation for images
     if kind in {"photo", "image"}:
@@ -317,6 +485,35 @@ def save_upload(file: UploadFile, kind: str) -> dict:
         try:
             from src.utils.ffmpeg import probe_duration
             ret["duration_seconds"] = round(probe_duration(path), 2)
+        except Exception:
+            pass
+
+    if kind == "clip":
+        import json
+        from src.utils.subprocess_runner import run_subprocess
+        probe_cmd = [
+            settings.ffprobe_bin,
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration:format=duration",
+            "-of", "json",
+            str(path),
+        ]
+        try:
+            pres = run_subprocess(probe_cmd)
+            pdata = json.loads(pres.stdout)
+            vst = pdata.get("streams", [{}])[0]
+            ret["codec"] = vst.get("codec_name")
+            ret["width"] = int(vst.get("width") or 0)
+            ret["height"] = int(vst.get("height") or 0)
+            dur_val = pdata.get("format", {}).get("duration") or vst.get("duration")
+            ret["duration_seconds"] = round(float(dur_val), 2) if dur_val else 0.0
+            r_fps = vst.get("r_frame_rate", "30/1")
+            if "/" in str(r_fps):
+                n, d = str(r_fps).split("/")
+                ret["fps"] = round(float(n) / float(d), 2) if float(d) > 0 else 30.0
+            else:
+                ret["fps"] = round(float(r_fps), 2)
         except Exception:
             pass
 
