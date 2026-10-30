@@ -17,7 +17,7 @@ export interface DurationsResponse {
   allowed_presets: DurationOption[];
 }
 
-export type AssetKind = 'photo' | 'voice' | 'image' | 'audio' | 'music';
+export type AssetKind = 'photo' | 'voice' | 'image' | 'audio' | 'music' | 'clip';
 
 export interface MusicPreset {
   id: string;
@@ -29,7 +29,7 @@ export interface MusicPreset {
 
 export interface JobEstimateRequest {
   target_duration_seconds: number;
-  visual_mode?: 'talking_head' | 'slideshow';
+  visual_mode?: 'talking_head' | 'slideshow' | 'ai_clips';
 }
 
 export interface JobEstimateResponse {
@@ -73,8 +73,57 @@ export interface PresetsResponse {
 
 export type ScriptTone = 'friendly' | 'professional' | 'storytelling' | 'educational';
 
-export type VisualPresentationMode = 'slideshow' | 'talking_head';
+export type VisualPresentationMode = 'slideshow' | 'talking_head' | 'ai_clips';
 export type VisualStyle = 'cinematic' | 'watercolor' | 'flat illustration' | 'photo' | 'cards';
+
+export interface SceneClipItem {
+  id?: string;
+  scene_index: number;
+  narration?: string;
+  narration_text?: string;
+  visual_prompt: string;
+  negative_prompt?: string;
+  target_clip_seconds?: number;
+  duration_seconds?: number;
+  start_seconds?: number;
+  end_seconds?: number;
+  aspect_ratio?: string;
+  motion_bucket?: number;
+  camera_cue?: string;
+  lighting?: string;
+  mood?: string;
+  subject?: string;
+  setting?: string;
+}
+
+export interface ScenePlanRequest {
+  script: string;
+  style?: string;
+  audio_asset_id?: string;
+  target_duration_seconds?: number;
+}
+
+export interface ScenePlanResponse {
+  plan_id: string;
+  style?: string;
+  total_duration_seconds?: number;
+  total_scenes?: number;
+  version?: string;
+  target_duration_seconds?: number;
+  scenes: SceneClipItem[];
+  plain_text_prompts?: string;
+}
+
+export interface UploadedClipItem {
+  id: string;
+  assetId: string;
+  fileName: string;
+  duration: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+  objectUrl?: string;
+}
 
 
 export interface ScriptGeneratePayload {
@@ -100,6 +149,7 @@ export interface ConsentPayload {
   voice_rights_attested?: boolean;
   ai_generated_accepted?: boolean;
   ai_label_accepted?: boolean;
+  clips_rights_attested?: boolean;
 }
 
 export interface JobCreatePayload {
@@ -112,11 +162,13 @@ export interface JobCreatePayload {
   consent: ConsentPayload;
   duration_preset?: DurationPreset;
   target_duration_seconds?: number;
-  visual_mode?: 'slideshow' | 'talking_head';
+  visual_mode?: 'slideshow' | 'talking_head' | 'ai_clips';
   image_style?: string;
   uploaded_image_asset_ids?: string[];
   image_durations?: number[];
   uploaded_audio_asset_id?: string;
+  clip_asset_ids?: string[];
+  plan_id?: string;
   prefer_lip_sync?: boolean;
   auto_subtitles?: boolean;
   burn_subtitles?: boolean;

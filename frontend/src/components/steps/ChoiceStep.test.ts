@@ -21,10 +21,11 @@ describe('ChoiceStep screen with three creative paths', () => {
     // Screen heading
     expect(html).toContain('How would you like to begin?');
 
-    // All three cards must be present
+    // All cards must be present
     expect(html).toContain('Write an idea');
     expect(html).toContain('Use my photos and voice');
     expect(html).toContain('A talking face');
+    expect(html).toContain('AI scene clips');
 
     // Back button to welcome page
     expect(html).toContain('Back');

@@ -9,6 +9,7 @@ interface ConsentStepProps {
   submitting: boolean;
   error?: string | null;
   isPromptPath?: boolean;
+  isAiClipsMode?: boolean;
 }
 
 export const ConsentStep: React.FC<ConsentStepProps> = ({
@@ -17,6 +18,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   submitting,
   error,
   isPromptPath = false,
+  isAiClipsMode = false,
 }) => {
   // Global Rule & Requirement: NO pre-checked boxes! All default to false.
   const [faceRights, setFaceRights] = useState(false);
@@ -26,9 +28,12 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
   // Prompt path consents (AI generation & AI label acceptance)
   const [aiGeneratedAccepted, setAiGeneratedAccepted] = useState(false);
   const [aiLabelAccepted, setAiLabelAccepted] = useState(false);
+  const [clipsRights, setClipsRights] = useState(false);
 
   // All required consents must be actively accepted by the user
-  const isValid = isPromptPath
+  const isValid = isAiClipsMode
+    ? clipsRights && aiGeneratedAccepted && aiLabelAccepted
+    : isPromptPath
     ? aiGeneratedAccepted && aiLabelAccepted
     : faceRights && voiceRights && authorized;
 
@@ -36,7 +41,16 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
     e.preventDefault();
     if (!isValid || submitting) return;
 
-    if (isPromptPath) {
+    if (isAiClipsMode) {
+      const consentPayload: ConsentPayload = {
+        authorized: true,
+        statement: 'I attest that I own or have permission to use all uploaded video clips, and agree that this film will carry an AI transparency label.',
+        clips_rights_attested: true,
+        ai_generated_accepted: true,
+        ai_label_accepted: true,
+      };
+      onSubmitJob(consentPayload);
+    } else if (isPromptPath) {
       const consentPayload: ConsentPayload = {
         authorized: true,
         statement: 'I accept that this video is AI-generated and will display an AI label.',
@@ -73,10 +87,16 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
       {/* Header Copy */}
       <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
-          {isPromptPath ? 'AI Generation & Transparency Consent' : 'Rights & Consent Confirmation'}
+          {isAiClipsMode
+            ? 'Clip Rights & AI Transparency Consent'
+            : isPromptPath
+            ? 'AI Generation & Transparency Consent'
+            : 'Rights & Consent Confirmation'}
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
-          {isPromptPath
+          {isAiClipsMode
+            ? 'Before we assemble your film, please confirm permission for uploaded video clips and acceptance of AI transparency labeling.'
+            : isPromptPath
             ? 'Before we render your film, please confirm acceptance that this video is AI-generated and will display an AI transparency label.'
             : 'Before we bring your narrative to life, please take a quiet moment to confirm permission and transparency.'}
         </p>
@@ -84,7 +104,7 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
 
       {/* Plain Language Summary Card */}
       <section
-        aria-label={isPromptPath ? 'AI generation transparency overview' : 'What happens with your media'}
+        aria-label={isAiClipsMode ? 'Clip rights and AI transparency overview' : (isPromptPath ? 'AI generation transparency overview' : 'What happens with your media')}
         className="card"
         style={{
           padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
@@ -98,11 +118,43 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Info size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, fontFamily: 'var(--font-sans)' }}>
-            {isPromptPath ? 'AI Generation Details' : 'What Happens with Your Media'}
+            {isAiClipsMode ? 'AI Scene Clips Details' : (isPromptPath ? 'AI Generation Details' : 'What Happens with Your Media')}
           </h3>
         </div>
 
-        {isPromptPath ? (
+        {isAiClipsMode ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <UserCheck size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Your Video Clips</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                  Assembled strictly according to your scene plan and pacing timeline.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Mic size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Voice Narration</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                  Uses studio preset speech or your custom recorded voice narration.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <Tag size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Transparency Label</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                  The rendered film carries a visible AI label and provenance metadata.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : isPromptPath ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
               <UserCheck size={18} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
@@ -182,7 +234,139 @@ export const ConsentStep: React.FC<ConsentStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          {isPromptPath ? (
+          {isAiClipsMode ? (
+            <>
+              {/* AI Clips Consent 1: Clips Rights */}
+              <label
+                htmlFor="clips-rights-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="clips-rights-checkbox"
+                  type="checkbox"
+                  checked={clipsRights}
+                  onChange={(e) => {
+                    setClipsRights(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
+                    marginTop: '2px',
+                    accentColor: 'var(--accent-primary)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
+                    I attest that I have permission to use all uploaded video clips
+                  </p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                    These clips were generated by me or I have the necessary rights and licenses to assemble them.
+                  </p>
+                </div>
+              </label>
+
+              <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
+
+              {/* AI Clips Consent 2: AI Generated */}
+              <label
+                htmlFor="ai-generated-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="ai-generated-checkbox"
+                  type="checkbox"
+                  checked={aiGeneratedAccepted}
+                  onChange={(e) => {
+                    setAiGeneratedAccepted(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
+                    marginTop: '2px',
+                    accentColor: 'var(--accent-primary)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
+                    I understand and accept that this film is AI-assisted and generated
+                  </p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                    The film is assembled from AI-generated scene clips with speech narration and transitions.
+                  </p>
+                </div>
+              </label>
+
+              <div style={{ height: '1px', backgroundColor: 'var(--border-light)' }} />
+
+              {/* AI Clips Consent 3: AI Label Acceptance */}
+              <label
+                htmlFor="ai-label-checkbox"
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  minHeight: '44px',
+                  padding: '4px 0',
+                }}
+              >
+                <input
+                  id="ai-label-checkbox"
+                  type="checkbox"
+                  checked={aiLabelAccepted}
+                  onChange={(e) => {
+                    setAiLabelAccepted(e.target.checked);
+                    playStickerPopSound();
+                  }}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    minWidth: '20px',
+                    minHeight: '20px',
+                    marginTop: '2px',
+                    accentColor: 'var(--accent-primary)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                />
+                <div>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '15px' }}>
+                    I agree that the video will carry an AI transparency label
+                  </p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                    A visible label and provenance metadata ensure viewers know this film was synthetically crafted.
+                  </p>
+                </div>
+              </label>
+            </>
+          ) : isPromptPath ? (
             <>
               {/* Prompt Consent 1: AI Generated */}
               <label

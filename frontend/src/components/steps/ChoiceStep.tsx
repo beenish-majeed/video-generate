@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Sparkles, Image, User } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Image, User, Film } from 'lucide-react';
 
 export const ENABLE_PROMPT_PATH = true;
 
@@ -8,14 +8,15 @@ export interface ChoiceStepProps {
   onSelectPromptFlow: () => void;
   onSelectImagesAudioFlow: () => void;
   onSelectCustomMediaFlow: () => void;
+  onSelectAiClipsFlow?: () => void;
   onBack: () => void;
 }
 
 interface CardConfig {
-  id: 'prompt' | 'images_audio' | 'custom_media';
+  id: 'prompt' | 'images_audio' | 'custom_media' | 'ai_clips';
   title: string;
   description: string;
-  icon: 'sparkles' | 'image' | 'user';
+  icon: 'sparkles' | 'image' | 'user' | 'film';
   badge: string;
   onSelect: () => void;
   isPrimary?: boolean;
@@ -25,6 +26,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
   onSelectPromptFlow,
   onSelectImagesAudioFlow,
   onSelectCustomMediaFlow,
+  onSelectAiClipsFlow,
   onBack,
 }) => {
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -72,6 +74,14 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
       icon: 'user',
       badge: 'Portrait Animator',
       onSelect: onSelectCustomMediaFlow,
+    },
+    {
+      id: 'ai_clips',
+      title: 'AI scene clips',
+      description: 'Export structured scene prompts for Colab video models, then assemble rendered clips into your film.',
+      icon: 'film',
+      badge: 'Diffusion Clips',
+      onSelect: onSelectAiClipsFlow || onSelectPromptFlow,
     },
   ];
 
@@ -309,6 +319,16 @@ const ChoiceCardItem: React.FC<ChoiceCardItemProps> = ({
               style={{ display: 'flex' }}
             >
               <User size={22} />
+            </motion.div>
+          )}
+
+          {card.icon === 'film' && (
+            <motion.div
+              animate={!shouldReduceMotion && isHovered ? { scale: [1, 1.14, 1] } : {}}
+              transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+              style={{ display: 'flex' }}
+            >
+              <Film size={22} />
             </motion.div>
           )}
         </div>

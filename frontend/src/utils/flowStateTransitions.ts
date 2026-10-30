@@ -19,11 +19,13 @@ export interface StudioFlowState {
   prompt: string;
   ideaText?: string;
   tone?: ScriptTone;
-  visualMode?: 'slideshow' | 'talking_head';
+  visualMode?: 'slideshow' | 'talking_head' | 'ai_clips';
   imageStyle?: string;
   uploadedImageAssetIds?: string[];
   imageDurations?: number[];
   uploadedAudioAssetId?: string;
+  clipAssetIds?: string[];
+  planId?: string;
   preferLipSync?: boolean;
   detectedFacesCount?: number;
   autoSubtitles?: boolean;
@@ -75,6 +77,20 @@ export function transitionFlowMode(
       currentStep: 'images_audio',
       visualMode: 'slideshow',
       preferLipSync: false,
+      burnSubtitles: true,
+      errorMessage: null,
+    };
+  }
+
+  if (targetMode === 'ai_clips') {
+    return {
+      ...prevState,
+      flowMode: 'ai_clips',
+      currentStep: 'idea',
+      visualMode: 'ai_clips',
+      imageStyle: prevState.imageStyle || 'cinematic',
+      voicePresetId: prevState.voicePresetId || DEFAULT_VOICE_PRESET_ID,
+      tone: prevState.tone || 'storytelling',
       burnSubtitles: true,
       errorMessage: null,
     };
@@ -149,6 +165,31 @@ export function navigateBackStep(prevState: StudioFlowState): StudioFlowState {
     }
     if (currentStep === 'consent') {
       return { ...prevState, currentStep: 'script', errorMessage: null };
+    }
+  }
+
+  // AI Clips path backward steps (Idea -> Duration -> Script -> Scene Plan -> Upload Clips -> Voice -> Consent)
+  if (flowMode === 'ai_clips') {
+    if (currentStep === 'idea') {
+      return { ...prevState, currentStep: 'choice', errorMessage: null };
+    }
+    if (currentStep === 'duration') {
+      return { ...prevState, currentStep: 'idea', errorMessage: null };
+    }
+    if (currentStep === 'script') {
+      return { ...prevState, currentStep: 'duration', errorMessage: null };
+    }
+    if (currentStep === 'scene_plan') {
+      return { ...prevState, currentStep: 'script', errorMessage: null };
+    }
+    if (currentStep === 'upload_clips') {
+      return { ...prevState, currentStep: 'scene_plan', errorMessage: null };
+    }
+    if (currentStep === 'voice') {
+      return { ...prevState, currentStep: 'upload_clips', errorMessage: null };
+    }
+    if (currentStep === 'consent') {
+      return { ...prevState, currentStep: 'voice', errorMessage: null };
     }
   }
 

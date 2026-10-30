@@ -193,5 +193,48 @@ describe('Switching Paths State Retention & Clearing Unit Tests', () => {
     expect(s2.currentStep).toBe('choice');
     expect(s2.uploadedImageAssetIds).toEqual(['img-1', 'img-2']);
   });
+
+  it('12. Transition to ai_clips sets flowMode, currentStep, and visualMode properly', () => {
+    const nextState = transitionFlowMode(initialCustomState, 'ai_clips');
+    expect(nextState.flowMode).toBe('ai_clips');
+    expect(nextState.currentStep).toBe('idea');
+    expect(nextState.visualMode).toBe('ai_clips');
+    expect(nextState.burnSubtitles).toBe(true);
+    expect(nextState.errorMessage).toBeNull();
+  });
+
+  it('13. AI clips back navigation: consent -> voice -> upload_clips -> scene_plan -> script -> duration -> idea -> choice', () => {
+    const aiClipsState: StudioFlowState = {
+      ...initialCustomState,
+      currentStep: 'consent',
+      flowMode: 'ai_clips',
+      visualMode: 'ai_clips',
+      ideaText: 'A futuristic city awakening at dawn',
+      script: 'Towering spires glow with soft light.',
+      clipAssetIds: ['clip-1', 'clip-2'],
+      planId: 'plan-123',
+    };
+
+    const sVoice = navigateBackStep(aiClipsState);
+    expect(sVoice.currentStep).toBe('voice');
+
+    const sUpload = navigateBackStep(sVoice);
+    expect(sUpload.currentStep).toBe('upload_clips');
+
+    const sPlan = navigateBackStep(sUpload);
+    expect(sPlan.currentStep).toBe('scene_plan');
+
+    const sScript = navigateBackStep(sPlan);
+    expect(sScript.currentStep).toBe('script');
+
+    const sDuration = navigateBackStep(sScript);
+    expect(sDuration.currentStep).toBe('duration');
+
+    const sIdea = navigateBackStep(sDuration);
+    expect(sIdea.currentStep).toBe('idea');
+
+    const sChoice = navigateBackStep(sIdea);
+    expect(sChoice.currentStep).toBe('choice');
+  });
 });
 

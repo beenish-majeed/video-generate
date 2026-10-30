@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import NotebookShell from './components/NotebookShell';
 import { ToastProvider } from './components/ui/Toast';
 import type { JourneyStepId, FlowMode } from './components/PageTabs';
-import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload } from './types/api';
+import type { DurationPreset, ConsentPayload, JobRecord, ScriptTone, JobCreatePayload, UploadedClipItem, ScenePlanResponse } from './types/api';
 import apiClient from './api/client';
 import { mapAPIError } from './api/errorMapper';
 import { playPageTurnSound } from './utils/soundEffects';
@@ -19,6 +19,8 @@ const ImagesAudioStep = lazy(() => import('./components/steps/ImagesAudioStep'))
 const DurationStep = lazy(() => import('./components/steps/DurationStep'));
 const LookVoiceStep = lazy(() => import('./components/steps/LookVoiceStep'));
 const ScriptStep = lazy(() => import('./components/steps/ScriptStep'));
+const ScenePlanStep = lazy(() => import('./components/steps/ScenePlanStep'));
+const ClipsUploadStep = lazy(() => import('./components/steps/ClipsUploadStep'));
 const ConsentStep = lazy(() => import('./components/steps/ConsentStep'));
 const WaitingStep = lazy(() => import('./components/steps/WaitingStep'));
 const PremiereStep = lazy(() => import('./components/steps/PremiereStep'));
@@ -57,10 +59,12 @@ const STEP_ORDER: Record<string, number> = {
   voice: 6,
   images_audio: 7,
   script: 8,
-  consent: 9,
-  waiting: 10,
-  premiere: 11,
-  failed: 12,
+  scene_plan: 9,
+  upload_clips: 10,
+  consent: 11,
+  waiting: 12,
+  premiere: 13,
+  failed: 14,
 };
 
 export const App: React.FC = () => {
@@ -110,15 +114,19 @@ export const App: React.FC = () => {
         } else if (currentStep === 'idea' || currentStep === 'photo' || currentStep === 'images_audio') {
           changeStep('choice');
         } else if (currentStep === 'voice') {
-          changeStep('photo');
+          changeStep(flowMode === 'ai_clips' ? 'upload_clips' : 'photo');
         } else if (currentStep === 'duration') {
-          changeStep(flowMode === 'prompt_first' ? 'idea' : 'voice');
+          changeStep(flowMode === 'prompt_first' || flowMode === 'ai_clips' ? 'idea' : 'voice');
         } else if (currentStep === 'look_voice') {
           changeStep('duration');
         } else if (currentStep === 'script') {
-          changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration');
+          changeStep(flowMode === 'ai_clips' ? 'duration' : (flowMode === 'prompt_first' ? 'look_voice' : 'duration'));
+        } else if (currentStep === 'scene_plan') {
+          changeStep('script');
+        } else if (currentStep === 'upload_clips') {
+          changeStep('scene_plan');
         } else if (currentStep === 'consent') {
-          changeStep(flowMode === 'images_audio' ? 'images_audio' : 'script');
+          changeStep(flowMode === 'images_audio' ? 'images_audio' : (flowMode === 'ai_clips' ? 'voice' : 'script'));
         }
       }
 
@@ -148,7 +156,9 @@ export const App: React.FC = () => {
   const [voiceAssetId, setVoiceAssetId] = useState<string>('');
   const [ideaText, setIdeaText] = useState<string>('');
   const [tone, setTone] = useState<ScriptTone>('storytelling');
-  const [visualMode, setVisualMode] = useState<'slideshow' | 'talking_head'>('slideshow');
+  const [visualMode, setVisualMode] = useState<'slideshow' | 'talking_head' | 'ai_clips'>('slideshow');
+  const [uploadedClips, setUploadedClips] = useState<UploadedClipItem[]>([]);
+  const [scenePlan, setScenePlan] = useState<ScenePlanResponse | null>(null);
   const [imageStyle, setImageStyle] = useState<string>('cinematic');
   const [avatarPresetId, setAvatarPresetId] = useState<string>('');
   const [voicePresetId, setVoicePresetId] = useState<string>('');
@@ -202,6 +212,13 @@ export const App: React.FC = () => {
     changeStep('images_audio');
   };
 
+  const handleSelectAiClipsFlow = () => {
+    setFlowMode('ai_clips');
+    setVisualMode('ai_clips');
+    setScript('');
+    changeStep('idea');
+  };
+
   const handleSelectCustomMediaFlow = () => {
     setFlowMode('custom_media');
     setVisualMode('talking_head');
@@ -217,7 +234,22 @@ export const App: React.FC = () => {
 
     let payload: JobCreatePayload;
 
-    if (flowMode === 'prompt_first') {
+    if (flowMode === 'ai_clips') {
+      payload = {
+        visual_mode: 'ai_clips',
+        clip_asset_ids: uploadedClips.map((c) => c.assetId),
+        plan_id: scenePlan?.plan_id,
+        voice_preset_id: voicePresetId || 'voice_piper_lessac',
+        voice_asset_id: voiceAssetId || undefined,
+        script: script.trim() || undefined,
+        duration_preset: durationPreset,
+        target_duration_seconds: targetSeconds,
+        burn_subtitles: burnSubtitles,
+        bg_music_asset_id: bgMusicAssetId || undefined,
+        bg_music_volume: bgMusicVolume,
+        consent,
+      };
+    } else if (flowMode === 'prompt_first') {
       payload = {
         visual_mode: visualMode,
         image_style: imageStyle,
@@ -386,6 +418,7 @@ export const App: React.FC = () => {
                 onSelectPromptFlow={handleSelectPromptFlow}
                 onSelectImagesAudioFlow={handleSelectImagesAudioFlow}
                 onSelectCustomMediaFlow={handleSelectCustomMediaFlow}
+                onSelectAiClipsFlow={handleSelectAiClipsFlow}
                 onBack={() => changeStep('hero')}
               />
             )}
@@ -417,8 +450,9 @@ export const App: React.FC = () => {
               <VoiceStep
                 selectedAssetId={voiceAssetId}
                 onAssetSelected={(id) => setVoiceAssetId(id)}
-                onNext={() => changeStep('duration')}
-                onBack={() => changeStep('photo')}
+                isAiClipsMode={flowMode === 'ai_clips'}
+                onNext={() => changeStep(flowMode === 'ai_clips' ? 'consent' : 'duration')}
+                onBack={() => changeStep(flowMode === 'ai_clips' ? 'upload_clips' : 'photo')}
               />
             )}
 
@@ -470,7 +504,7 @@ export const App: React.FC = () => {
 
             {currentStep === 'look_voice' && (
               <LookVoiceStep
-                initialVisualMode={visualMode}
+                initialVisualMode={visualMode === 'ai_clips' ? 'slideshow' : visualMode}
                 initialImageStyle={imageStyle}
                 initialAvatarId={avatarPresetId}
                 initialVoiceId={voicePresetId}
@@ -495,21 +529,44 @@ export const App: React.FC = () => {
                 durationPreset={durationPreset}
                 ideaText={ideaText}
                 tone={tone}
-                isPromptPath={flowMode === 'prompt_first'}
+                isPromptPath={flowMode === 'prompt_first' || flowMode === 'ai_clips'}
                 initialScriptSource={scriptSource}
                 onScriptSourceChange={(src) => setScriptSource(src)}
-                onNext={() => changeStep('consent')}
-                onBack={() => changeStep(flowMode === 'prompt_first' ? 'look_voice' : 'duration')}
+                onNext={() => changeStep(flowMode === 'ai_clips' ? 'scene_plan' : 'consent')}
+                onBack={() => changeStep(flowMode === 'ai_clips' ? 'duration' : (flowMode === 'prompt_first' ? 'look_voice' : 'duration'))}
+              />
+            )}
+
+            {currentStep === 'scene_plan' && (
+              <ScenePlanStep
+                script={script}
+                targetSeconds={targetSeconds}
+                imageStyle={imageStyle}
+                initialPlan={scenePlan}
+                onPlanLoaded={(plan: ScenePlanResponse) => setScenePlan(plan)}
+                onNext={() => changeStep('upload_clips')}
+                onBack={() => changeStep('script')}
+              />
+            )}
+
+            {currentStep === 'upload_clips' && (
+              <ClipsUploadStep
+                plan={scenePlan}
+                clips={uploadedClips}
+                onClipsChange={(clips: UploadedClipItem[]) => setUploadedClips(clips)}
+                onNext={() => changeStep('voice')}
+                onBack={() => changeStep('scene_plan')}
               />
             )}
 
             {currentStep === 'consent' && (
               <ConsentStep
                 onSubmitJob={handleCreateJob}
-                onBack={() => changeStep(flowMode === 'images_audio' ? 'images_audio' : 'script')}
+                onBack={() => changeStep(flowMode === 'images_audio' ? 'images_audio' : (flowMode === 'ai_clips' ? 'voice' : 'script'))}
                 submitting={submitting}
                 error={errorMessage}
                 isPromptPath={flowMode === 'prompt_first'}
+                isAiClipsMode={flowMode === 'ai_clips'}
               />
             )}
 

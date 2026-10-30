@@ -10,6 +10,8 @@ import type {
   JobEstimateResponse,
   ScriptGeneratePayload,
   ScriptGenerateResponse,
+  ScenePlanRequest,
+  ScenePlanResponse,
 } from '../types/api';
 
 /**
@@ -196,6 +198,27 @@ class MemoryStudioAPIClient {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  /**
+   * POST /v1/scene-plans
+   * Exports structured scene plan with visual prompts and duration alignment.
+   */
+  async exportScenePlan(payload: ScenePlanRequest): Promise<ScenePlanResponse> {
+    return this.request<ScenePlanResponse>('/v1/scene-plans', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /**
+   * Upload video clip asset via multipart/form-data with optional progress reporting.
+   */
+  async uploadClip(
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<AssetUploadResponse> {
+    return this.uploadAsset('clip', file, onProgress);
   }
 
 

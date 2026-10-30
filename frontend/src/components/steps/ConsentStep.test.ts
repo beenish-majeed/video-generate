@@ -82,4 +82,43 @@ describe('ConsentStep component and payload tests', () => {
     expect(markup).toContain('This is my own face');
     expect(markup).toContain('I am the speaker');
   });
+
+  it('5. Validates ai_clips mode payload contract with clips rights attestation and AI transparency', () => {
+    const payload: ConsentPayload = {
+      authorized: true,
+      statement: 'I attest that I own or have permission to use all uploaded video clips, and agree that this film will carry an AI transparency label.',
+      clips_rights_attested: true,
+      ai_generated_accepted: true,
+      ai_label_accepted: true,
+    };
+
+    expect(payload.authorized).toBe(true);
+    expect(payload.clips_rights_attested).toBe(true);
+    expect(payload.ai_generated_accepted).toBe(true);
+    expect(payload.ai_label_accepted).toBe(true);
+    expect(payload.statement).toContain('uploaded video clips');
+  });
+
+  it('6. Renders clip rights and AI transparency wording on ai_clips path', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ConsentStep, {
+        onSubmitJob: () => {},
+        onBack: () => {},
+        submitting: false,
+        isAiClipsMode: true,
+      })
+    );
+
+    // AI clips path copy
+    expect(markup).toContain('Clip Rights &amp; AI Transparency Consent');
+    expect(markup).toContain('Your Video Clips');
+    expect(markup).toContain('Voice Narration');
+    expect(markup).toContain('AI Transparency Label');
+    expect(markup).toContain('I attest that I have permission to use all uploaded video clips');
+    expect(markup).toContain('I understand and accept that this film is AI-assisted and generated');
+    expect(markup).toContain('I agree that the video will carry an AI transparency label');
+
+    // Must NOT contain personal face ownership wording
+    expect(markup).not.toContain('permission to use the face image in this photograph');
+  });
 });

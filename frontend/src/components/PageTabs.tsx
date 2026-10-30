@@ -12,12 +12,14 @@ export type JourneyStepId =
   | 'duration'
   | 'look_voice'
   | 'script'
+  | 'scene_plan'
+  | 'upload_clips'
   | 'consent'
   | 'waiting'
   | 'premiere'
   | 'failed';
 
-export type FlowMode = 'custom_media' | 'prompt_first' | 'images_audio';
+export type FlowMode = 'custom_media' | 'prompt_first' | 'images_audio' | 'ai_clips';
 
 export interface StepDefinition {
   id: JourneyStepId;
@@ -52,10 +54,23 @@ export const IMAGES_AUDIO_STEPS: StepDefinition[] = [
   { id: 'premiere', label: 'Premiere', tabTitle: '04. Final Film' },
 ];
 
+export const AI_CLIPS_STEPS: StepDefinition[] = [
+  { id: 'idea', label: 'Idea', tabTitle: '01. Idea' },
+  { id: 'duration', label: 'Length & Style', tabTitle: '02. Length & Style' },
+  { id: 'script', label: 'Script', tabTitle: '03. Script' },
+  { id: 'scene_plan', label: 'Scene Plan', tabTitle: '04. Scene Plan' },
+  { id: 'upload_clips', label: 'Upload Clips', tabTitle: '05. Upload Clips' },
+  { id: 'voice', label: 'Voice', tabTitle: '06. Voice' },
+  { id: 'consent', label: 'Consent', tabTitle: '07. Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '08. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '09. Final Film' },
+];
+
 // Helper to get step definitions for a given flow mode
 export function getStepListForMode(flowMode: FlowMode = 'custom_media'): StepDefinition[] {
   if (flowMode === 'prompt_first') return PROMPT_FIRST_STEPS;
   if (flowMode === 'images_audio') return IMAGES_AUDIO_STEPS;
+  if (flowMode === 'ai_clips') return AI_CLIPS_STEPS;
   return CUSTOM_MEDIA_STEPS;
 }
 

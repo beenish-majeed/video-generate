@@ -27,6 +27,7 @@ interface VoiceStepProps {
   onAssetSelected: (assetId: string) => void;
   onNext: () => void;
   onBack: () => void;
+  isAiClipsMode?: boolean;
 }
 
 import {
@@ -42,6 +43,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   onAssetSelected,
   onNext,
   onBack,
+  isAiClipsMode = false,
 }) => {
   // Voice Mode & State
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('upload');
@@ -1146,15 +1148,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         <button
           type="button"
           onClick={onNext}
-          disabled={!selectedAssetId || uploading}
+          disabled={(!selectedAssetId && !isAiClipsMode) || uploading}
           className="btn-primary"
           style={{
             minHeight: '44px',
             padding: '10px 24px',
-            cursor: !selectedAssetId || uploading ? 'not-allowed' : 'pointer',
+            cursor: (!selectedAssetId && !isAiClipsMode) || uploading ? 'not-allowed' : 'pointer',
           }}
         >
-          <span>Continue to Duration</span>
+          <span>{isAiClipsMode ? 'Continue to Consent' : 'Continue to Duration'}</span>
           <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
           <ArrowRight size={16} />
         </button>
