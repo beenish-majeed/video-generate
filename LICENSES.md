@@ -17,8 +17,8 @@
 | **Piper TTS** (`en_US-lessac-medium`) | Rhasspy / Michael Hansen (Lessac dataset) | Open Database License (ODbL) / Public Domain | **YES** (with attribution) | Voice dataset weights. Note: the `piper-tts` runtime library is GPL-3.0-or-later. |
 | **faster-whisper** (`tiny`) | SYSTRAN / OpenAI Whisper weights | MIT License / Apache 2.0 | **YES** | CTranslate2-accelerated local transcription engine. |
 | **Llama 3.2 3B** (via Ollama) | Meta AI | Llama 3.2 Community License Agreement | **YES** (up to 700M monthly active users) | Local LLM used for intelligent script generation. |
-| **LTX-Video** (`Lightricks/LTX-Video`) | Lightricks | Lightricks Research License / Open Weights | **Community / Research** | Open-weights 0.9.1 / 0.9.5 text-to-video diffusion transformer model with FP8 support for T4 GPUs. |
-| **Wan 2.1 1.3B** (`Wan-AI/Wan2.1-T2V-1.3B`) | Wan-AI | Apache 2.0 | **YES** | Open-weights 1.3B text-to-video model with 480p generation, efficient for low-VRAM GPUs. |
+| **LTX-Video** (`Lightricks/LTX-Video`) | Lightricks | check the model card | check the model card | Open-weights text-to-video diffusion transformer model. Review terms on Hugging Face model card (`Lightricks/LTX-Video`). |
+| **Wan 2.1 1.3B** (`Wan-AI/Wan2.1-T2V-1.3B-Diffusers`) | Wan-AI | check the model card | check the model card | Open-weights 1.3B text-to-video model. Review terms on Hugging Face model card (`Wan-AI/Wan2.1-T2V-1.3B-Diffusers`). |
 
 ---
 

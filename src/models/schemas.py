@@ -182,7 +182,11 @@ class VideoParams(BaseModel):
 class SafetyParams(BaseModel):
     visible_label: bool = True
     label_text: str = "AI-generated"
-    c2pa: bool = True
+    # Provenance metadata tags written with FFmpeg, not a signed C2PA manifest
+    c2pa: bool = Field(
+        default=False,
+        description="provenance metadata tags written with FFmpeg, not a signed C2PA manifest",
+    )
     provenance_metadata: bool = True
 
 

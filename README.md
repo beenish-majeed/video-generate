@@ -277,4 +277,5 @@ AvatarStudio provides a hybrid workflow for cinematic multi-scene AI video gener
 * **Camera Moves vs. Generative Video:** Visual scenes are created using high-quality Ken Burns motion, pans, and crossfades over imagery; this is not generative full-motion video diffusion (like Sora or Runway).
 * **Face Requirements for Lip Sync:** Wav2Lip requires a clear, frontal face. If multiple faces or no faces are detected, the pipeline gracefully defaults to a Ken Burns slideshow.
 * **Local Concurrency:** Generation jobs run locally on your system using an in-process worker pool. For high-throughput multi-user setups, an external queue (e.g. Celery / Redis) would be required.
+* **Provenance Metadata:** The application writes standard FFmpeg container metadata tags (`artist`, `comment`, `title`), not a signed C2PA manifest.
 * **Storage:** Rendered media, uploaded clips, and audio files reside in `./storage/` until cleaned up or deleted.

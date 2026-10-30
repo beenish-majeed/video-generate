@@ -37,9 +37,17 @@ This directory provides the companion Google Colab notebook and helper utilities
 
 ---
 
-## Open Models & Licenses
+## Open Models & Verification Table
 
-- **LTX-Video** (`Lightricks/LTX-Video`): Open weights text-to-video model developed by Lightricks.
-- **Wan 2.1 1.3B** (`Wan-AI/Wan2.1-T2V-1.3B`): Lightweight open diffusion text-to-video model.
+| Model & Call | Official Source Checked | Verification Status | Match / Constraints Note |
+| :--- | :--- | :---: | :--- |
+| `LTXPipeline.from_pretrained("Lightricks/LTX-Video")` | Hugging Face Diffusers Docs / Model Card | MATCH | Loaded in `torch.bfloat16` with `enable_model_cpu_offload()` for 15GB VRAM compatibility. |
+| `pipeline(prompt, width, height, num_frames, ...)` (LTX) | Diffusers `LTXPipeline` Specification | MATCH (Fixed) | Requires `width` and `height` divisible by 32 (704x480), and `num_frames` following $8n + 1$ (25..121). |
+| `WanPipeline.from_pretrained("Wan-AI/Wan2.1-T2V-1.3B-Diffusers")` | Wan-AI Diffusers Model Card | MATCH (Fixed) | Diffusers format repository ID with `WanPipeline` class in `torch.bfloat16`. |
+| GPU Inference Execution (`!nvidia-smi`, `pipeline(...)`) | Local Execution Check | UNVERIFIED | Local system lacks CUDA GPU; must be executed inside Google Colab T4 runtime. |
+
+### Licensing
+- **LTX-Video** (`Lightricks/LTX-Video`): check the model card on Hugging Face.
+- **Wan 2.1 1.3B** (`Wan-AI/Wan2.1-T2V-1.3B-Diffusers`): check the model card on Hugging Face.
 - **Zero Third-Party Cost**: No paid API tokens, no subscriptions, no cloud tunnels (ngrok/localtunnel), and no external webhooks.
 - **Complete Privacy**: Videos and prompts stay entirely within your ephemeral Colab session.
