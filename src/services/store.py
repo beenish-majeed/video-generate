@@ -312,8 +312,8 @@ def validate_upload(file: UploadFile, kind: str) -> None:
             probe_cmd = [
                 settings.ffprobe_bin,
                 "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration:format=duration",
+                "-protocol_whitelist", "file",
+                "-show_entries", "stream=index,codec_name,codec_type,width,height,r_frame_rate,duration:format=duration",
                 "-of", "json",
                 str(tmp_path),
             ]
@@ -323,10 +323,14 @@ def validate_upload(file: UploadFile, kind: str) -> None:
 
             data = json.loads(probe_res.stdout)
             streams = data.get("streams", [])
-            if not streams:
-                raise HTTPException(status_code=400, detail="No video stream found in uploaded clip.")
+            video_streams = [s for s in streams if s.get("codec_type") == "video"]
+            if len(video_streams) != 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Uploaded clip must contain exactly one video stream (found {len(video_streams)}).",
+                )
 
-            v_stream = streams[0]
+            v_stream = video_streams[0]
             codec = (v_stream.get("codec_name") or "").lower()
             if codec not in ALLOWED_CLIP_CODECS:
                 raise HTTPException(
@@ -380,6 +384,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
             d1_cmd = [
                 settings.ffmpeg_bin,
                 "-v", "error",
+                "-protocol_whitelist", "file",
                 "-ss", "0",
                 "-t", "1",
                 "-i", str(tmp_path),
@@ -395,6 +400,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
                 d2_cmd = [
                     settings.ffmpeg_bin,
                     "-v", "error",
+                    "-protocol_whitelist", "file",
                     "-sseof", "-1",
                     "-i", str(tmp_path),
                     "-f", "null",
@@ -425,7 +431,7 @@ def save_upload(file: UploadFile, kind: str) -> dict:
     path = ASSETS_DIR / f"{asset_id}{ext}"
 
     if kind == "clip":
-        # Save to temp file first, then strip audio and container metadata
+        # Save to temp file first, then sanitize and re-encode
         import tempfile
         from src.utils.subprocess_runner import run_subprocess
         import json
@@ -436,18 +442,23 @@ def save_upload(file: UploadFile, kind: str) -> dict:
         strip_cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-protocol_whitelist", "file",
             "-i", str(tmp_up_path),
-            "-an",  # Strip audio
-            "-map_metadata", "-1",  # Strip metadata
-            "-c:v", "copy",
+            "-map", "0:v:0",
+            "-an",
+            "-sn",
+            "-dn",
+            "-map_metadata", "-1",
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-crf", "20",
+            "-pix_fmt", "yuv420p",
             str(path),
         ]
         try:
             res = run_subprocess(strip_cmd, timeout=settings.subprocess_default_timeout_seconds)
             if res.returncode != 0 or not path.exists():
-                shutil.copyfile(tmp_up_path, path)
-        except Exception:
-            shutil.copyfile(tmp_up_path, path)
+                raise HTTPException(status_code=400, detail="Failed to sanitize and re-encode video clip.")
         finally:
             if tmp_up_path.exists():
                 tmp_up_path.unlink(missing_ok=True)

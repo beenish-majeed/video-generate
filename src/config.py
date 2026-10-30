@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     max_image_width: int = 4096
     max_image_height: int = 4096
     max_image_pixels: int = 16_777_216
-    max_request_body_bytes: int = 210 * 1024 * 1024
+    max_request_body_bytes: int = 55 * 1024 * 1024
+    max_clip_request_body_bytes: int = 215 * 1024 * 1024
 
     # Clip Upload Bounds
     max_clip_size_bytes: int = 200 * 1024 * 1024
