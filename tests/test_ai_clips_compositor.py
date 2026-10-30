@@ -219,6 +219,7 @@ class TestAiClipsJobCreationAndConsent:
             consent=ConsentRequest(
                 authorized=False,
                 statement="I own and authorize these clips.",
+                clips_rights_attested=True,
             ),
         )
 

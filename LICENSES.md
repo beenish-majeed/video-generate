@@ -17,6 +17,8 @@
 | **Piper TTS** (`en_US-lessac-medium`) | Rhasspy / Michael Hansen (Lessac dataset) | Open Database License (ODbL) / Public Domain | **YES** (with attribution) | Voice dataset weights. Note: the `piper-tts` runtime library is GPL-3.0-or-later. |
 | **faster-whisper** (`tiny`) | SYSTRAN / OpenAI Whisper weights | MIT License / Apache 2.0 | **YES** | CTranslate2-accelerated local transcription engine. |
 | **Llama 3.2 3B** (via Ollama) | Meta AI | Llama 3.2 Community License Agreement | **YES** (up to 700M monthly active users) | Local LLM used for intelligent script generation. |
+| **LTX-Video** (`Lightricks/LTX-Video`) | Lightricks | Lightricks Research License / Open Weights | **Community / Research** | Open-weights 0.9.1 / 0.9.5 text-to-video diffusion transformer model with FP8 support for T4 GPUs. |
+| **Wan 2.1 1.3B** (`Wan-AI/Wan2.1-T2V-1.3B`) | Wan-AI | Apache 2.0 | **YES** | Open-weights 1.3B text-to-video model with 480p generation, efficient for low-VRAM GPUs. |
 
 ---
 
@@ -73,3 +75,9 @@ AvatarStudio integrates `piper-tts`, which is licensed under the **GNU General P
 * If you distribute binary packages, container images, or derived products that bundle `piper-tts`, you may be obligated by the GPLv3 to provide the complete corresponding source code under GPLv3.
 * If you wish to deploy AvatarStudio in a proprietary or commercial product without GPLv3 obligations, you must decouple `piper-tts` (e.g. invoke it solely over an isolated network protocol boundary) or substitute it with a permissively licensed TTS engine (such as an Apache 2.0 or MIT TTS library).
 * Furthermore, commercial deployment requires replacing `wav2lip.pth` and `insightface` model checkpoints with commercially permissible neural weights.
+
+---
+
+## 5. Companion Colab Tooling & Notebooks
+
+The companion Google Colab notebook (`notebooks/ai_clips_colab.ipynb`), helper scripts (`notebooks/clip_helpers.py`), and documentation are licensed under the MIT License.

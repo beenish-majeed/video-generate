@@ -106,9 +106,14 @@ Generation times depend on your local hardware (CPU vs. NVIDIA CUDA GPU). The fo
    * Single-face detection automatically unlocks optional Wav2Lip lip-sync mode.
 3. **Talking Face (Wav2Lip):**
    * High-accuracy neural lip synchronization using local Piper TTS and Wav2Lip checkpoint.
-4. **Offline Subtitle Engine:**
+4. **AI Scene Clips (visual_mode: "ai_clips"):**
+   * Generate timed scene plans with visual prompts from any narrative or script.
+   * Render cinematic clips using our free companion Google Colab notebook (`notebooks/ai_clips_colab.ipynb`) powered by open-weights models (LTX-Video default on free T4 GPU, or Wan 2.1 1.3B).
+   * Drag-and-drop import into Memory Studio: automatic validation (H.264/HEVC/VP9/AV1, max 30s, up to 1920x1080), audio stripping, and sanitization.
+   * Seamless assembly: 0.5s crossfade transitions, synchronized narration voiceover, optional background music with real-time speech ducking, burned-in subtitles, and burned AI transparency watermark.
+5. **Offline Subtitle Engine:**
    * Procedural aligner and faster-whisper support with burned-in styled captions.
-5. **Background Music Engine:**
+6. **Background Music Engine:**
    * Offline mixed and ducked background audio with sidechain compression, loudness normalization, and peak limiting.
 
 ---
@@ -210,6 +215,60 @@ curl -X POST http://localhost:8000/v1/jobs \
     }
   }'
 ```
+
+---
+
+## AI Scene Clips & Free Google Colab Workflow (visual_mode: "ai_clips")
+
+AvatarStudio provides a hybrid workflow for cinematic multi-scene AI video generation: planning and final film assembly run 100% locally on your machine, while GPU-heavy video diffusion runs for free on Google Colab or your own local GPU.
+
+### Architecture Overview
+
+```
+[ Your Idea / Script ]
+         │
+         ▼
+[ Scene Plan Generator ] ──> Structured Timed JSON & Visual Prompts
+         │
+         ▼
+[ Companion Colab Notebook ] ──> T4 GPU (Free) / LTX-Video FP8 (or Wan 2.1 1.3B)
+         │
+         ▼ (Download MP4 clips)
+[ Memory Studio Clip Import ] ──> FFprobe validation (H.264/HEVC/VP9/AV1), audio stripping
+         │
+         ▼
+[ Film Compositor ] ──> 0.5s crossfade, audio sync, speech-ducked music, subtitles, AI label
+```
+
+### Step-by-Step Workflow Guide
+
+1. **Plan Timed Scenes:**
+   In Memory Studio, choose **"AI scene clips"** from the creative path selector. Enter your story or idea, select length and visual style, and generate your script.
+2. **Review & Export Prompts:**
+   Memory Studio automatically splits the narrative into timed scenes and generates visual prompts (subject, setting, camera cue, lighting, mood, motion bucket) with negative prompts. Click **"Download Scene Plan"** to save `scene_plan.json` (or copy prompts).
+3. **Run Free Google Colab Notebook:**
+   Open [`notebooks/ai_clips_colab.ipynb`](notebooks/ai_clips_colab.ipynb) in Google Colab:
+   * Select a free **T4 GPU** runtime (`Runtime -> Change runtime type -> T4 GPU`).
+   * Upload `scene_plan.json` and run the cells.
+   * The notebook loads **LTX-Video** (FP8 precision, ~12 GB VRAM) or **Wan 2.1 1.3B** and generates one video clip per scene with resume support.
+   * Download the rendered clips.
+4. **Import & Sequence Clips:**
+   Return to Memory Studio and drag-and-drop your clips into the **Upload & Sequence** step. The UI matches each clip to its corresponding planned scene with badges (e.g. *"Matches Scene 1"*). You can reorder, replace, or preview clips.
+5. **Add Narration & Music:**
+   Use the built-in studio voice preset (e.g. Lessac) or upload/record custom voice narration. Optionally choose an ambient soundtrack preset (`calm`, `warm`, `bright`) with real-time speech ducking.
+6. **Confirm Rights & Render:**
+   Confirm clip ownership rights and accept AI transparency labeling. Memory Studio assembles your final film with smooth crossfades, subtitles, and watermarking.
+
+### Hardware Comparison & Benchmarks
+
+| Environment | GPU / Hardware | VRAM | Generation Speed | Cost |
+| :--- | :--- | :---: | :---: | :---: |
+| **Local Studio (Memory Studio)** | Any Modern CPU | N/A | Sub-second planning & ~5-15s assembly | **$0 (100% Free)** |
+| **Google Colab (Recommended)** | NVIDIA T4 | ~15 GB | ~2 – 4 min per 5s clip (LTX-Video FP8) | **$0 (Free Tier)** |
+| **Local NVIDIA GPU** | RTX 3060 / 4070+ | >= 12 GB | ~1.5 – 3 min per 5s clip (LTX-Video FP8) | Local hardware |
+| **Local NVIDIA GPU (Wan 2.1)** | RTX 4080 / 3090+ | >= 16 GB | ~2 – 5 min per 5s clip (Wan 2.1 1.3B) | Local hardware |
+
+> **Note on Verification:** You do not need a GPU to run Memory Studio or the backend. Local tests verify clip validation, crossfade compositing, audio ducking, subtitle burn-in, and HTTP APIs with synthetic FFmpeg clips. Generative neural video diffusion on GPU is marked *not verified locally*.
 
 ---
 
