@@ -4,9 +4,13 @@ from typing import Any, Dict, Optional
 import urllib.request
 
 from src.config import settings
-from src.services.speech_to_text import is_whisper_available
 
 logger = logging.getLogger(__name__)
+
+
+def is_whisper_available() -> bool:
+    """Whisper is replaced by cloud API STT/TTS; local model disabled."""
+    return False
 
 
 def is_gpu_available() -> tuple[bool, Optional[str]]:
@@ -21,11 +25,12 @@ def is_gpu_available() -> tuple[bool, Optional[str]]:
     return False, None
 
 
-def is_ollama_available(url: str = settings.ollama_url) -> bool:
+def is_ollama_available(url: Optional[str] = None) -> bool:
     """Check if local Ollama server is reachable."""
+    target_url = url or getattr(settings, "ollama_url", "http://127.0.0.1:11434")
     try:
         req = urllib.request.Request(
-            f"{url.rstrip('/')}/api/tags",
+            f"{target_url.rstrip('/')}/api/tags",
             headers={"User-Agent": "AvatarStudio/1.0"},
         )
         with urllib.request.urlopen(req, timeout=1.0) as resp:
@@ -45,7 +50,8 @@ def is_diffusers_model_available() -> bool:
 
 def is_piper_available() -> bool:
     """Check if Piper model or voice preset is available."""
-    return Path(settings.piper_model_path).exists() or Path("assets/voices/default_voice.wav").exists()
+    piper_path = getattr(settings, "piper_model_path", "models/piper")
+    return Path(piper_path).exists() or Path("assets/voices/default_voice.wav").exists()
 
 
 def compute_honest_time_estimate(

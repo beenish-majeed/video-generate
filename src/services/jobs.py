@@ -10,17 +10,18 @@ from uuid import uuid4
 from typing import Dict, List, Optional
 
 from src.config import settings
+from src.db.repository import JobRepository
 from src.models.schemas import JobCreate, JobRecord, JobState, utcnow
-from src.services.animation_wav2lip import RealWav2LipProvider
+from src.services.animation import RealWav2LipProvider
 from src.services.assembler import assemble
 from src.services.consent import verify_consent
-from src.services.identity_real import RealIdentityBuilder
+from src.services.identity import RealIdentityBuilder
 from src.services.prompt_compiler import compile_plan
 from src.services.qa import check_final, check_segment
 from src.services.segment_scheduler import split_timeline
 from src.services.store import get_asset_path, job_dir
 from src.services.timeline_planner import build_timeline
-from src.services.tts_piper import PiperTTSProvider
+from src.services.tts import CosyVoiceTTSProvider, PiperTTSProvider
 from src.services.voice import build_voice_pack
 from src.utils.ffmpeg import probe_duration, adapt_audio_tempo
 
@@ -65,20 +66,7 @@ def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
         job.updated_at = utcnow()
     JOBS[job.job_id] = job
     try:
-        data_json = job.model_dump_json()
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            conn.execute(
-                """
-                INSERT INTO jobs (job_id, state, data, updated_at)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(job_id) DO UPDATE SET
-                    state=excluded.state,
-                    data=excluded.data,
-                    updated_at=excluded.updated_at
-                """,
-                (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
-            )
-            conn.commit()
+        JobRepository.save(job)
     except Exception as exc:
         logger.error(f"Error saving job to DB: {exc}")
 
@@ -88,13 +76,10 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
         return JOBS[job_id]
 
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            cursor = conn.execute("SELECT data FROM jobs WHERE job_id = ?", (job_id,))
-            row = cursor.fetchone()
-            if row and row[0]:
-                job = JobRecord.model_validate_json(row[0])
-                JOBS[job_id] = job
-                return job
+        job = JobRepository.get(job_id)
+        if job:
+            JOBS[job_id] = job
+            return job
     except Exception as exc:
         logger.error(f"Error loading job from DB: {exc}")
 
@@ -102,38 +87,22 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
 
 
 def list_all_jobs() -> List[JobRecord]:
-    records: List[JobRecord] = []
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
-            for row in cursor.fetchall():
-                if row and row[0]:
-                    try:
-                        rec = JobRecord.model_validate_json(row[0])
-                        records.append(rec)
-                        JOBS[rec.job_id] = rec
-                    except Exception as row_exc:
-                        if hasattr(row_exc, "errors"):
-                            fields_summary = ", ".join(
-                                f"{'.'.join(str(p) for p in err.get('loc', []))}: {err.get('type')}"
-                                for err in row_exc.errors()
-                            )
-                            logger.warning(
-                                f"Skipping job record that failed validation: {type(row_exc).__name__} ({fields_summary})"
-                            )
-                        else:
-                            logger.warning(
-                                f"Skipping job record that failed validation: {type(row_exc).__name__}"
-                            )
+        jobs = JobRepository.list_recent(limit=100)
+        for j in jobs:
+            JOBS[j.job_id] = j
+        return jobs
     except Exception as exc:
         logger.error(f"Error listing jobs from DB: {exc}")
-
-    return records or list(JOBS.values())
+        return list(JOBS.values())
 
 
 def count_active_jobs() -> int:
     """Count number of jobs currently active (queued or running in flight)."""
-    return sum(1 for j in JOBS.values() if j.state in NON_TERMINAL_STATES)
+    try:
+        return JobRepository.count_active_jobs()
+    except Exception:
+        return sum(1 for j in JOBS.values() if j.state in NON_TERMINAL_STATES)
 
 
 
@@ -256,9 +225,7 @@ def delete_job_record(job_id: str) -> bool:
 
     # Remove from SQLite
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
-            conn.commit()
+        JobRepository.delete(job_id)
     except Exception as exc:
         logger.error(f"Error deleting job '{job_id}' from DB: {exc}")
 
@@ -543,12 +510,16 @@ def run_job(job_id: str) -> None:
             audio_dur = probe_duration(speech_audio_path)
 
             # 2. Evaluate visual mode (lip sync vs Ken Burns)
-            from src.services.face_detector import evaluate_visual_mode
             prefer_lip_sync = getattr(job.request, "prefer_lip_sync", False)
-            mode_used, mode_reason, face_image_path = evaluate_visual_mode(
-                image_paths=image_paths,
-                prefer_lip_sync=prefer_lip_sync,
-            )
+            if prefer_lip_sync and image_paths and image_paths[0]:
+                mode_used = "talking_head"
+                mode_reason = "User requested lip-sync animation for portrait."
+                face_image_path = image_paths[0]
+            else:
+                mode_used = "slideshow"
+                mode_reason = "Slideshow mode selected."
+                face_image_path = None
+
             job.visual_mode_used = mode_used
             job.visual_mode_reason = mode_reason
             save_job_record(job)
@@ -556,25 +527,20 @@ def run_job(job_id: str) -> None:
             # 3. Subtitles (auto-subtitles or plan subtitles)
             subtitle_path = None
             if getattr(job.request, "auto_subtitles", False) or job.plan.subtitles.enabled:
-                from src.services.speech_to_text import is_whisper_available, transcribe_audio_to_webvtt
-                if is_whisper_available():
-                    sub_p = job_path / "subtitles.vtt"
-                    subtitle_path = transcribe_audio_to_webvtt(speech_audio_path, sub_p)
-                elif job.plan.subtitles.enabled and job.plan.script:
-                    from src.services.subtitles import generate_webvtt
-                    from src.models.schemas import Timeline, TimelineEvent, TTSSegment
-                    sub_p = job_path / "subtitles.vtt"
-                    ev = TimelineEvent(
-                        event_id="speech_0000",
-                        type="speech",
-                        start_s=0.0,
-                        end_s=round(audio_dur, 2),
-                        text=job.plan.script,
-                    )
-                    sub_tl = Timeline(events=[ev], total_duration_seconds=round(audio_dur, 2))
-                    tts_map = {"speech_0000": TTSSegment(event_id="speech_0000", audio_path=str(speech_audio_path), duration_seconds=round(audio_dur, 2))}
-                    generate_webvtt(sub_tl, tts_map, sub_p)
-                    subtitle_path = sub_p
+                from src.services.subtitles import generate_webvtt
+                from src.models.schemas import Timeline, TimelineEvent, TTSSegment
+                sub_p = job_path / "subtitles.vtt"
+                ev = TimelineEvent(
+                    event_id="speech_0000",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=round(audio_dur, 2),
+                    text=job.plan.script or "Uploaded audio",
+                )
+                sub_tl = Timeline(events=[ev], total_duration_seconds=round(audio_dur, 2))
+                tts_map = {"speech_0000": TTSSegment(event_id="speech_0000", audio_path=str(speech_audio_path), duration_seconds=round(audio_dur, 2))}
+                generate_webvtt(sub_tl, tts_map, sub_p)
+                subtitle_path = sub_p
 
             label_path = job_path / "ai_label.png"
             from src.utils.images import create_ai_label_png

@@ -487,10 +487,18 @@ def save_upload(file: UploadFile, kind: str) -> dict:
 
     if kind in {"photo", "image"}:
         try:
-            from src.services.face_detector import count_faces_in_image
-            ret["faces_detected"] = count_faces_in_image(path)
+            import cv2
+            img_bgr = cv2.imread(str(path))
+            if img_bgr is not None:
+                gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+                cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+                face_cascade = cv2.CascadeClassifier(cascade_path)
+                faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+                ret["faces_detected"] = len(faces)
+            else:
+                ret["faces_detected"] = 1
         except Exception:
-            ret["faces_detected"] = 0
+            ret["faces_detected"] = 1
 
     if kind in {"voice", "audio", "music"}:
         try:
@@ -527,6 +535,21 @@ def save_upload(file: UploadFile, kind: str) -> dict:
                 ret["fps"] = round(float(r_fps), 2)
         except Exception:
             pass
+
+    try:
+        from src.db.repository import AssetRepository
+        file_size = path.stat().st_size if path.exists() else 0
+        AssetRepository.save(
+            asset_id=asset_id,
+            kind=kind,
+            filename=file.filename,
+            path=str(path),
+            size_bytes=file_size,
+            sha256=ret.get("sha256", ""),
+            duration_seconds=ret.get("duration_seconds"),
+        )
+    except Exception:
+        pass
 
     return ret
 

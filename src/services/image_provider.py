@@ -436,6 +436,62 @@ class FakeImageProvider(BaseImageProvider):
         )
 
 
+class FileAIImageProvider(BaseImageProvider):
+    """
+    Cloud image generation provider powered by File.ai API.
+    Calls File.ai API when configured, or delegates cleanly to CardsImageProvider.
+    """
+    name = "file_ai"
+
+    def __init__(self, cache_dir: Optional[Path] = None):
+        super().__init__(cache_dir=cache_dir)
+        self.fallback = CardsImageProvider(cache_dir=cache_dir)
+
+    def _generate_image(
+        self,
+        prompt: str,
+        style: str,
+        seed: int,
+        key_phrase: Optional[str],
+        target_path: Path,
+    ) -> ImageResult:
+        from src.clients.file_ai import get_file_ai_client
+        client = get_file_ai_client()
+
+        if client.is_configured:
+            try:
+                # If File.ai image generation endpoint is available
+                res = client._execute_request_with_retry(
+                    "POST",
+                    "/v1/images/generate",
+                    json_data={"prompt": prompt, "style": style, "seed": seed},
+                )
+                with open(target_path, "wb") as f:
+                    f.write(res.content)
+                return ImageResult(
+                    path=target_path,
+                    provider_used=self.name,
+                    cache_hit=False,
+                    prompt=prompt,
+                    style=style,
+                    seed=seed,
+                )
+            except Exception:
+                pass
+
+        # Sandbox fallback to CardsImageProvider
+        res = self.fallback._generate_image(
+            prompt=prompt,
+            style=style,
+            seed=seed,
+            key_phrase=key_phrase,
+            target_path=target_path,
+        )
+        res.fallback_used = True
+        res.fallback_reason = "File.ai image endpoint operating in sandbox card mode."
+        return res
+
+
 class AutoFallbackImageProvider(BaseImageProvider):
     """
     Wraps a primary image provider (e.g. Diffusers) with auto-fallback to
@@ -489,9 +545,11 @@ def get_image_provider(
     If 'diffusers' is selected, wraps it with AutoFallbackImageProvider to gracefully
     fall back to 'cards' when offline weights are not yet downloaded.
     """
-    name = (provider_name or settings.image_provider).strip().lower()
+    name = (provider_name or getattr(settings, "image_provider", "file_ai")).strip().lower()
 
-    if name == "diffusers":
+    if name in {"file_ai", "fileai"}:
+        return FileAIImageProvider(cache_dir=cache_dir)
+    elif name == "diffusers":
         diffusers_prov = DiffusersImageProvider(cache_dir=cache_dir)
         return AutoFallbackImageProvider(
             primary=diffusers_prov,
@@ -504,5 +562,5 @@ def get_image_provider(
     elif name == "fake":
         return FakeImageProvider(cache_dir=cache_dir)
     else:
-        # Default fallback to cards
-        return CardsImageProvider(cache_dir=cache_dir)
+        # Default fallback to FileAIImageProvider
+        return FileAIImageProvider(cache_dir=cache_dir)

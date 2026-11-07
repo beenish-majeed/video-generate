@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     min_duration_seconds: float = 1.0
     max_duration_policy_seconds: float = 900.0
     words_per_minute: float = 148.0
+    sample_rate: int = 16000
     default_fps: int = 30
     default_resolution: str = "1280x720"
     allow_burn_subtitles: bool = True

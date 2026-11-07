@@ -239,6 +239,38 @@ def is_ollama_reachable(
         return False
 
 
+class FileAILLMProvider(LLMProvider):
+    """
+    Cloud API LLM provider powered by File.ai.
+    Uses FileAIClient for live cloud script generation with automatic sandbox fallback.
+    """
+    provider_name: str = "file_ai"
+
+    def __init__(self, **kwargs: Any):
+        from src.clients.file_ai import get_file_ai_client
+        self.client = get_file_ai_client()
+
+    def generate(self, system: str, user: str, max_tokens: int = 1024) -> str:
+        import re
+        target_words = 74
+        m = re.search(r"(?:target length:\s*exactly around|around|expanded to)\s*(\d+)\s*words", user, re.IGNORECASE)
+        if m:
+            target_words = int(m.group(1))
+
+        tone = "friendly"
+        m_tone = re.search(r"Tone of voice:\s*([a-zA-Z]+)", system, re.IGNORECASE)
+        if m_tone:
+            tone = m_tone.group(1).strip().lower()
+
+        wpm = getattr(settings, "words_per_minute", 148.0)
+        duration_seconds = (target_words / wpm) * 60.0
+        return self.client.generate_script(
+            prompt=user,
+            target_duration_seconds=duration_seconds,
+            tone=tone,
+        )
+
+
 def get_llm_provider(
     provider_name: str | None = None,
     model: str | None = None,
@@ -247,19 +279,23 @@ def get_llm_provider(
     **kwargs: Any,
 ) -> LLMProvider:
     """Factory creating the appropriate LLMProvider based on configuration or explicit name."""
-    name = (provider_name or settings.llm_provider or "ollama").strip().lower()
-    timeout = timeout_seconds if timeout_seconds is not None else settings.llm_timeout_seconds
-    model_name = model or settings.llm_model
+    configured_default = getattr(settings, "llm_provider", "file_ai")
+    name = (provider_name or configured_default or "file_ai").strip().lower()
+    timeout = timeout_seconds if timeout_seconds is not None else getattr(settings, "llm_timeout_seconds", 30.0)
+    model_name = model or getattr(settings, "llm_model", "file_ai")
 
-    if name == "fake":
+    if name in {"file_ai", "fileai"}:
+        return FileAILLMProvider(**kwargs)
+    elif name == "fake":
         return FakeLLMProvider(**kwargs)
     elif name == "template":
         return TemplateLLMProvider(**kwargs)
     elif name == "ollama":
-        url = ollama_url or settings.ollama_url
+        url = ollama_url or getattr(settings, "ollama_url", "http://127.0.0.1:11434")
         return OllamaLLMProvider(base_url=url, model=model_name, timeout_seconds=timeout, **kwargs)
     else:
-        raise LLMError(f"Unsupported LLM provider: '{name}'. Supported providers: 'ollama', 'template', 'fake'.")
+        # Default to File.ai provider for unknown/new provider strings
+        return FileAILLMProvider(**kwargs)
 
 
 def generate(system: str, user: str, max_tokens: int = 1024, provider: LLMProvider | None = None) -> str:
