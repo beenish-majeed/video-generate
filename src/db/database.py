@@ -79,6 +79,15 @@ def _execute_schema_ddl(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_state ON jobs(state);")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_updated ON jobs(updated_at DESC);")
 
+    # Column migrations if table pre-existed with older schema
+    job_cols = {row[1] for row in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+    if "data_json" not in job_cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN data_json TEXT;")
+    if "data" not in job_cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN data TEXT;")
+    if "visual_mode" not in job_cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN visual_mode TEXT;")
+
     # 2. Assets Table
     conn.execute("""
         CREATE TABLE IF NOT EXISTS assets (

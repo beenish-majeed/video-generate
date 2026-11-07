@@ -32,8 +32,10 @@ def recover_interrupted_jobs(
     try:
         now_iso = utcnow().isoformat()
         with sqlite3.connect(db_path, timeout=30.0) as conn:
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+            col_expr = "coalesce(data_json, data)" if ("data_json" in cols and "data" in cols) else ("data_json" if "data_json" in cols else "data")
             cursor = conn.execute(
-                "SELECT job_id, data FROM jobs WHERE state NOT IN (?, ?, ?)",
+                f"SELECT job_id, {col_expr} FROM jobs WHERE state NOT IN (?, ?, ?)",
                 (JobState.COMPLETED.value, JobState.FAILED.value, JobState.CANCELLED.value),
             )
             rows = cursor.fetchall()
@@ -49,10 +51,22 @@ def recover_interrupted_jobs(
                         job.updated_at = utcnow()
                         if cache is not None:
                             cache[job.job_id] = job
-                        conn.execute(
-                            "UPDATE jobs SET state = ?, data = ?, updated_at = ? WHERE job_id = ?",
-                            (job.state.value, job.model_dump_json(), job.updated_at.isoformat(), job.job_id),
-                        )
+                        dump_str = job.model_dump_json()
+                        if "data_json" in cols and "data" in cols:
+                            conn.execute(
+                                "UPDATE jobs SET state = ?, data = ?, data_json = ?, updated_at = ? WHERE job_id = ?",
+                                (job.state.value, dump_str, dump_str, job.updated_at.isoformat(), job.job_id),
+                            )
+                        elif "data_json" in cols:
+                            conn.execute(
+                                "UPDATE jobs SET state = ?, data_json = ?, updated_at = ? WHERE job_id = ?",
+                                (job.state.value, dump_str, job.updated_at.isoformat(), job.job_id),
+                            )
+                        else:
+                            conn.execute(
+                                "UPDATE jobs SET state = ?, data = ?, updated_at = ? WHERE job_id = ?",
+                                (job.state.value, dump_str, job.updated_at.isoformat(), job.job_id),
+                            )
                         interrupted_count += 1
                 except Exception:
                     conn.execute(

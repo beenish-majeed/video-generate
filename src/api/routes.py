@@ -59,6 +59,13 @@ JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
 JOB_CREATION_LOCK = threading.Lock()
 
 
+def get_job_executor() -> ThreadPoolExecutor:
+    global JOB_EXECUTOR
+    if getattr(JOB_EXECUTOR, "_shutdown", False):
+        JOB_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="JobWorker")
+    return JOB_EXECUTOR
+
+
 # =============================================================================
 # Health & Capabilities
 # =============================================================================
@@ -300,7 +307,10 @@ def create_video_job(payload: JobCreate):
     lock = getattr(main_mod, "JOB_CREATION_LOCK", JOB_CREATION_LOCK)
     active_fn = getattr(main_mod, "count_active_jobs", count_active_jobs)
     create_fn = getattr(main_mod, "create_job", create_job)
-    executor = getattr(main_mod, "JOB_EXECUTOR", JOB_EXECUTOR)
+    executor = getattr(main_mod, "JOB_EXECUTOR", None)
+    if executor is None or getattr(executor, "_shutdown", False):
+        executor = get_job_executor()
+        main_mod.JOB_EXECUTOR = executor
     run_fn = getattr(main_mod, "run_job", run_job)
 
     with lock:

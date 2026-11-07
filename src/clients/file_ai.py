@@ -236,7 +236,24 @@ class FileAIClient:
                     if json_match:
                         parsed = json.loads(json_match.group(0))
                         if isinstance(parsed, list) and len(parsed) > 0:
-                            return parsed
+                            validated_scenes = []
+                            for i, sc in enumerate(parsed):
+                                if isinstance(sc, dict):
+                                    dur = float(sc.get("duration_seconds") or 3.0)
+                                    start = float(sc.get("start_time") or (i * 3.0))
+                                    end = float(sc.get("end_time") or (start + dur))
+                                    validated_scenes.append({
+                                        "scene_index": int(sc.get("scene_index", i)),
+                                        "text": str(sc.get("text", "")),
+                                        "start_time": round(start, 2),
+                                        "end_time": round(end, 2),
+                                        "duration_seconds": round(dur, 2),
+                                        "image_prompt": str(sc.get("image_prompt", "")),
+                                        "style": str(sc.get("style", style)),
+                                        "key_phrase": str(sc.get("key_phrase", "")),
+                                    })
+                            if validated_scenes:
+                                return validated_scenes
                 except Exception as exc:
                     logger.warning(
                         f"Live fal.ai scene planning encountered notice ({_sanitize_error_message(str(exc))}); "
@@ -374,6 +391,16 @@ class FileAIClient:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        if not text.strip():
+            est_duration = max(0.5, float(duration_seconds or 1.0))
+            from src.utils.ffmpeg import make_silence_wav
+            make_silence_wav(output_path, seconds=est_duration, sample_rate=settings.sample_rate)
+            return {
+                "audio_path": str(output_path),
+                "duration_seconds": est_duration,
+                "word_timestamps": [],
+            }
+
         if self.is_configured:
             # A. fal.ai Kokoro / Expressive TTS Integration
             if self.config.is_fal:
@@ -508,6 +535,15 @@ class FileAIClient:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        img_p = Path(image_path)
+        aud_p = Path(audio_path)
+        if not img_p.exists():
+            raise FileNotFoundError(f"Avatar image not found at '{image_path}'")
+        if not aud_p.exists():
+            raise FileNotFoundError(f"Avatar audio not found at '{audio_path}'")
+
+        dur = max(0.2, float(duration_seconds or 1.0))
+
         if self.is_configured:
             # Generic File.ai REST avatar endpoint
             if not self.config.is_fal:
@@ -533,7 +569,7 @@ class FileAIClient:
             "-y",
             "-loop", "1",
             "-framerate", "30",
-            "-t", f"{duration_seconds:.3f}",
+            "-t", f"{dur:.3f}",
             "-i", str(image_path),
             "-i", str(audio_path),
             "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p",

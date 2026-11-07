@@ -101,13 +101,14 @@ class JobRepository:
         placeholders = ",".join("?" for _ in NON_TERMINAL_STATES)
         with get_db_connection() as conn:
             rows = conn.execute(
-                f"SELECT data_json FROM jobs WHERE state IN ({placeholders}) ORDER BY created_at ASC",
+                f"SELECT coalesce(data_json, data) AS data_str FROM jobs WHERE state IN ({placeholders}) ORDER BY created_at ASC",
                 list(NON_TERMINAL_STATES),
             ).fetchall()
             jobs = []
             for row in rows:
                 try:
-                    jobs.append(JobRecord.model_validate_json(row["data_json"]))
+                    if row["data_str"]:
+                        jobs.append(JobRecord.model_validate_json(row["data_str"]))
                 except Exception as exc:
                     logger.error(f"Failed to deserialize interrupted job: {exc}")
             return jobs
@@ -116,13 +117,14 @@ class JobRepository:
     def list_recent(limit: int = 50, offset: int = 0) -> List[JobRecord]:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT data_json FROM jobs ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+                "SELECT coalesce(data_json, data) AS data_str FROM jobs ORDER BY updated_at DESC LIMIT ? OFFSET ?",
                 (limit, offset),
             ).fetchall()
             jobs = []
             for row in rows:
                 try:
-                    jobs.append(JobRecord.model_validate_json(row["data_json"]))
+                    if row["data_str"]:
+                        jobs.append(JobRecord.model_validate_json(row["data_str"]))
                 except Exception as exc:
                     logger.error(f"Failed to deserialize job: {exc}")
             return jobs

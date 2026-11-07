@@ -44,6 +44,8 @@ def get_active_assets_and_jobs() -> tuple[Set[str], Set[str]]:
                     active_asset_ids.add(req.uploaded_audio_asset_id)
                 if req.uploaded_image_asset_ids:
                     active_asset_ids.update(req.uploaded_image_asset_ids)
+                if getattr(req, "clip_asset_ids", None):
+                    active_asset_ids.update(req.clip_asset_ids)
 
     return active_job_ids, active_asset_ids
 

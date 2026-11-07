@@ -96,6 +96,18 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # 5. Graceful Shutdown & Resource Cleanup
+    try:
+        JOB_EXECUTOR.shutdown(wait=False, cancel_futures=True)
+    except Exception:
+        pass
+
+    try:
+        from src.clients.file_ai import get_file_ai_client
+        get_file_ai_client().close()
+    except Exception:
+        pass
+
 
 docs_url = "/docs" if settings.allow_insecure_dev else None
 redoc_url = "/redoc" if settings.allow_insecure_dev else None

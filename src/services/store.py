@@ -563,10 +563,22 @@ def get_asset_path(asset_id: str) -> Path | None:
     if not clean_id:
         return None
 
-    # Strict exact stem match (p.stem == clean_id)
-    for p in ASSETS_DIR.iterdir():
-        if p.is_file() and p.stem == clean_id:
-            return p
+    # 1. Fast indexed lookup via AssetRepository
+    try:
+        from src.db.repository import AssetRepository
+        asset_record = AssetRepository.get(clean_id)
+        if asset_record and asset_record.path:
+            p = Path(asset_record.path).resolve()
+            if p.exists() and p.is_relative_to(ASSETS_DIR.resolve()):
+                return p
+    except Exception:
+        pass
+
+    # 2. Strict exact stem match fallback
+    if ASSETS_DIR.exists():
+        for p in ASSETS_DIR.iterdir():
+            if p.is_file() and p.stem == clean_id:
+                return p
     return None
 
 

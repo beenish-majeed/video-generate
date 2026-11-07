@@ -40,11 +40,18 @@ def _init_db() -> None:
             CREATE TABLE IF NOT EXISTS jobs (
                 job_id TEXT PRIMARY KEY,
                 state TEXT NOT NULL,
-                data TEXT NOT NULL,
+                data TEXT,
+                data_json TEXT,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        # Migrate existing table if columns are missing
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+        if "data_json" not in columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN data_json TEXT")
+        if "data" not in columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN data TEXT")
         conn.commit()
 
 
@@ -58,7 +65,18 @@ from src.services.job_recovery import recover_interrupted_jobs
 
 
 _init_db()
+try:
+    recover_interrupted_jobs()
+except Exception:
+    pass
 JOBS: BoundedJobCache = BoundedJobCache(maxsize=100)
+
+
+def _get_job_table_columns(conn: sqlite3.Connection) -> set[str]:
+    try:
+        return {row[1] for row in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+    except Exception:
+        return {"data"}
 
 
 def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
@@ -68,17 +86,44 @@ def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
     try:
         data_json = job.model_dump_json()
         with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            conn.execute(
-                """
-                INSERT INTO jobs (job_id, state, data, updated_at)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(job_id) DO UPDATE SET
-                    state=excluded.state,
-                    data=excluded.data,
-                    updated_at=excluded.updated_at
-                """,
-                (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
-            )
+            cols = _get_job_table_columns(conn)
+            if "data_json" in cols and "data" in cols:
+                conn.execute(
+                    """
+                    INSERT INTO jobs (job_id, state, data, data_json, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(job_id) DO UPDATE SET
+                        state=excluded.state,
+                        data=excluded.data,
+                        data_json=excluded.data_json,
+                        updated_at=excluded.updated_at
+                    """,
+                    (job.job_id, job.state.value, data_json, data_json, job.updated_at.isoformat()),
+                )
+            elif "data_json" in cols:
+                conn.execute(
+                    """
+                    INSERT INTO jobs (job_id, state, data_json, updated_at)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(job_id) DO UPDATE SET
+                        state=excluded.state,
+                        data_json=excluded.data_json,
+                        updated_at=excluded.updated_at
+                    """,
+                    (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO jobs (job_id, state, data, updated_at)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(job_id) DO UPDATE SET
+                        state=excluded.state,
+                        data=excluded.data,
+                        updated_at=excluded.updated_at
+                    """,
+                    (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
+                )
             conn.commit()
     except Exception as exc:
         logger.error(f"Error saving job to DB: {exc}")
@@ -90,7 +135,9 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
 
     try:
         with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            cursor = conn.execute("SELECT data FROM jobs WHERE job_id = ?", (job_id,))
+            cols = _get_job_table_columns(conn)
+            col_expr = "coalesce(data_json, data)" if ("data_json" in cols and "data" in cols) else ("data_json" if "data_json" in cols else "data")
+            cursor = conn.execute(f"SELECT {col_expr} FROM jobs WHERE job_id = ?", (job_id,))
             row = cursor.fetchone()
             if row and row[0]:
                 job = JobRecord.model_validate_json(row[0])
@@ -106,7 +153,9 @@ def list_all_jobs() -> List[JobRecord]:
     records: List[JobRecord] = []
     try:
         with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
-            cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
+            cols = _get_job_table_columns(conn)
+            col_expr = "coalesce(data_json, data)" if ("data_json" in cols and "data" in cols) else ("data_json" if "data_json" in cols else "data")
+            cursor = conn.execute(f"SELECT {col_expr} FROM jobs ORDER BY updated_at DESC")
             for row in cursor.fetchall():
                 if row and row[0]:
                     try:
@@ -163,19 +212,8 @@ def _cleanup_intermediate_job_files(
                 elif item.is_file() and item.name not in keep_files:
                     try:
                         item.unlink()
-                    except Exception as row_exc:
-                        if hasattr(row_exc, "errors"):
-                            fields_summary = ", ".join(
-                                f"{'.'.join(str(p) for p in err.get('loc', []))}: {err.get('type')}"
-                                for err in row_exc.errors()
-                            )
-                            logger.warning(
-                                f"Skipping job record that failed validation: {type(row_exc).__name__} ({fields_summary})"
-                            )
-                        else:
-                            logger.warning(
-                                f"Skipping job record that failed validation: {type(row_exc).__name__}"
-                            )
+                    except Exception as unlink_exc:
+                        logger.debug(f"Could not unlink intermediate file {item}: {unlink_exc}")
         except Exception as exc:
             logger.warning(f"Error during cancelled job cleanup for {job_path}: {exc}")
         return
