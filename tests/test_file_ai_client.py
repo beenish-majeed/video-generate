@@ -69,3 +69,63 @@ def test_file_ai_client_live_mock():
     res = client.generate_script(prompt="Live API prompt", target_duration_seconds=5.0)
     assert res == "This is generated directly from the live API."
     client._execute_request_with_retry.assert_called_once()
+
+
+def test_fal_api_key_detection_and_headers():
+    fake_fal_key = "fal_sk_1234567890abcdef1234567890abcdef:secret123456"
+    config = FileAIConfig(api_key=fake_fal_key)
+    assert config.is_configured is True
+    assert config.is_fal is True
+    assert config.provider_name == "fal.ai"
+    headers = config.get_headers()
+    assert headers["Authorization"] == f"Key {fake_fal_key}"
+    # Verify key masking
+    masked = config.masked_api_key
+    assert fake_fal_key not in masked
+    assert masked.startswith("fal_sk_1")
+
+
+def test_file_ai_generate_image_procedural(tmp_path):
+    config = FileAIConfig(api_key="")
+    client = FileAIClient(config=config)
+    img_out = tmp_path / "gen_image.png"
+    result_path = client.generate_image(
+        prompt="A serene sunset over rolling mountain peaks",
+        target_path=img_out,
+        style="cinematic",
+    )
+    assert result_path.exists()
+    assert result_path.stat().st_size > 500
+
+
+def test_fal_client_subscribe_mock(monkeypatch, tmp_path):
+    fake_fal_key = "fal_sk_test_key_abc:secret_key_123"
+    config = FileAIConfig(api_key=fake_fal_key)
+    client = FileAIClient(config=config)
+
+    # Mock fal_client.subscribe
+    import fal_client
+    mock_subscribe = MagicMock(return_value={"output": "In the quiet stillness of dawn, the mountains awaken with golden light."})
+    monkeypatch.setattr(fal_client, "subscribe", mock_subscribe)
+
+    script = client.generate_script("Morning sunrise", target_duration_seconds=5.0)
+    assert "mountains awaken" in script
+    mock_subscribe.assert_called_once()
+
+
+def test_fal_client_exhausted_balance_fallback(monkeypatch, tmp_path):
+    fake_fal_key = "fal_sk_test_key_exhausted:secret_xyz"
+    config = FileAIConfig(api_key=fake_fal_key)
+    client = FileAIClient(config=config)
+
+    # Simulate fal_client raising balance exhausted error
+    import fal_client
+    def mock_exhausted(*args, **kwargs):
+        raise RuntimeError("User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing.")
+    monkeypatch.setattr(fal_client, "subscribe", mock_exhausted)
+
+    # Should not crash; gracefully returns high-fidelity fallback
+    script = client.generate_script("Peaceful river", target_duration_seconds=5.0)
+    assert isinstance(script, str)
+    assert len(script.split()) >= 8
+

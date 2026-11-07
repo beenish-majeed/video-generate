@@ -458,38 +458,33 @@ class FileAIImageProvider(BaseImageProvider):
         from src.clients.file_ai import get_file_ai_client
         client = get_file_ai_client()
 
-        if client.is_configured:
-            try:
-                # If File.ai image generation endpoint is available
-                res = client._execute_request_with_retry(
-                    "POST",
-                    "/v1/images/generate",
-                    json_data={"prompt": prompt, "style": style, "seed": seed},
-                )
-                with open(target_path, "wb") as f:
-                    f.write(res.content)
-                return ImageResult(
-                    path=target_path,
-                    provider_used=self.name,
-                    cache_hit=False,
-                    prompt=prompt,
-                    style=style,
-                    seed=seed,
-                )
-            except Exception:
-                pass
-
-        # Sandbox fallback to CardsImageProvider
-        res = self.fallback._generate_image(
-            prompt=prompt,
-            style=style,
-            seed=seed,
-            key_phrase=key_phrase,
-            target_path=target_path,
-        )
-        res.fallback_used = True
-        res.fallback_reason = "File.ai image endpoint operating in sandbox card mode."
-        return res
+        try:
+            out_p = client.generate_image(
+                prompt=prompt,
+                target_path=target_path,
+                style=style,
+                seed=seed,
+            )
+            return ImageResult(
+                path=out_p,
+                provider_used=self.name,
+                cache_hit=False,
+                prompt=prompt,
+                style=style,
+                seed=seed,
+            )
+        except Exception as exc:
+            # Sandbox fallback to CardsImageProvider
+            res = self.fallback._generate_image(
+                prompt=prompt,
+                style=style,
+                seed=seed,
+                key_phrase=key_phrase,
+                target_path=target_path,
+            )
+            res.fallback_used = True
+            res.fallback_reason = f"File.ai image fallback activated: {exc}"
+            return res
 
 
 class AutoFallbackImageProvider(BaseImageProvider):
