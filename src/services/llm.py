@@ -294,8 +294,7 @@ def get_llm_provider(
         url = ollama_url or getattr(settings, "ollama_url", "http://127.0.0.1:11434")
         return OllamaLLMProvider(base_url=url, model=model_name, timeout_seconds=timeout, **kwargs)
     else:
-        # Default to File.ai provider for unknown/new provider strings
-        return FileAILLMProvider(**kwargs)
+        raise LLMError(f"Unsupported LLM provider: '{name}'. Supported providers: 'file_ai', 'ollama', 'template', 'fake'.")
 
 
 def generate(system: str, user: str, max_tokens: int = 1024, provider: LLMProvider | None = None) -> str:

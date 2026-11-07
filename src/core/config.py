@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Storage Paths
     storage_dir: Path = Path("./storage")
-    db_filename: str = "app.db"
+    db_filename: str = "jobs.db"
 
     # Server Authentication & Security
     api_key: Optional[str] = None
@@ -78,6 +78,22 @@ class Settings(BaseSettings):
     subprocess_default_timeout_seconds: float = 120.0
     subprocess_ffprobe_timeout_seconds: float = 15.0
     subprocess_render_timeout_seconds: float = 600.0
+
+    # Model Paths & Provider Selection (Backward Compatibility & Integration)
+    wav2lip_ckpt_path: str = "src/models/wav2lip/wav2lip.pth"
+    piper_model_path: str = "src/models/piper/en_US-lessac-medium.onnx"
+    piper_config_path: str = "src/models/piper/en_US-lessac-medium.onnx.json"
+    cosyvoice_model_path: str = "src/models/cosyvoice"
+    sd_turbo_model_path: str = "models/sd-turbo"
+    image_style: str = "cinematic"
+    image_cache_dir: Path = Path("storage/cache/images")
+    image_provider: str = "file_ai"
+    llm_provider: str = "file_ai"
+    llm_model: str = "file_ai"
+    llm_timeout_seconds: float = 30.0
+    tts_provider: str = "file_ai"
+    ollama_url: str = "http://127.0.0.1:11434"
+    max_segment_seconds: float = 6.0
 
     @property
     def db_path(self) -> Path:

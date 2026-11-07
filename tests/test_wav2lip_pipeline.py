@@ -1,6 +1,9 @@
 import numpy as np
-import torch
 import pytest
+
+torch = pytest.importorskip("torch")
+if not hasattr(torch, "FloatTensor"):
+    pytest.skip("PyTorch not installed in API mode", allow_module_level=True)
 
 def test_wav2lip_tensor_shapes():
     # Simulate face crop 96x96

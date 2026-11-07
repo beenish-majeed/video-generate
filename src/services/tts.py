@@ -35,6 +35,7 @@ class FileAITTSProvider:
         text = event.text or ""
         speed = getattr(plan.voice, "speed", 1.0) if plan and plan.voice else 1.0
         pitch = getattr(plan.voice, "pitch", 0.0) if plan and plan.voice else 0.0
+        event_dur = max(0.01, event.end_s - event.start_s)
 
         res = self.client.synthesize_speech(
             text=text,
@@ -42,6 +43,7 @@ class FileAITTSProvider:
             voice_id="natural_en",
             speed=speed,
             pitch=pitch,
+            duration_seconds=event_dur,
         )
 
         return TTSSegment(

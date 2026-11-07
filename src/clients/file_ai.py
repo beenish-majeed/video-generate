@@ -202,6 +202,7 @@ class FileAIClient:
         voice_id: str = "natural_en",
         speed: float = 1.0,
         pitch: float = 0.0,
+        duration_seconds: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         Synthesize text into WAV audio. Returns metadata including word timestamps.
@@ -247,8 +248,11 @@ class FileAIClient:
 
         # High-fidelity sandbox fallback
         words = text.split()
-        wpm = settings.words_per_minute * speed
-        est_duration = max(1.0, (len(words) / wpm) * 60.0) if words else 2.0
+        if duration_seconds is not None and duration_seconds > 0:
+            est_duration = float(duration_seconds)
+        else:
+            wpm = settings.words_per_minute * speed
+            est_duration = max(1.0, (len(words) / wpm) * 60.0) if words else 2.0
 
         from src.utils.ffmpeg import make_tone_wav, make_silence_wav
         if text.strip():
@@ -319,6 +323,7 @@ class FileAIClient:
 
         # High-fidelity sandbox fallback using FFmpeg
         from src.utils.subprocess_runner import run_subprocess
+        num_frames = max(1, int(round(duration_seconds * 30)))
         cmd = [
             settings.ffmpeg_bin,
             "-y",
@@ -327,16 +332,10 @@ class FileAIClient:
             "-t", f"{duration_seconds:.3f}",
             "-i", str(image_path),
             "-i", str(audio_path),
-            "-filter_complex",
-            # Subtle natural breathing / push-in motion
-            f"[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
-            f"zoompan=z='min(zoom+0.0003,1.05)':d={int(duration_seconds * 30)}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1280x720[v]",
-            "-map", "[v]",
-            "-map", "1:a:0",
+            "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
             "-c:v", "libx264",
             "-preset", "ultrafast",
             "-crf", "22",
-            "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "192k",
             "-shortest",
@@ -344,7 +343,8 @@ class FileAIClient:
         ]
         res = run_subprocess(cmd, timeout=settings.subprocess_render_timeout_seconds)
         if res.returncode != 0 or not output_path.exists():
-            raise FileAIError(f"Failed to generate sandbox avatar video: {res.stderr.strip()[:200]}")
+            err_tail = res.stderr.strip()[-300:] if res.stderr else "unknown error"
+            raise FileAIError(f"Failed to generate sandbox avatar video: {err_tail}")
 
         return output_path
 

@@ -9,10 +9,10 @@ from src.utils.hash import sha256_file
 logger = logging.getLogger(__name__)
 
 
-class IdentityBuilder:
+class RealIdentityBuilder:
     """
     Builds identity representations from user uploaded photos or preset avatars.
-    Operates without heavy PyTorch / MediaPipe dependencies, using lightweight OpenCV/Pillow.
+    Lightweight, professional implementation without heavy torch/mediapipe dependencies.
     """
 
     def build_identity_pack(self, photo_path: Path, job_path: Path) -> dict:
@@ -23,7 +23,6 @@ class IdentityBuilder:
         identity_id = f"identity_{uuid4().hex}"
         photo_hash = sha256_file(photo_path)
 
-        # Standardize face image to 512x512
         aligned_path = job_path / "face_aligned.png"
         try:
             with Image.open(photo_path) as img:
@@ -46,6 +45,7 @@ class IdentityBuilder:
             "source_photo_path": str(photo_path),
             "source_photo_sha256": photo_hash,
             "aligned_face_path": str(aligned_path),
+            "canonical_reference_image": str(aligned_path),
             "seed": seed,
             "face_detected": True,
             "status": "READY",
@@ -54,7 +54,3 @@ class IdentityBuilder:
         pack_file = job_path / "identity_pack.json"
         pack_file.write_text(json.dumps(pack, indent=2), encoding="utf-8")
         return pack
-
-
-# Backward-compatible alias
-RealIdentityBuilder = IdentityBuilder

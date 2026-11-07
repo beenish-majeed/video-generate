@@ -45,11 +45,12 @@ class JobRepository:
         with get_db_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO jobs (job_id, state, visual_mode, data_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO jobs (job_id, state, visual_mode, data, data_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(job_id) DO UPDATE SET
                     state = excluded.state,
                     visual_mode = excluded.visual_mode,
+                    data = excluded.data,
                     data_json = excluded.data_json,
                     updated_at = excluded.updated_at
                 """,
@@ -57,6 +58,7 @@ class JobRepository:
                     job.job_id,
                     job.state.value if isinstance(job.state, JobState) else str(job.state),
                     visual_mode,
+                    data_json,
                     data_json,
                     job.created_at.isoformat(),
                     job.updated_at.isoformat(),
@@ -67,13 +69,13 @@ class JobRepository:
     def get(job_id: str) -> Optional[JobRecord]:
         with get_db_connection() as conn:
             row = conn.execute(
-                "SELECT data_json FROM jobs WHERE job_id = ?",
+                "SELECT coalesce(data_json, data) AS data_str FROM jobs WHERE job_id = ?",
                 (job_id,),
             ).fetchone()
-            if not row or not row["data_json"]:
+            if not row or not row["data_str"]:
                 return None
             try:
-                return JobRecord.model_validate_json(row["data_json"])
+                return JobRecord.model_validate_json(row["data_str"])
             except Exception as exc:
                 logger.error(f"Failed to deserialize job {job_id}: {exc}")
                 return None

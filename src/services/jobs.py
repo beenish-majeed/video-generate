@@ -12,10 +12,10 @@ from typing import Dict, List, Optional
 from src.config import settings
 from src.db.repository import JobRepository
 from src.models.schemas import JobCreate, JobRecord, JobState, utcnow
-from src.services.animation import RealWav2LipProvider
+from src.services.animation_wav2lip import RealWav2LipProvider
 from src.services.assembler import assemble
 from src.services.consent import verify_consent
-from src.services.identity import RealIdentityBuilder
+from src.services.identity_real import RealIdentityBuilder
 from src.services.prompt_compiler import compile_plan
 from src.services.qa import check_final, check_segment
 from src.services.segment_scheduler import split_timeline
@@ -66,7 +66,20 @@ def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
         job.updated_at = utcnow()
     JOBS[job.job_id] = job
     try:
-        JobRepository.save(job)
+        data_json = job.model_dump_json()
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+            conn.execute(
+                """
+                INSERT INTO jobs (job_id, state, data, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(job_id) DO UPDATE SET
+                    state=excluded.state,
+                    data=excluded.data,
+                    updated_at=excluded.updated_at
+                """,
+                (job.job_id, job.state.value, data_json, job.updated_at.isoformat()),
+            )
+            conn.commit()
     except Exception as exc:
         logger.error(f"Error saving job to DB: {exc}")
 
@@ -76,10 +89,13 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
         return JOBS[job_id]
 
     try:
-        job = JobRepository.get(job_id)
-        if job:
-            JOBS[job_id] = job
-            return job
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+            cursor = conn.execute("SELECT data FROM jobs WHERE job_id = ?", (job_id,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                job = JobRecord.model_validate_json(row[0])
+                JOBS[job_id] = job
+                return job
     except Exception as exc:
         logger.error(f"Error loading job from DB: {exc}")
 
@@ -87,14 +103,33 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
 
 
 def list_all_jobs() -> List[JobRecord]:
+    records: List[JobRecord] = []
     try:
-        jobs = JobRepository.list_recent(limit=100)
-        for j in jobs:
-            JOBS[j.job_id] = j
-        return jobs
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+            cursor = conn.execute("SELECT data FROM jobs ORDER BY updated_at DESC")
+            for row in cursor.fetchall():
+                if row and row[0]:
+                    try:
+                        rec = JobRecord.model_validate_json(row[0])
+                        records.append(rec)
+                        JOBS[rec.job_id] = rec
+                    except Exception as row_exc:
+                        if hasattr(row_exc, "errors"):
+                            fields_summary = ", ".join(
+                                f"{'.'.join(str(p) for p in err.get('loc', []))}: {err.get('type')}"
+                                for err in row_exc.errors()
+                            )
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__} ({fields_summary})"
+                            )
+                        else:
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__}"
+                            )
     except Exception as exc:
         logger.error(f"Error listing jobs from DB: {exc}")
-        return list(JOBS.values())
+
+    return records or list(JOBS.values())
 
 
 def count_active_jobs() -> int:
@@ -128,8 +163,19 @@ def _cleanup_intermediate_job_files(
                 elif item.is_file() and item.name not in keep_files:
                     try:
                         item.unlink()
-                    except Exception:
-                        pass
+                    except Exception as row_exc:
+                        if hasattr(row_exc, "errors"):
+                            fields_summary = ", ".join(
+                                f"{'.'.join(str(p) for p in err.get('loc', []))}: {err.get('type')}"
+                                for err in row_exc.errors()
+                            )
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__} ({fields_summary})"
+                            )
+                        else:
+                            logger.warning(
+                                f"Skipping job record that failed validation: {type(row_exc).__name__}"
+                            )
         except Exception as exc:
             logger.warning(f"Error during cancelled job cleanup for {job_path}: {exc}")
         return
@@ -225,7 +271,9 @@ def delete_job_record(job_id: str) -> bool:
 
     # Remove from SQLite
     try:
-        JobRepository.delete(job_id)
+        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+            conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
+            conn.commit()
     except Exception as exc:
         logger.error(f"Error deleting job '{job_id}' from DB: {exc}")
 
