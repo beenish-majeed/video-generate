@@ -461,7 +461,7 @@ def create_job(request: JobCreate) -> JobRecord:
         photo_path=photo_path,
         voice_path=voice_path,
         job_id=job_id,
-        is_preset_path=is_preset_path or (request.visual_mode in ("text_to_video", "slideshow", "picture_to_video")),
+        is_preset_path=is_preset_path or (request.visual_mode == "text_to_video"),
         clip_paths=clip_paths if is_clips_mode else None,
     )
 
@@ -974,6 +974,8 @@ def run_job(job_id: str) -> None:
 
             job.output_path = str(output_path)
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
+            job.visual_mode_used = "text_to_video" if visual_mode == "text_to_video" else "slideshow"
+            job.visual_mode_reason = f"{visual_mode.replace('_', ' ').capitalize()} generation completed."
             if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
                 job.music_applied = True
             job.state = JobState.COMPLETED
