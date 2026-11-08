@@ -353,6 +353,44 @@ def create_job(request: JobCreate) -> JobRecord:
                 words = len(request.script.split()) if request.script else 0
                 explicit_dur = (words / settings.words_per_minute) * 60.0 if words > 0 else 5.0
 
+    elif request.visual_mode == "text_to_video":
+        photo_path = None
+        from src.services.presets import get_allowed_voice_preset_ids, get_voice_sample_path
+        if request.voice_preset_id:
+            voice_path = get_voice_sample_path(request.voice_preset_id)
+        else:
+            voice_ids = get_allowed_voice_preset_ids()
+            voice_path = get_voice_sample_path(voice_ids[0]) if voice_ids else None
+        explicit_dur = request.resolve_target_duration_seconds() or 10.0
+
+    elif request.visual_mode == "picture_to_video":
+        photo_path = None
+        if request.photo_asset_id:
+            photo_path = get_asset_path(request.photo_asset_id)
+        elif request.avatar_preset_id:
+            from src.services.presets import get_avatar_file_path
+            photo_path = get_avatar_file_path(request.avatar_preset_id)
+        elif request.uploaded_image_asset_ids:
+            photo_path = get_asset_path(request.uploaded_image_asset_ids[0])
+
+        if photo_path is None or not photo_path.exists():
+            raise ValueError("Input image asset not found for picture_to_video.")
+
+        audio_mode = getattr(request, "audio_mode", "ai_generated")
+        if audio_mode == "original_audio" and (request.uploaded_audio_asset_id or request.voice_asset_id):
+            voice_path = get_asset_path(request.uploaded_audio_asset_id or request.voice_asset_id)
+            if voice_path is None or not voice_path.exists():
+                raise ValueError("Uploaded original audio asset not found.")
+            explicit_dur = probe_duration(voice_path)
+        else:
+            from src.services.presets import get_allowed_voice_preset_ids, get_voice_sample_path
+            if request.voice_preset_id:
+                voice_path = get_voice_sample_path(request.voice_preset_id)
+            else:
+                voice_ids = get_allowed_voice_preset_ids()
+                voice_path = get_voice_sample_path(voice_ids[0]) if voice_ids else None
+            explicit_dur = request.resolve_target_duration_seconds() or 5.0
+
     elif is_my_own:
         image_paths = []
         for img_id in request.uploaded_image_asset_ids:
@@ -423,7 +461,7 @@ def create_job(request: JobCreate) -> JobRecord:
         photo_path=photo_path,
         voice_path=voice_path,
         job_id=job_id,
-        is_preset_path=is_preset_path,
+        is_preset_path=is_preset_path or (request.visual_mode in ("text_to_video", "slideshow", "picture_to_video")),
         clip_paths=clip_paths if is_clips_mode else None,
     )
 
@@ -470,7 +508,7 @@ def create_job(request: JobCreate) -> JobRecord:
     from datetime import timedelta
     dur = float(plan.target_duration_seconds)
     v_mode = getattr(request, "visual_mode", "talking_head")
-    if v_mode == "talking_head":
+    if v_mode in ("picture_to_video", "talking_head"):
         render_mult = 2.7
     elif v_mode == "ai_clips":
         render_mult = 0.5
@@ -773,12 +811,27 @@ def run_job(job_id: str) -> None:
                 job.music_applied = True
             job.state = JobState.COMPLETED
 
-        elif visual_mode == "slideshow":
-            # 1. Voice Pack
+        elif visual_mode in ("text_to_video", "slideshow"):
+            # Mode 1: TEXT TO VIDEO
+            # 1. Script Generation if prompt was provided without script
+            if job.request.prompt and not (job.plan.script and job.plan.script.strip()):
+                from src.clients.file_ai import get_file_ai_client
+                client = get_file_ai_client()
+                job.state = JobState.SCHEDULING_SEGMENTS
+                save_job_record(job)
+                ai_script = client.generate_script(
+                    prompt=job.request.prompt,
+                    target_duration_seconds=float(job.plan.target_duration_seconds or 10.0),
+                )
+                job.plan.script = ai_script
+                job.timeline = build_timeline(ai_script, job.plan)
+                save_job_record(job)
+
+            # 2. Voice Pack
             voice_pack = build_voice_pack(Path(job.voice_path), job_path)
             job.voice_pack = voice_pack
 
-            # 2. Scene Planning
+            # 3. Scene Planning
             job.state = JobState.SCHEDULING_SEGMENTS
             save_job_record(job)
 
@@ -923,6 +976,152 @@ def run_job(job_id: str) -> None:
             job.subtitle_path = str(subtitle_path) if subtitle_path else None
             if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
                 job.music_applied = True
+            job.state = JobState.COMPLETED
+
+        elif visual_mode == "picture_to_video":
+            # Mode 2: PICTURE TO VIDEO
+            job.visual_mode_used = "picture_to_video"
+            job.visual_mode_reason = "Picture-to-Video generation selected."
+            save_job_record(job)
+
+            input_image_path = Path(job.photo_path)
+            audio_mode = getattr(job.request, "audio_mode", "ai_generated")
+
+            # 1. Resolve Audio (Default: AI-generated; Optional: original audio)
+            if audio_mode == "original_audio" and job.request.uploaded_audio_asset_id:
+                speech_audio_path = Path(job.voice_path)
+                audio_dur = probe_duration(speech_audio_path)
+            elif audio_mode == "original_audio" and job.voice_path and Path(job.voice_path).exists():
+                speech_audio_path = Path(job.voice_path)
+                audio_dur = probe_duration(speech_audio_path)
+            else:
+                # AI-generated audio enabled by default
+                job.state = JobState.SYNTHESIZING_AUDIO
+                save_job_record(job)
+
+                from src.clients.file_ai import get_file_ai_client
+                client = get_file_ai_client()
+                script_text = job.plan.script
+                if not script_text or not script_text.strip():
+                    if job.request.prompt:
+                        script_text = client.generate_script(
+                            prompt=job.request.prompt,
+                            target_duration_seconds=float(job.plan.target_duration_seconds or 5.0),
+                        )
+                    else:
+                        script_text = "Bringing your still picture to life with high quality animation."
+                    job.plan.script = script_text
+
+                if settings.tts_provider.lower() == "cosyvoice":
+                    from src.services.tts_cosyvoice import CosyVoiceTTSProvider
+                    tts_provider = CosyVoiceTTSProvider()
+                else:
+                    tts_provider = PiperTTSProvider()
+
+                from src.models.schemas import TimelineEvent
+                ev = TimelineEvent(
+                    event_id="p2v_speech",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=float(job.plan.target_duration_seconds or 5.0),
+                    text=job.plan.script,
+                )
+                tts_res = tts_provider.synthesize_event(
+                    event=ev,
+                    plan=job.plan,
+                    job_path=job_path,
+                    voice_sample_path=job.voice_path,
+                )
+                speech_audio_path = Path(tts_res.audio_path)
+                audio_dur = probe_duration(speech_audio_path)
+
+            # 2. Animate Image using FileAIClient
+            job.state = JobState.GENERATING_SEGMENTS
+            save_job_record(job)
+
+            p2v_output_path = job_path / "animated_photo.mp4"
+            from src.clients.file_ai import get_file_ai_client
+            client = get_file_ai_client()
+            anim_res = client.generate_image_to_video(
+                image_path=input_image_path,
+                prompt=job.request.prompt or "cinematic animation, natural subtle movement",
+                output_path=p2v_output_path,
+                audio_path=speech_audio_path,
+                duration_seconds=audio_dur,
+            )
+            video_path = Path(anim_res["output_path"])
+
+            # 3. Subtitles
+            subtitle_path = None
+            if getattr(job.request, "auto_subtitles", False) or (job.plan.subtitles and job.plan.subtitles.enabled):
+                from src.services.subtitles import generate_webvtt
+                from src.models.schemas import Timeline, TimelineEvent, TTSSegment
+                sub_p = job_path / "subtitles.vtt"
+                ev = TimelineEvent(
+                    event_id="speech_0000",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=round(audio_dur, 2),
+                    text=job.plan.script or "Uploaded audio",
+                )
+                sub_tl = Timeline(events=[ev], total_duration_seconds=round(audio_dur, 2))
+                tts_map = {"speech_0000": TTSSegment(event_id="speech_0000", audio_path=str(speech_audio_path), duration_seconds=round(audio_dur, 2))}
+                generate_webvtt(sub_tl, tts_map, sub_p)
+                subtitle_path = sub_p
+
+            # 4. Assembly & AI Label Watermark
+            job.state = JobState.ASSEMBLING
+            save_job_record(job)
+
+            label_path = job_path / "ai_label.png"
+            from src.utils.images import create_ai_label_png
+            label_text = (job.plan.safety.label_text if job.plan and job.plan.safety and job.plan.safety.label_text else "AI-generated")
+            create_ai_label_png(label_path, label_text)
+
+            output_path = job_path / "final_video.mp4"
+            from src.utils.ffmpeg import finalize_video, mix_background_music
+
+            final_speech_audio = speech_audio_path
+            music_id = job.request.music_preset_id or job.request.music_asset_id
+            if music_id and job.music_applied is not False:
+                try:
+                    from src.services.music_presets import resolve_job_music_path
+                    m_path = resolve_job_music_path(job.request.music_asset_id, job.request.music_preset_id)
+                    if m_path and m_path.exists():
+                        mixed_audio = job_path / "final_audio_with_music.wav"
+                        mix_background_music(
+                            speech_path=speech_audio_path,
+                            music_path=m_path,
+                            output_path=mixed_audio,
+                            target_duration=audio_dur,
+                            volume=job.request.music_volume,
+                            ducking=job.request.music_ducking,
+                        )
+                        final_speech_audio = mixed_audio
+                        job.music_applied = True
+                except Exception as exc:
+                    logger.warning(f"Background music mixing failed: {exc}; continuing without music.")
+                    job.music_applied = False
+
+            burn_sub = bool(job.plan.subtitles and job.plan.subtitles.burn_in)
+            finalize_video(
+                video_path=video_path,
+                audio_path=final_speech_audio,
+                watermark_path=label_path,
+                output_path=output_path,
+                duration=audio_dur,
+                subtitle_path=subtitle_path,
+                burn_subtitles=burn_sub,
+            )
+
+            expected_final_dur = audio_dur
+            tolerance = max(0.5, expected_final_dur * 0.12)
+            final_qa = check_final(video_path=output_path, expected_duration=expected_final_dur, tolerance=tolerance)
+            if not final_qa.get("passed"):
+                raise RuntimeError(f"Final QA failed: {final_qa}")
+
+            job.output_path = str(output_path)
+            job.subtitle_path = str(subtitle_path) if subtitle_path else None
             job.state = JobState.COMPLETED
 
         elif visual_mode == "ai_clips":
