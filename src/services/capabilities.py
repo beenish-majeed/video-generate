@@ -67,7 +67,7 @@ def compute_honest_time_estimate(
     dur = max(1.0, float(duration_seconds))
     provider = (image_provider or settings.image_provider).lower()
 
-    if mode == "talking_head":
+    if mode in ("picture_to_video", "talking_head"):
         # Wav2Lip forward pass on cropped face frames
         # ~0.5x realtime on GPU, ~2.5x realtime on CPU
         multiplier = 0.6 if gpu else 2.5
@@ -127,6 +127,7 @@ def get_system_capabilities(
         "auto_subtitles": whisper_ok,
         "background_music": True,
         "music_presets": get_allowed_preset_ids(),
+        "modes": ["text_to_video", "picture_to_video"],
         "image_provider_configured": settings.image_provider,
         "llm_provider_configured": settings.llm_provider,
     }

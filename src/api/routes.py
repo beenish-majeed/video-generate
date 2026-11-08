@@ -275,7 +275,7 @@ async def upload_asset_endpoint(
     dependencies=[Depends(verify_api_key)],
 )
 def estimate_job_render(payload: JobEstimateRequest):
-    mult = 2.7 if payload.visual_mode == "talking_head" else 0.85
+    mult = 2.7 if payload.visual_mode in ("picture_to_video", "talking_head") else 0.85
     est_s = round(payload.target_duration_seconds * mult, 1)
     mins = int(est_s // 60)
     secs = int(est_s % 60)
