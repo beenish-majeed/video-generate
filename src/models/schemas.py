@@ -282,7 +282,17 @@ class JobCreate(BaseModel):
     target_duration_seconds: Optional[float] = None
     duration_preset: Optional[str] = None
     overrides: dict = Field(default_factory=dict)
-    visual_mode: Literal["talking_head", "slideshow", "ai_clips"] = "talking_head"
+    visual_mode: Literal[
+        "talking_head",
+        "text_to_video",
+        "picture_to_video",
+        "slideshow",
+        "ai_clips",
+    ] = "talking_head"
+    audio_mode: Literal["ai_generated", "original_audio"] = Field(
+        default="ai_generated",
+        description="Audio mode for video generation. Defaults to 'ai_generated'. Can be 'original_audio' if user uploads audio.",
+    )
     clip_asset_ids: list[str] = Field(default_factory=list, description="Ordered clip asset IDs for ai_clips mode.")
     plan_id: Optional[str] = Field(default=None, description="Optional associated scene plan ID.")
     burn_subtitles: Optional[bool] = None
@@ -364,15 +374,31 @@ class JobCreate(BaseModel):
             )
         return v_clean
 
+    @property
+    def canonical_mode(self) -> str:
+        """Resolve to strictly one of the two canonical generation modes."""
+        if self.visual_mode in ("picture_to_video", "talking_head"):
+            return "picture_to_video"
+        return "text_to_video"
+
     @field_validator("visual_mode")
     @classmethod
     def validate_visual_mode(cls, v: str) -> str:
         if not v:
             return "talking_head"
-        norm = v.strip().lower().replace(" ", "_")
-        if norm not in ("talking_head", "slideshow", "ai_clips"):
-            raise ValueError(f"Invalid visual_mode '{v}'. Allowed modes: 'talking_head', 'slideshow', 'ai_clips'")
-        return norm
+        norm = v.strip().lower().replace(" ", "_").replace("-", "_")
+        # Canonical mappings
+        if norm in ("text_to_video", "text2video", "t2v"):
+            return "text_to_video"
+        if norm in ("picture_to_video", "image_to_video", "photo_to_video", "p2v", "i2v"):
+            return "picture_to_video"
+        # Legacy mappings
+        if norm in ("talking_head", "slideshow", "ai_clips"):
+            return norm
+        raise ValueError(
+            f"Invalid visual_mode '{v}'. Allowed canonical modes: 'text_to_video', 'picture_to_video' "
+            f"(legacy aliases: 'slideshow', 'talking_head', 'ai_clips')."
+        )
 
     @field_validator("avatar_preset_id")
     @classmethod
@@ -436,9 +462,31 @@ class JobCreate(BaseModel):
                 raise ValueError("Either an audio asset, voice preset, or typed script must be provided for ai_clips mode.")
             return self
 
+        # Canonical Mode 1: text_to_video
+        if self.visual_mode == "text_to_video":
+            has_text = bool((self.prompt and self.prompt.strip()) or (self.script and self.script.strip()))
+            if not has_text:
+                raise ValueError("Either 'prompt' or 'script' must be provided for text_to_video mode.")
+            return self
+
+        # Canonical Mode 2: picture_to_video
+        if self.visual_mode == "picture_to_video":
+            has_image = bool(
+                self.photo_asset_id
+                or self.avatar_preset_id
+                or (self.uploaded_image_asset_ids and len(self.uploaded_image_asset_ids) > 0)
+            )
+            if not has_image:
+                raise ValueError(
+                    "An image must be provided for picture_to_video mode (via photo_asset_id, avatar_preset_id, or uploaded_image_asset_ids)."
+                )
+            if self.uploaded_audio_asset_id:
+                object.__setattr__(self, "audio_mode", "original_audio")
+            return self
+
         has_uploads = bool(self.photo_asset_id and self.voice_asset_id)
         has_presets = bool(self.avatar_preset_id and self.voice_preset_id)
-        has_prompt_flow = bool(self.visual_mode == "slideshow" and (self.voice_preset_id or self.voice_asset_id))
+        has_prompt_flow = bool(self.visual_mode == "slideshow" and (self.voice_preset_id or self.voice_asset_id or self.prompt))
 
         if not has_uploads and not has_presets and not has_prompt_flow:
             n_images = len(self.uploaded_image_asset_ids) if self.uploaded_image_asset_ids is not None else 0
@@ -517,6 +565,11 @@ class JobCreate(BaseModel):
         if self.uploaded_audio_asset_id:
             return self
 
+        # In prompt-driven mode or text_to_video where prompt is provided and script is omitted,
+        # AI script synthesis handles script generation to match target duration.
+        if (self.prompt and self.prompt.strip()) and not (self.script and self.script.strip()):
+            return self
+
         target_seconds = self.resolve_target_duration_seconds()
         if target_seconds is None:
             return self
@@ -591,7 +644,10 @@ class JobRecord(BaseModel):
 
 class JobEstimateRequest(BaseModel):
     target_duration_seconds: float = Field(..., ge=1.0, le=900.0)
-    visual_mode: str = Field("talking_head", pattern="^(talking_head|slideshow|ai_clips)$")
+    visual_mode: str = Field(
+        "talking_head",
+        pattern="^(text_to_video|picture_to_video|talking_head|slideshow|ai_clips)$",
+    )
 
 
 class JobEstimateResponse(BaseModel):
