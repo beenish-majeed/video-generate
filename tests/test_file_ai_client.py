@@ -2,7 +2,12 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 import httpx
-from src.clients.file_ai import FileAIClient, FileAIError, _sanitize_error_message
+from src.clients.file_ai import (
+    FileAIClient,
+    FileAIError,
+    _sanitize_error_message,
+    _validate_download_url,
+)
 from src.core.api_config import FileAIConfig
 
 
@@ -128,4 +133,120 @@ def test_fal_client_exhausted_balance_fallback(monkeypatch, tmp_path):
     script = client.generate_script("Peaceful river", target_duration_seconds=5.0)
     assert isinstance(script, str)
     assert len(script.split()) >= 8
+
+
+def test_validate_download_url_ssrf_protection():
+    # Valid HTTPS URL passes
+    _validate_download_url("https://v3.fal.media/files/monkey/sample.png")
+
+    # Insecure scheme blocked
+    with pytest.raises(FileAIError, match="Insecure scheme"):
+        _validate_download_url("http://v3.fal.media/files/sample.png")
+
+    # Localhost string blocked
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://localhost/admin")
+
+    # Loopback IP blocked
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://127.0.0.1:8000/internal")
+
+    # Private IP blocked
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://10.0.0.1/sensitive")
+
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://192.168.1.1/router")
+
+    # Cloud metadata IP blocked
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://169.254.169.254/latest/meta-data")
+
+
+def test_generate_image_to_video_sandbox(tmp_path):
+    from PIL import Image
+    img_path = tmp_path / "input_photo.jpg"
+    img = Image.new("RGB", (640, 640), color=(120, 180, 220))
+    img.save(img_path)
+
+    config = FileAIConfig(api_key="")
+    client = FileAIClient(config=config)
+
+    # 1. Without audio
+    out_video = tmp_path / "photo_anim.mp4"
+    res = client.generate_image_to_video(
+        image_path=img_path,
+        prompt="gentle ambient camera pan",
+        output_path=out_video,
+        duration_seconds=3.0,
+    )
+    assert out_video.exists()
+    assert res["generation_source"] == "sandbox_fallback"
+    assert res["duration_seconds"] == 3.0
+
+    # 2. With audio
+    audio_path = tmp_path / "input_speech.wav"
+    speech = client.synthesize_speech("Hello picture to video test", output_path=audio_path)
+    out_audio_video = tmp_path / "photo_anim_audio.mp4"
+    res_audio = client.generate_image_to_video(
+        image_path=img_path,
+        prompt="gentle ambient camera pan",
+        output_path=out_audio_video,
+        audio_path=audio_path,
+    )
+    assert out_audio_video.exists()
+    assert res_audio["generation_source"] == "sandbox_fallback"
+    assert res_audio["duration_seconds"] > 0
+
+
+def test_generate_image_to_video_fal_mock(monkeypatch, tmp_path):
+    from PIL import Image
+    img_path = tmp_path / "fal_input.jpg"
+    img = Image.new("RGB", (640, 640), color=(200, 100, 50))
+    img.save(img_path)
+
+    fake_fal_key = "fal_sk_test_key_fal_p2v:secret123"
+    config = FileAIConfig(api_key=fake_fal_key)
+    client = FileAIClient(config=config)
+
+    import fal_client
+    monkeypatch.setattr(fal_client, "upload_file", lambda p: "https://v3.fal.media/uploaded_test.jpg")
+    monkeypatch.setattr(
+        fal_client,
+        "subscribe",
+        lambda endpoint, arguments: {"video": {"url": "https://v3.fal.media/generated_clip.mp4"}},
+    )
+
+    # Mock _safe_download_file to avoid actual network call
+    def mock_download(url, target_path):
+        target_path.write_bytes(b"dummy_mp4_bytes")
+        return target_path
+
+    monkeypatch.setattr(client, "_safe_download_file", mock_download)
+
+    out_video = tmp_path / "fal_p2v.mp4"
+    res = client.generate_image_to_video(
+        image_path=img_path,
+        output_path=out_video,
+        duration_seconds=4.0,
+    )
+    assert res["generation_source"] == "fal.ai"
+    assert out_video.exists()
+
+
+def test_generate_text_to_video_sandbox(tmp_path):
+    config = FileAIConfig(api_key="")
+    client = FileAIClient(config=config)
+
+    out_video = tmp_path / "t2v_final.mp4"
+    res = client.generate_text_to_video(
+        prompt="Explore the majestic depths of the ancient redwood forest",
+        target_duration_seconds=5.0,
+        output_path=out_video,
+    )
+    assert out_video.exists()
+    assert out_video.stat().st_size > 1000
+    assert res["generation_source"] == "sandbox_fallback"
+    assert len(res["scenes"]) >= 1
+    assert "redwood" in res["script"].lower() or len(res["script"].split()) >= 5
 

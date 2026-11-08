@@ -42,7 +42,7 @@ def _resolve_initial_api_key() -> str:
 
 class FileAIConfig(BaseModel):
     """Configuration schema for File.ai & fal.ai API integration."""
-    api_key: str = Field(
+    api_key: Optional[str] = Field(
         default_factory=_resolve_initial_api_key,
         description="Secret API key. Loaded from FILE_AI_API_KEY or FAL_KEY in .env.",
     )
@@ -68,7 +68,7 @@ class FileAIConfig(BaseModel):
     )
 
     def model_post_init(self, __context) -> None:
-        if not self.api_key:
+        if self.api_key is None:
             self.api_key = _resolve_initial_api_key()
         if self.is_fal and self.is_configured:
             os.environ["FAL_KEY"] = self.api_key

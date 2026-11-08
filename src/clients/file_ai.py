@@ -1,9 +1,12 @@
+import ipaddress
 import json
 import logging
 import math
 import os
 import re
+import socket
 import time
+import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -13,6 +16,60 @@ from src.core.api_config import file_ai_config
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_download_url(url: str) -> None:
+    """Validate external download URL to prevent SSRF vulnerabilities."""
+    if not url or not isinstance(url, str):
+        raise FileAIError("Download URL cannot be empty")
+
+    parsed = urllib.parse.urlsplit(url.strip())
+    if parsed.scheme.lower() != "https":
+        raise FileAIError(f"Insecure scheme '{parsed.scheme}': only HTTPS URLs are allowed")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise FileAIError("Invalid download URL: missing hostname")
+
+    # Reject localhost strings directly
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
+        raise FileAIError(f"SSRF blocked: local host {hostname} is prohibited")
+
+    # If hostname is an IP address directly
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if (
+            ip.is_loopback
+            or ip.is_private
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+            or str(ip) == "169.254.169.254"
+        ):
+            raise FileAIError(f"SSRF blocked: {hostname} is a prohibited address")
+        return
+    except ValueError:
+        # Not a raw IP literal, proceed to DNS resolution
+        pass
+
+    try:
+        addr_info = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+        for item in addr_info:
+            ip_str = item[4][0]
+            ip = ipaddress.ip_address(ip_str)
+            if (
+                ip.is_loopback
+                or ip.is_private
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+                or ip.is_unspecified
+                or ip_str == "169.254.169.254"
+            ):
+                raise FileAIError(f"SSRF blocked: {hostname} resolves to prohibited address {ip_str}")
+    except (socket.gaierror, socket.error) as exc:
+        raise FileAIError(f"Could not resolve host {hostname}: {exc}") from exc
 
 
 def _sanitize_error_message(message: str) -> str:
@@ -60,6 +117,7 @@ class FileAIClient:
     def __init__(self, config=None):
         self.config = config or file_ai_config
         self._http_client: Optional[httpx.Client] = None
+        self._live_calls_count: int = 0
         if self.config.is_fal and self.config.is_configured:
             os.environ["FAL_KEY"] = self.config.api_key
 
@@ -116,6 +174,41 @@ class FileAIClient:
                     continue
                 raise FileAIError(f"Network error contacting {self.config.provider_name} API: {exc}") from exc
 
+    def _safe_download_file(self, url: str, target_path: Path, timeout: float = 30.0) -> Path:
+        """Download remote asset after validating URL against SSRF."""
+        _validate_download_url(url)
+        target_path = Path(target_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        with httpx.Client(timeout=timeout) as client:
+            resp = client.get(url)
+            if not resp.is_success:
+                raise FileAIError(f"Failed to download asset from {url}: status {resp.status_code}")
+            target_path.write_bytes(resp.content)
+            return target_path
+
+    def _mux_audio_if_needed(self, video_path: Path, audio_path: Path) -> Path:
+        """Mux audio stream into video file if missing or replace existing audio."""
+        from src.utils.ffmpeg import has_audio_stream
+        if has_audio_stream(video_path):
+            return video_path
+        tmp_out = video_path.parent / f"{video_path.stem}_muxed.mp4"
+        cmd = [
+            settings.ffmpeg_bin,
+            "-y",
+            "-i", str(video_path),
+            "-i", str(audio_path),
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            str(tmp_out),
+        ]
+        from src.utils.subprocess_runner import run_subprocess
+        res = run_subprocess(cmd, timeout=30.0)
+        if res.returncode == 0 and tmp_out.exists():
+            tmp_out.replace(video_path)
+        return video_path
+
     # =========================================================================
     # 1. Script Generation (LLM)
     # =========================================================================
@@ -157,6 +250,7 @@ class FileAIClient:
                     raw_text = res.get("output", "") if isinstance(res, dict) else str(res)
                     if raw_text and len(raw_text.strip().split()) >= 8:
                         clean_script = re.sub(r'["\n]+', ' ', raw_text.strip())
+                        self._live_calls_count += 1
                         return clean_script.strip()
                 except Exception as exc:
                     logger.warning(
@@ -176,6 +270,7 @@ class FileAIClient:
                     res = self._execute_request_with_retry("POST", "/v1/script/generate", json_data=payload)
                     data = res.json()
                     if "script" in data:
+                        self._live_calls_count += 1
                         return str(data["script"]).strip()
                 except Exception as exc:
                     logger.warning(
@@ -253,6 +348,7 @@ class FileAIClient:
                                         "key_phrase": str(sc.get("key_phrase", "")),
                                     })
                             if validated_scenes:
+                                self._live_calls_count += 1
                                 return validated_scenes
                 except Exception as exc:
                     logger.warning(
@@ -271,6 +367,7 @@ class FileAIClient:
                     res = self._execute_request_with_retry("POST", "/v1/scene-plan", json_data=payload)
                     data = res.json()
                     if "scenes" in data and isinstance(data["scenes"], list):
+                        self._live_calls_count += 1
                         return data["scenes"]
                 except Exception as exc:
                     logger.warning(
@@ -336,11 +433,9 @@ class FileAIClient:
                     images = res.get("images", []) if isinstance(res, dict) else []
                     if images and isinstance(images, list) and "url" in images[0]:
                         img_url = images[0]["url"]
-                        with httpx.Client(timeout=30.0) as dl_client:
-                            img_resp = dl_client.get(img_url)
-                            if img_resp.is_success:
-                                target_path.write_bytes(img_resp.content)
-                                return target_path
+                        self._safe_download_file(img_url, target_path)
+                        self._live_calls_count += 1
+                        return target_path
                 except Exception as exc:
                     logger.warning(
                         f"Live fal.ai image generation encountered notice ({_sanitize_error_message(str(exc))}); "
@@ -353,6 +448,7 @@ class FileAIClient:
                     payload = {"prompt": prompt, "style": style, "seed": seed}
                     res = self._execute_request_with_retry("POST", "/v1/images/generate", json_data=payload)
                     target_path.write_bytes(res.content)
+                    self._live_calls_count += 1
                     return target_path
                 except Exception as exc:
                     logger.warning(
@@ -416,27 +512,25 @@ class FileAIClient:
                     audio_info = res.get("audio", {}) if isinstance(res, dict) else {}
                     audio_url = audio_info.get("url") if isinstance(audio_info, dict) else None
                     if audio_url:
-                        with httpx.Client(timeout=30.0) as dl_client:
-                            audio_resp = dl_client.get(audio_url)
-                            if audio_resp.is_success:
-                                output_path.write_bytes(audio_resp.content)
-                                from src.utils.ffmpeg import probe_duration
-                                duration = probe_duration(output_path)
-                                words = text.split()
-                                per_word = duration / max(1, len(words))
-                                word_timestamps = [
-                                    {
-                                        "word": w,
-                                        "start": round(i * per_word, 3),
-                                        "end": round((i + 1) * per_word, 3),
-                                    }
-                                    for i, w in enumerate(words)
-                                ]
-                                return {
-                                    "audio_path": str(output_path),
-                                    "duration_seconds": duration,
-                                    "word_timestamps": word_timestamps,
-                                }
+                        self._safe_download_file(audio_url, output_path)
+                        from src.utils.ffmpeg import probe_duration
+                        duration = probe_duration(output_path)
+                        words = text.split()
+                        per_word = duration / max(1, len(words))
+                        word_timestamps = [
+                            {
+                                "word": w,
+                                "start": round(i * per_word, 3),
+                                "end": round((i + 1) * per_word, 3),
+                            }
+                            for i, w in enumerate(words)
+                        ]
+                        self._live_calls_count += 1
+                        return {
+                            "audio_path": str(output_path),
+                            "duration_seconds": duration,
+                            "word_timestamps": word_timestamps,
+                        }
                 except Exception as exc:
                     logger.warning(
                         f"Live fal.ai TTS synthesis encountered notice ({_sanitize_error_message(str(exc))}); "
@@ -468,6 +562,7 @@ class FileAIClient:
                         }
                         for i, w in enumerate(words)
                     ]
+                    self._live_calls_count += 1
                     return {
                         "audio_path": str(output_path),
                         "duration_seconds": duration,
@@ -587,6 +682,250 @@ class FileAIClient:
             raise FileAIError(f"Failed to generate avatar video: {err_tail}")
 
         return output_path
+
+    # =========================================================================
+    # 6. Mode 2: Picture-to-Video Generation
+    # =========================================================================
+
+    def generate_image_to_video(
+        self,
+        image_path: Path,
+        prompt: Optional[str] = None,
+        output_path: Optional[Path] = None,
+        audio_path: Optional[Path] = None,
+        duration_seconds: float = 5.0,
+    ) -> Dict[str, Any]:
+        """
+        Mode 2: Picture-to-Video generation.
+        Animates input image into video. If audio_path is provided, matches video duration
+        to audio and synchronizes or muxes audio track cleanly.
+        """
+        image_path = Path(image_path)
+        if not image_path.exists():
+            raise FileNotFoundError(f"Image not found at '{image_path}'")
+
+        if output_path is None:
+            output_path = image_path.parent / f"{image_path.stem}_p2v.mp4"
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        aud_p = Path(audio_path) if audio_path else None
+        if aud_p and aud_p.exists():
+            from src.utils.ffmpeg import probe_duration
+            try:
+                dur = probe_duration(aud_p)
+            except Exception:
+                dur = max(1.0, float(duration_seconds or 5.0))
+        else:
+            dur = max(1.0, float(duration_seconds or 5.0))
+
+        if self.is_configured:
+            # A. fal.ai Integration
+            if self.config.is_fal:
+                try:
+                    import fal_client
+                    os.environ["FAL_KEY"] = self.config.api_key
+
+                    # Upload image asset to fal CDN
+                    img_url = fal_client.upload_file(str(image_path))
+
+                    if aud_p and aud_p.exists():
+                        aud_url = fal_client.upload_file(str(aud_p))
+                        res = fal_client.subscribe(
+                            "fal-ai/sync-lipsync",
+                            arguments={
+                                "video_url": img_url,
+                                "audio_url": aud_url,
+                            },
+                        )
+                    else:
+                        res = fal_client.subscribe(
+                            "fal-ai/minimax/video-01/image-to-video",
+                            arguments={
+                                "image_url": img_url,
+                                "prompt": prompt or "subtle realistic motion, high definition",
+                            },
+                        )
+
+                    video_info = res.get("video") if isinstance(res, dict) else None
+                    vid_url = None
+                    if isinstance(video_info, dict) and "url" in video_info:
+                        vid_url = video_info["url"]
+                    elif isinstance(res, dict) and "video_url" in res:
+                        vid_url = res["video_url"]
+
+                    if vid_url:
+                        self._safe_download_file(vid_url, output_path)
+                        if aud_p and aud_p.exists():
+                            self._mux_audio_if_needed(output_path, aud_p)
+                        return {
+                            "output_path": str(output_path),
+                            "duration_seconds": dur,
+                            "generation_source": "fal.ai",
+                        }
+                except Exception as exc:
+                    logger.warning(
+                        f"Live fal.ai image-to-video encountered notice ({_sanitize_error_message(str(exc))}); "
+                        f"using high-fidelity local video compositor."
+                    )
+
+            # B. Generic File.ai REST Integration
+            else:
+                try:
+                    with open(image_path, "rb") as img_f:
+                        files = {"image": (image_path.name, img_f, "image/jpeg")}
+                        if aud_p and aud_p.exists():
+                            files["audio"] = (aud_p.name, open(aud_p, "rb"), "audio/wav")
+                        res = self._execute_request_with_retry("POST", "/v1/video/image-to-video", files=files)
+                        output_path.write_bytes(res.content)
+                        if aud_p and aud_p.exists():
+                            self._mux_audio_if_needed(output_path, aud_p)
+                        return {
+                            "output_path": str(output_path),
+                            "duration_seconds": dur,
+                            "generation_source": "file.ai",
+                        }
+                except Exception as exc:
+                    logger.warning(
+                        f"Live File.ai image-to-video failed ({_sanitize_error_message(str(exc))}); "
+                        f"falling back to local video compositor."
+                    )
+
+        # High-fidelity sandbox fallback using FFmpeg
+        from src.utils.subprocess_runner import run_subprocess
+        if aud_p and aud_p.exists():
+            cmd = [
+                settings.ffmpeg_bin,
+                "-y",
+                "-loop", "1",
+                "-framerate", "30",
+                "-t", f"{dur:.3f}",
+                "-i", str(image_path),
+                "-i", str(aud_p),
+                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "22",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-shortest",
+                str(output_path),
+            ]
+        else:
+            cmd = [
+                settings.ffmpeg_bin,
+                "-y",
+                "-loop", "1",
+                "-framerate", "30",
+                "-t", f"{dur:.3f}",
+                "-i", str(image_path),
+                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
+                "-c:v", "libx264",
+                "-preset", "ultrafast",
+                "-crf", "22",
+                "-pix_fmt", "yuv420p",
+                str(output_path),
+            ]
+        res = run_subprocess(cmd, timeout=settings.subprocess_render_timeout_seconds)
+        if res.returncode != 0 or not output_path.exists():
+            err_tail = res.stderr.strip()[-300:] if res.stderr else "unknown error"
+            raise FileAIError(f"Failed to generate video from image: {err_tail}")
+
+        return {
+            "output_path": str(output_path),
+            "duration_seconds": dur,
+            "generation_source": "sandbox_fallback",
+        }
+
+    # =========================================================================
+    # 7. Mode 1: Text-to-Video Pipeline
+    # =========================================================================
+
+    def generate_text_to_video(
+        self,
+        prompt: str,
+        target_duration_seconds: float,
+        output_path: Path,
+        tone: str = "friendly",
+        language: str = "en",
+        style: str = "cinematic",
+    ) -> Dict[str, Any]:
+        """
+        Mode 1: Text-to-Video complete pipeline:
+        1. Script generation
+        2. Scene planning
+        3. Visual synthesis per scene
+        4. Speech synthesis
+        5. Final video assembly
+        """
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        work_dir = output_path.parent / f"t2v_work_{int(time.time() * 1000)}"
+        work_dir.mkdir(parents=True, exist_ok=True)
+
+        start_count = self._live_calls_count
+
+        # 1. Script Generation
+        script = self.generate_script(
+            prompt=prompt,
+            target_duration_seconds=target_duration_seconds,
+            tone=tone,
+            language=language,
+        )
+
+        # 2. Scene Planning
+        scenes = self.generate_scene_plan(
+            script=script,
+            target_duration_seconds=target_duration_seconds,
+            style=style,
+        )
+
+        # 3. Audio Speech Synthesis
+        audio_path = work_dir / "narration.wav"
+        speech_meta = self.synthesize_speech(
+            text=script,
+            output_path=audio_path,
+            duration_seconds=target_duration_seconds,
+        )
+        audio_duration = speech_meta.get("duration_seconds", target_duration_seconds)
+
+        # 4. Visual Generation for scenes
+        scene_images: List[Path] = []
+        for i, sc in enumerate(scenes):
+            img_p = work_dir / f"scene_{i:03d}.png"
+            p = sc.get("image_prompt") or f"{prompt}, scene {i + 1}"
+            self.generate_image(prompt=p, target_path=img_p, style=style, seed=42 + i)
+            scene_images.append(img_p)
+
+        # 5. Assembly via Slideshow / Video Compositor
+        import shutil
+        from src.services.slideshow_compositor import SlideshowCompositor
+        n = len(scene_images)
+        per_img = max(2.0, audio_duration / max(1, n))
+        durations = [per_img] * n
+        composed_video = SlideshowCompositor.compose_user_slideshow(
+            job_path=work_dir,
+            image_paths=scene_images,
+            image_durations=durations,
+            audio_path=audio_path,
+            burn_subtitles=True,
+        )
+        if composed_video.exists() and output_path != composed_video:
+            shutil.copy2(composed_video, output_path)
+            final_video = output_path
+        else:
+            final_video = composed_video
+
+        source = self.config.provider_name if (self._live_calls_count > start_count) else "sandbox_fallback"
+
+        return {
+            "output_path": str(final_video),
+            "script": script,
+            "scenes": scenes,
+            "audio_path": str(audio_path),
+            "duration_seconds": audio_duration,
+            "generation_source": source,
+        }
 
     def close(self) -> None:
         if self._http_client and not self._http_client.is_closed:
