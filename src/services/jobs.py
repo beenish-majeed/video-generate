@@ -525,26 +525,49 @@ def get_job(job_id: str) -> JobRecord | None:
     return load_job_record(job_id)
 
 
+_EXECUTING_JOB_IDS: set[str] = set()
+_EXECUTING_JOBS_LOCK = threading.Lock()
+
+
+def is_job_executing(job_id: str) -> bool:
+    with _EXECUTING_JOBS_LOCK:
+        return job_id in _EXECUTING_JOB_IDS
+
+
 def run_job(job_id: str) -> None:
-    job = load_job_record(job_id)
-    if job is None:
-        return
+    with _EXECUTING_JOBS_LOCK:
+        if job_id in _EXECUTING_JOB_IDS:
+            logger.warning(f"Job {job_id} is already currently executing on an active worker; skipping duplicate execution.")
+            return
+        _EXECUTING_JOB_IDS.add(job_id)
 
-    if job.plan is None or job.timeline is None:
-        job.state = JobState.FAILED
-        job.error = "Job plan or timeline is missing."
-        save_job_record(job)
-        return
-
-    job_path = job_dir(job_id)
-
-    if is_job_cancelled(job_id):
-        return
-
-    is_my_own = bool(getattr(job.request, "uploaded_image_asset_ids", None))
-    visual_mode = getattr(job.request, "visual_mode", "talking_head")
-
+    job = None
+    job_path = None
+    should_save_and_cleanup = False
     try:
+        job = load_job_record(job_id)
+        if job is None:
+            return
+
+        if job.state in (JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED):
+            logger.warning(f"Job {job_id} is already in terminal state {job.state.value}; skipping re-execution.")
+            return
+
+        if job.plan is None or job.timeline is None:
+            job.state = JobState.FAILED
+            job.error = "Job plan or timeline is missing."
+            save_job_record(job)
+            return
+
+        job_path = job_dir(job_id)
+        should_save_and_cleanup = True
+
+        if is_job_cancelled(job_id):
+            return
+
+        is_my_own = bool(getattr(job.request, "uploaded_image_asset_ids", None))
+        visual_mode = getattr(job.request, "visual_mode", "talking_head")
+
         # Early pre-flight validation of music asset/preset before rendering segments
         music_id = job.request.music_preset_id or job.request.music_asset_id
         if music_id:
@@ -1383,18 +1406,21 @@ def run_job(job_id: str) -> None:
                     job.music_failure_reason = str(exc)
 
     finally:
-        save_job_record(job)
-        try:
-            manifest_path = job_path / "manifest.json"
-            manifest_path.write_text(
-                job.model_dump_json(indent=2),
-                encoding="utf-8",
+        if should_save_and_cleanup and job is not None and job_path is not None:
+            save_job_record(job)
+            try:
+                manifest_path = job_path / "manifest.json"
+                manifest_path.write_text(
+                    job.model_dump_json(indent=2),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
+            _cleanup_intermediate_job_files(
+                job_path,
+                is_failed=(job.state == JobState.FAILED),
+                is_cancelled=(job.state == JobState.CANCELLED),
+                updated_at=job.updated_at,
             )
-        except Exception:
-            pass
-        _cleanup_intermediate_job_files(
-            job_path,
-            is_failed=(job.state == JobState.FAILED),
-            is_cancelled=(job.state == JobState.CANCELLED),
-            updated_at=job.updated_at,
-        )
+        with _EXECUTING_JOBS_LOCK:
+            _EXECUTING_JOB_IDS.discard(job_id)
