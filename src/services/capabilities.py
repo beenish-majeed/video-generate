@@ -56,7 +56,7 @@ def is_piper_available() -> bool:
 
 def compute_honest_time_estimate(
     duration_seconds: float,
-    mode: str = "slideshow",
+    mode: str = "text_to_video",
     gpu: bool = False,
     image_provider: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -135,7 +135,7 @@ def get_system_capabilities(
     if duration_seconds is not None:
         caps["estimate"] = compute_honest_time_estimate(
             duration_seconds=duration_seconds,
-            mode=mode or "slideshow",
+            mode=mode or "text_to_video",
             gpu=gpu_ok,
         )
 

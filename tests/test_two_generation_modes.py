@@ -198,3 +198,31 @@ def test_transparent_generation_source(tmp_path):
         duration_seconds=2.0,
     )
     assert res_sandbox["generation_source"] == "sandbox_fallback"
+
+
+def test_capabilities_canonical_two_modes(monkeypatch):
+    from fastapi.testclient import TestClient
+    from src.main import app
+    from src.core.config import settings
+
+    client = TestClient(app)
+    headers = {"X-API-Key": "test-key"}
+
+    monkeypatch.setattr(settings, "api_key", "test-key")
+    monkeypatch.setattr(settings, "allow_insecure_dev", False)
+
+    # 1. Base capabilities advertises strictly two modes
+    resp = client.get("/v1/capabilities", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["modes"] == ["text_to_video", "picture_to_video"]
+
+    # 2. Estimate parameter with valid mode
+    resp_est = client.get("/v1/capabilities?mode=text_to_video&duration_seconds=30", headers=headers)
+    assert resp_est.status_code == 200
+    assert "estimate" in resp_est.json()
+
+    # 3. Invalid mode query is rejected with 400
+    resp_bad = client.get("/v1/capabilities?mode=unknown_third_mode", headers=headers)
+    assert resp_bad.status_code == 400
+    assert "Canonical modes" in resp_bad.json()["detail"]

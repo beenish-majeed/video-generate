@@ -80,6 +80,12 @@ def get_capabilities_endpoint(
     mode: Optional[str] = Query(None),
     duration_seconds: Optional[float] = Query(None),
 ):
+    valid_modes = {"text_to_video", "picture_to_video", "slideshow", "talking_head"}
+    if mode is not None and mode not in valid_modes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid generation mode '{mode}'. Canonical modes: 'text_to_video', 'picture_to_video'.",
+        )
     return get_system_capabilities(mode=mode, duration_seconds=duration_seconds)
 
 
