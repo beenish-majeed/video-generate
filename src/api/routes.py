@@ -262,7 +262,27 @@ async def upload_asset_endpoint(
 
     import src.main as main_mod
     upload_fn = getattr(main_mod, "save_upload", save_upload)
-    return upload_fn(file=file, kind=kind)
+    result = upload_fn(file=file, kind=kind)
+    if isinstance(result, dict):
+        clean_result = dict(result)
+        clean_result.pop("path", None)
+        return clean_result
+    return result
+
+
+def _validate_safe_job_id(job_id: str) -> str:
+    """Validate job identifier to prevent directory traversal or malformed injection."""
+    if not job_id or not isinstance(job_id, str):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid job identifier.",
+        )
+    if not re.match(r"^[a-zA-Z0-9_\-]{1,128}$", job_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid job identifier format: illegal characters or path traversal elements.",
+        )
+    return job_id
 
 
 # =============================================================================
@@ -272,7 +292,7 @@ async def upload_asset_endpoint(
 @router.post(
     "/v1/jobs/estimate",
     response_model=JobEstimateResponse,
-    dependencies=[Depends(verify_api_key)],
+    dependencies=[Depends(verify_api_key), Depends(check_script_rate_limit)],
 )
 def estimate_job_render(payload: JobEstimateRequest):
     mult = 2.7 if payload.visual_mode in ("picture_to_video", "talking_head") else 0.85
@@ -339,6 +359,7 @@ def list_jobs():
 
 @router.get("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
 def read_job(job_id: str):
+    job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     get_fn = getattr(main_mod, "get_job", load_job_record)
     job = get_fn(job_id)
@@ -349,6 +370,7 @@ def read_job(job_id: str):
 
 @router.post("/v1/jobs/{job_id}/cancel", dependencies=[Depends(verify_api_key)])
 def cancel_video_job(job_id: str):
+    job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     cancel_fn = getattr(main_mod, "cancel_job", cancel_job)
     job = cancel_fn(job_id)
@@ -359,6 +381,7 @@ def cancel_video_job(job_id: str):
 
 @router.get("/v1/jobs/{job_id}/download", dependencies=[Depends(verify_api_key)])
 def download_job_video(job_id: str):
+    job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     get_fn = getattr(main_mod, "get_job", load_job_record)
     job = get_fn(job_id)
@@ -398,6 +421,7 @@ def download_job_video(job_id: str):
 
 @router.delete("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
 def delete_video_job(job_id: str):
+    job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     del_fn = getattr(main_mod, "delete_job_record", delete_job_record)
     try:
