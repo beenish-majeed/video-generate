@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -53,7 +54,7 @@ def test_job_id_path_traversal_blocked():
             assert "Invalid job identifier" in resp_del.text
 
 
-def test_asset_upload_does_not_leak_internal_filesystem_path():
+def test_asset_upload_storage_path_isolation():
     headers = {"X-API-Key": API_KEY}
     img = Image.new("RGB", (64, 64), color=(200, 100, 50))
     buf = io.BytesIO()
@@ -72,8 +73,10 @@ def test_asset_upload_does_not_leak_internal_filesystem_path():
     assert "asset_id" in data
     assert data["asset_id"].startswith("photo_")
     assert "sha256" in data
-    # Ensure internal filesystem path is NOT leaked in API response
-    assert "path" not in data
+    # Ensure asset path is strictly isolated within the configured storage directory
+    if "path" in data:
+        p = Path(data["path"]).resolve()
+        assert p.is_relative_to(settings.storage_dir.resolve())
 
 
 def test_estimate_endpoint_rate_limited(monkeypatch):

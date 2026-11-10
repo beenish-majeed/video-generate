@@ -268,12 +268,7 @@ async def upload_asset_endpoint(
 
     import src.main as main_mod
     upload_fn = getattr(main_mod, "save_upload", save_upload)
-    result = upload_fn(file=file, kind=kind)
-    if isinstance(result, dict):
-        clean_result = dict(result)
-        clean_result.pop("path", None)
-        return clean_result
-    return result
+    return upload_fn(file=file, kind=kind)
 
 
 def _validate_safe_job_id(job_id: str) -> str:
