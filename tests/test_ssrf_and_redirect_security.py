@@ -34,6 +34,24 @@ def test_validate_download_url_comprehensive():
     with pytest.raises(FileAIError, match="only HTTPS"):
         _validate_download_url("ftp://example.com/file.mp4")
 
+    # Prohibited ports
+    with pytest.raises(FileAIError, match="prohibited port"):
+        _validate_download_url("https://example.com:22/file.mp4")
+
+    with pytest.raises(FileAIError, match="prohibited port"):
+        _validate_download_url("https://example.com:25/file.mp4")
+
+    with pytest.raises(FileAIError, match="prohibited port"):
+        _validate_download_url("https://example.com:8000/file.mp4")
+
+    # Integer decimal host (2130706433 == 127.0.0.1)
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://2130706433/file.mp4")
+
+    # Hexadecimal host (0x7f000001 == 127.0.0.1)
+    with pytest.raises(FileAIError, match="SSRF blocked"):
+        _validate_download_url("https://0x7f000001/file.mp4")
+
     with pytest.raises(FileAIError, match="SSRF blocked"):
         _validate_download_url("https://metadata.google.internal/computeMetadata/v1/")
 
@@ -48,6 +66,25 @@ def test_validate_download_url_comprehensive():
 
     with pytest.raises(FileAIError, match="SSRF blocked"):
         _validate_download_url("https://169.254.169.254/latest/meta-data")
+
+
+def test_dns_rebinding_peer_ip_interception():
+    from src.clients.file_ai import SafeSyncBackend
+
+    class MockRebindingStream:
+        class MockSock:
+            def getpeername(self):
+                return ("127.0.0.1", 443)
+            def close(self):
+                pass
+        _sock = MockSock()
+        def close(self):
+            pass
+
+    backend = SafeSyncBackend()
+    with patch("httpcore._backends.sync.SyncBackend.connect_tcp", return_value=MockRebindingStream()):
+        with pytest.raises(FileAIError, match="SSRF / DNS rebinding blocked"):
+            backend.connect_tcp("malicious-rebinding-domain.com", 443)
 
 
 def test_safe_download_redirect_to_ssrf_blocked(tmp_path):

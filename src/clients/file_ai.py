@@ -10,6 +10,8 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import httpcore
+import httpcore._backends.sync
 import httpx
 
 from src.core.api_config import file_ai_config
@@ -30,6 +32,54 @@ def _is_ip_prohibited(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool
         or ip.is_unspecified
         or str(ip) in {"169.254.169.254", "169.254.170.2", "0.0.0.0", "::"}
     )
+
+
+class SafeSyncBackend(httpcore._backends.sync.SyncBackend):
+    """Network backend that intercepts connected socket peer IP to prevent DNS rebinding attacks."""
+
+    def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: Optional[float] = None,
+        local_address: Optional[str] = None,
+        socket_options: Optional[Any] = None,
+    ):
+        stream = super().connect_tcp(
+            host=host,
+            port=port,
+            timeout=timeout,
+            local_address=local_address,
+            socket_options=socket_options,
+        )
+        try:
+            sock = getattr(stream, "_sock", None)
+            if sock is not None and hasattr(sock, "getpeername"):
+                peer_ip_str = sock.getpeername()[0]
+                peer_ip = ipaddress.ip_address(peer_ip_str)
+                if _is_ip_prohibited(peer_ip):
+                    stream.close()
+                    raise FileAIError(
+                        f"SSRF / DNS rebinding blocked: connected socket peer IP {peer_ip_str} is a prohibited address"
+                    )
+        except Exception:
+            try:
+                stream.close()
+            except Exception:
+                pass
+            raise
+        return stream
+
+
+class SafeHTTPTransport(httpx.HTTPTransport):
+    """HTTP transport configured with kernel-level socket peer IP verification."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._pool = httpcore.ConnectionPool(
+            ssl_context=self._pool._ssl_context,
+            network_backend=SafeSyncBackend(),
+        )
 
 
 def _validate_download_url(url: str) -> None:
@@ -58,10 +108,33 @@ def _validate_download_url(url: str) -> None:
         ip = ipaddress.ip_address(hostname)
         if _is_ip_prohibited(ip):
             raise FileAIError(f"SSRF blocked: {hostname} is a prohibited address")
-        return
     except ValueError:
-        # Not a raw IP literal, proceed to DNS resolution
         pass
+
+    # Check decimal integer host representation (e.g. 2130706433 -> 127.0.0.1)
+    if lower_host.isdigit():
+        try:
+            ip = ipaddress.ip_address(int(lower_host))
+            if _is_ip_prohibited(ip):
+                raise FileAIError(f"SSRF blocked: integer host {hostname} resolves to prohibited address {ip}")
+            return
+        except ValueError:
+            pass
+
+    # Check hexadecimal host representation (e.g. 0x7f000001 -> 127.0.0.1)
+    if lower_host.startswith("0x"):
+        try:
+            ip = ipaddress.ip_address(int(lower_host, 16))
+            if _is_ip_prohibited(ip):
+                raise FileAIError(f"SSRF blocked: hex host {hostname} resolves to prohibited address {ip}")
+            return
+        except ValueError:
+            pass
+
+    if parsed.port and parsed.port not in (443, 8443):
+        raise FileAIError(
+            f"Insecure or prohibited port '{parsed.port}': only standard HTTPS ports (443, 8443) are allowed"
+        )
 
     try:
         addr_info = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
@@ -196,7 +269,7 @@ class FileAIClient:
         redirect_count = 0
 
         try:
-            with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+            with httpx.Client(transport=SafeHTTPTransport(), timeout=timeout, follow_redirects=False) as client:
                 while True:
                     _validate_download_url(current_url)
                     with client.stream("GET", current_url) as resp:
