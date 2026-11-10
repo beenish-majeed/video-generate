@@ -18,6 +18,20 @@ from src.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _is_ip_prohibited(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if hasattr(ip, "ipv4_mapped") and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return bool(
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+        or str(ip) in {"169.254.169.254", "169.254.170.2", "0.0.0.0", "::"}
+    )
+
+
 def _validate_download_url(url: str) -> None:
     """Validate external download URL to prevent SSRF vulnerabilities."""
     if not url or not isinstance(url, str):
@@ -31,22 +45,18 @@ def _validate_download_url(url: str) -> None:
     if not hostname:
         raise FileAIError("Invalid download URL: missing hostname")
 
-    # Reject localhost strings directly
-    if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
-        raise FileAIError(f"SSRF blocked: local host {hostname} is prohibited")
+    lower_host = hostname.lower()
+    # Reject localhost strings and internal domain patterns directly
+    if (
+        lower_host in ("localhost", "127.0.0.1", "::1", "metadata.google.internal")
+        or lower_host.endswith((".local", ".internal", ".lan", ".localhost"))
+    ):
+        raise FileAIError(f"SSRF blocked: local or internal host {hostname} is prohibited")
 
     # If hostname is an IP address directly
     try:
         ip = ipaddress.ip_address(hostname)
-        if (
-            ip.is_loopback
-            or ip.is_private
-            or ip.is_link_local
-            or ip.is_multicast
-            or ip.is_reserved
-            or ip.is_unspecified
-            or str(ip) == "169.254.169.254"
-        ):
+        if _is_ip_prohibited(ip):
             raise FileAIError(f"SSRF blocked: {hostname} is a prohibited address")
         return
     except ValueError:
@@ -58,15 +68,7 @@ def _validate_download_url(url: str) -> None:
         for item in addr_info:
             ip_str = item[4][0]
             ip = ipaddress.ip_address(ip_str)
-            if (
-                ip.is_loopback
-                or ip.is_private
-                or ip.is_link_local
-                or ip.is_multicast
-                or ip.is_reserved
-                or ip.is_unspecified
-                or ip_str == "169.254.169.254"
-            ):
+            if _is_ip_prohibited(ip):
                 raise FileAIError(f"SSRF blocked: {hostname} resolves to prohibited address {ip_str}")
     except (socket.gaierror, socket.error) as exc:
         raise FileAIError(f"Could not resolve host {hostname}: {exc}") from exc
@@ -174,17 +176,71 @@ class FileAIClient:
                     continue
                 raise FileAIError(f"Network error contacting {self.config.provider_name} API: {exc}") from exc
 
-    def _safe_download_file(self, url: str, target_path: Path, timeout: float = 30.0) -> Path:
-        """Download remote asset after validating URL against SSRF."""
-        _validate_download_url(url)
+    def _safe_download_file(
+        self,
+        url: str,
+        target_path: Path,
+        timeout: float = 30.0,
+        max_download_size_bytes: int = 150 * 1024 * 1024,
+        max_redirects: int = 5,
+    ) -> Path:
+        """
+        Download remote asset with SSRF redirect validation and streaming size cap.
+        Prevents SSRF, DNS rebinding/redirect bypasses, and memory/disk exhaustion attacks.
+        """
         target_path = Path(target_path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        with httpx.Client(timeout=timeout) as client:
-            resp = client.get(url)
-            if not resp.is_success:
-                raise FileAIError(f"Failed to download asset from {url}: status {resp.status_code}")
-            target_path.write_bytes(resp.content)
-            return target_path
+        tmp_download_path = target_path.parent / f"{target_path.name}.download_{os.getpid()}_{time.time_ns()}.tmp"
+
+        current_url = url
+        redirect_count = 0
+
+        try:
+            with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+                while True:
+                    _validate_download_url(current_url)
+                    with client.stream("GET", current_url) as resp:
+                        if resp.status_code in {301, 302, 303, 307, 308}:
+                            redirect_count += 1
+                            if redirect_count > max_redirects:
+                                raise FileAIError(f"Too many redirects ({redirect_count}) downloading asset from {url}")
+                            location = resp.headers.get("Location")
+                            if not location:
+                                raise FileAIError(f"Redirect response ({resp.status_code}) missing Location header")
+                            current_url = urllib.parse.urljoin(current_url, location)
+                            continue
+
+                        if not resp.is_success:
+                            raise FileAIError(f"Failed to download asset from {current_url}: status {resp.status_code}")
+
+                        content_len_header = resp.headers.get("Content-Length")
+                        if content_len_header and content_len_header.isdigit():
+                            content_len = int(content_len_header)
+                            if content_len > max_download_size_bytes:
+                                raise FileAIError(
+                                    f"Asset size ({content_len} bytes) exceeds maximum permitted limit ({max_download_size_bytes} bytes)"
+                                )
+
+                        total_bytes = 0
+                        with open(tmp_download_path, "wb") as f_out:
+                            for chunk in resp.iter_bytes(chunk_size=65536):
+                                total_bytes += len(chunk)
+                                if total_bytes > max_download_size_bytes:
+                                    raise FileAIError(
+                                        f"Download stream exceeded maximum permitted limit ({max_download_size_bytes} bytes)"
+                                    )
+                                f_out.write(chunk)
+
+                        tmp_download_path.replace(target_path)
+                        return target_path
+
+        except Exception:
+            if tmp_download_path.exists():
+                try:
+                    tmp_download_path.unlink()
+                except OSError:
+                    pass
+            raise
 
     def _mux_audio_if_needed(self, video_path: Path, audio_path: Path) -> Path:
         """Mux audio stream into video file if missing or replace existing audio."""
