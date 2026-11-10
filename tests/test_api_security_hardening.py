@@ -103,3 +103,23 @@ def test_estimate_endpoint_rate_limited(monkeypatch):
 
     # Clear after test so subsequent tests are unaffected
     SCRIPT_LIMITER._history.clear()
+
+
+def test_authentication_supports_both_x_api_key_and_bearer_token():
+    # 1. Missing authentication
+    resp_no_auth = client.get("/v1/presets")
+    assert resp_no_auth.status_code == 401
+    assert "Invalid or missing API key" in resp_no_auth.json()["detail"]
+
+    # 2. X-API-Key header authentication
+    resp_x_key = client.get("/v1/presets", headers={"X-API-Key": API_KEY})
+    assert resp_x_key.status_code == 200
+
+    # 3. Authorization: Bearer <key> authentication
+    resp_bearer = client.get("/v1/presets", headers={"Authorization": f"Bearer {API_KEY}"})
+    assert resp_bearer.status_code == 200
+
+    # 4. Invalid Bearer token
+    resp_bad_bearer = client.get("/v1/presets", headers={"Authorization": "Bearer invalid_secret_token"})
+    assert resp_bad_bearer.status_code == 401
+    assert "Invalid or missing API key" in resp_bad_bearer.json()["detail"]

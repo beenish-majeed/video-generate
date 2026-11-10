@@ -18,10 +18,12 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def verify_api_key(
+    request: Request,
     header_key: Optional[str] = Security(api_key_header),
 ) -> Optional[str]:
     """
     Authenticate incoming request using constant-time comparison against configured API_KEY.
+    Supports both 'X-API-Key' header and standard 'Authorization: Bearer <key>' header.
     Allows unauthenticated requests only when ALLOW_INSECURE_DEV is True.
     """
     if not settings.api_key:
@@ -32,12 +34,21 @@ def verify_api_key(
             detail="Authentication failed: API key is not configured on the server.",
         )
 
-    if not header_key or not hmac.compare_digest(header_key, settings.api_key):
+    # 1. Check X-API-Key header
+    provided_key = header_key
+
+    # 2. Check Authorization: Bearer <token> fallback
+    if not provided_key:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.strip().lower().startswith("bearer "):
+            provided_key = auth_header.strip()[7:].strip()
+
+    if not provided_key or not hmac.compare_digest(provided_key, settings.api_key):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API key.",
         )
-    return header_key
+    return provided_key
 
 
 def check_script_rate_limit(request: Request) -> None:
