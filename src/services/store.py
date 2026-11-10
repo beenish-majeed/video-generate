@@ -76,6 +76,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
         probe_cmd = [
             settings.ffprobe_bin,
             "-v", "error",
+            "-protocol_whitelist", "file",
             "-select_streams", "a:0",
             "-show_entries", "stream=codec_type:format=duration",
             "-of", "json",
@@ -91,6 +92,8 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
                 decode_cmd = [
                     settings.ffmpeg_bin,
                     "-v", "error",
+                    "-nostdin",
+                    "-protocol_whitelist", "file",
                     "-i", str(tmp_path),
                     "-f", "null",
                     "-",
@@ -442,6 +445,7 @@ def save_upload(file: UploadFile, kind: str) -> dict:
         strip_cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
             "-protocol_whitelist", "file",
             "-i", str(tmp_up_path),
             "-map", "0:v:0",

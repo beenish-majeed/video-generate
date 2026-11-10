@@ -247,10 +247,12 @@ class FileAIClient:
         from src.utils.ffmpeg import has_audio_stream
         if has_audio_stream(video_path):
             return video_path
-        tmp_out = video_path.parent / f"{video_path.stem}_muxed.mp4"
+        tmp_out = video_path.parent / f"{video_path.stem}_muxed_{os.getpid()}_{time.time_ns()}.mp4"
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist", "file",
             "-i", str(video_path),
             "-i", str(audio_path),
             "-c:v", "copy",
@@ -260,9 +262,16 @@ class FileAIClient:
             str(tmp_out),
         ]
         from src.utils.subprocess_runner import run_subprocess
-        res = run_subprocess(cmd, timeout=30.0)
-        if res.returncode == 0 and tmp_out.exists():
-            tmp_out.replace(video_path)
+        try:
+            res = run_subprocess(cmd, timeout=30.0)
+            if res.returncode == 0 and tmp_out.exists():
+                tmp_out.replace(video_path)
+        finally:
+            if tmp_out.exists():
+                try:
+                    tmp_out.unlink()
+                except OSError:
+                    pass
         return video_path
 
     # =========================================================================
@@ -828,19 +837,25 @@ class FileAIClient:
             # B. Generic File.ai REST Integration
             else:
                 try:
-                    with open(image_path, "rb") as img_f:
-                        files = {"image": (image_path.name, img_f, "image/jpeg")}
-                        if aud_p and aud_p.exists():
-                            files["audio"] = (aud_p.name, open(aud_p, "rb"), "audio/wav")
-                        res = self._execute_request_with_retry("POST", "/v1/video/image-to-video", files=files)
-                        output_path.write_bytes(res.content)
-                        if aud_p and aud_p.exists():
-                            self._mux_audio_if_needed(output_path, aud_p)
-                        return {
-                            "output_path": str(output_path),
-                            "duration_seconds": dur,
-                            "generation_source": "file.ai",
-                        }
+                    aud_f = None
+                    try:
+                        with open(image_path, "rb") as img_f:
+                            files = {"image": (image_path.name, img_f, "image/jpeg")}
+                            if aud_p and aud_p.exists():
+                                aud_f = open(aud_p, "rb")
+                                files["audio"] = (aud_p.name, aud_f, "audio/wav")
+                            res = self._execute_request_with_retry("POST", "/v1/video/image-to-video", files=files)
+                            output_path.write_bytes(res.content)
+                            if aud_p and aud_p.exists():
+                                self._mux_audio_if_needed(output_path, aud_p)
+                            return {
+                                "output_path": str(output_path),
+                                "duration_seconds": dur,
+                                "generation_source": "file.ai",
+                            }
+                    finally:
+                        if aud_f:
+                            aud_f.close()
                 except Exception as exc:
                     logger.warning(
                         f"Live File.ai image-to-video failed ({_sanitize_error_message(str(exc))}); "
@@ -853,6 +868,7 @@ class FileAIClient:
             cmd = [
                 settings.ffmpeg_bin,
                 "-y",
+                "-nostdin",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",
@@ -871,6 +887,7 @@ class FileAIClient:
             cmd = [
                 settings.ffmpeg_bin,
                 "-y",
+                "-nostdin",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",

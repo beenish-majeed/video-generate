@@ -16,6 +16,31 @@ def run(cmd: list[str], timeout: float | None = None) -> object:
     return run_subprocess(cmd, timeout=timeout, check=True)
 
 
+def has_audio_stream(path: str | Path) -> bool:
+    """Check whether a media file contains at least one valid audio stream."""
+    path = Path(path)
+    if not path.exists():
+        return False
+    try:
+        cmd = [
+            settings.ffprobe_bin,
+            "-v", "error",
+            "-protocol_whitelist", "file",
+            "-select_streams", "a:0",
+            "-show_entries", "stream=codec_type",
+            "-of", "json",
+            str(path),
+        ]
+        res = run_subprocess(cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            streams = data.get("streams", [])
+            return len(streams) > 0 and streams[0].get("codec_type") == "audio"
+    except Exception:
+        pass
+    return False
+
+
 def probe_duration(path: str | Path) -> float:
     path = Path(path)
 
