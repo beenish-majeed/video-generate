@@ -197,7 +197,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     height: '18px',
                     borderRadius: '50%',
                     backgroundColor: 'var(--accent-primary)',
-                    color: '#fff',
+                    color: '#F5F5DC',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -244,7 +244,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                     height: '18px',
                     borderRadius: '50%',
                     backgroundColor: 'var(--accent-primary)',
-                    color: '#fff',
+                    color: '#F5F5DC',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -419,7 +419,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                           height: '18px',
                           borderRadius: '50%',
                           backgroundColor: 'var(--accent-primary)',
-                          color: '#fff',
+                          color: '#F5F5DC',
                         }}
                       >
                         <Check size={12} strokeWidth={3} />
@@ -551,7 +551,7 @@ export const LookVoiceStep: React.FC<LookVoiceStepProps> = ({
                       height: '18px',
                       borderRadius: '50%',
                       backgroundColor: 'var(--accent-primary)',
-                      color: '#fff',
+                      color: '#F5F5DC',
                     }}
                   >
                     <Check size={11} strokeWidth={3} />

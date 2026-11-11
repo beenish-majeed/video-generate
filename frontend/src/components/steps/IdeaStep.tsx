@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 import type { ScriptTone } from '../../types/api';
 import { validateIdeaPrompt, MAX_IDEA_PROMPT_LENGTH } from '../../utils/ideaValidation';
 import { playStickerPopSound } from '../../utils/soundEffects';
+import StoryScrollSection from '../ui/StoryScrollSection';
 
 export interface IdeaStepProps {
   initialIdea?: string;
@@ -83,17 +84,18 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
       }}
     >
       {/* Title & Description */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <StoryScrollSection as="header" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <h1 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           What is your video about?
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           Write a thought, a memory, or an idea. Our studio writer will turn it into a tailored spoken script.
         </p>
-      </header>
+      </StoryScrollSection>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1.4dvh, 18px)' }}>
         {/* Textarea Box with Live Counter */}
+        <StoryScrollSection delay={0.06}>
         <div
           className="card"
           style={{
@@ -165,9 +167,10 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             </p>
           )}
         </div>
+        </StoryScrollSection>
 
         {/* 4 Example Chips */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <StoryScrollSection delay={0.1} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
             <span
@@ -209,10 +212,10 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
               </button>
             ))}
           </div>
-        </div>
+        </StoryScrollSection>
 
         {/* Tone Selector */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <StoryScrollSection delay={0.15} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <label
             style={{
               fontFamily: 'var(--font-sans)',
@@ -267,10 +270,11 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
               );
             })}
           </div>
-        </div>
+        </StoryScrollSection>
 
         {/* Actions Row */}
-        <div
+        <StoryScrollSection
+          delay={0.2}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -305,7 +309,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
             <ArrowRight size={18} aria-hidden="true" />
             <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
           </button>
-        </div>
+        </StoryScrollSection>
       </form>
     </div>
   );

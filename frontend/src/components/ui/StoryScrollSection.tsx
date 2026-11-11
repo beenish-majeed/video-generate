@@ -7,7 +7,7 @@ export interface StoryScrollSectionProps extends React.HTMLAttributes<HTMLElemen
   threshold?: number;
   className?: string;
   style?: React.CSSProperties;
-  as?: 'section' | 'div' | 'article' | 'header';
+  as?: 'section' | 'div' | 'article' | 'header' | 'footer' | 'aside';
 }
 
 export const StoryScrollSection: React.FC<StoryScrollSectionProps> = ({
@@ -27,6 +27,10 @@ export const StoryScrollSection: React.FC<StoryScrollSectionProps> = ({
     ? motion.article
     : as === 'header'
     ? motion.header
+    : as === 'footer'
+    ? motion.footer
+    : as === 'aside'
+    ? motion.aside
     : motion.section;
 
   return (

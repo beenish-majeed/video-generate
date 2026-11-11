@@ -254,8 +254,8 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
           style={{
             padding: '12px 16px',
             borderRadius: '12px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            background: 'var(--beige-surface)',
+            border: '1px solid rgba(0, 0, 0, 0.4)',
             color: 'var(--text-primary)',
             fontSize: '13.5px',
             display: 'flex',
@@ -263,7 +263,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
             gap: '8px',
           }}
         >
-          <AlertCircle size={16} color="#ef4444" />
+          <AlertCircle size={16} color="#000000" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -369,7 +369,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                         fontWeight: 700,
                         padding: '3px 8px',
                         borderRadius: '4px',
-                        background: '#5835ea',
+                        background: 'var(--teal-primary)',
                         color: '#ffffff',
                       }}
                     >
@@ -396,7 +396,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                     {matchedScene && (
                       <>
                         <span>•</span>
-                        <span style={{ color: '#4f2ee8', fontWeight: 600 }}>
+                        <span style={{ color: 'var(--teal-primary)', fontWeight: 600 }}>
                           Matches Scene {(matchedScene.scene_index ?? idx) + 1} ({((matchedScene.target_clip_seconds ?? matchedScene.duration_seconds) ?? 5.0).toFixed(1)}s)
                         </span>
                       </>
@@ -440,7 +440,7 @@ export const ClipsUploadStep: React.FC<ClipsUploadStepProps> = ({
                     type="button"
                     onClick={() => removeClip(idx)}
                     className="btn-secondary"
-                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}
+                    style={{ width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#000000' }}
                     title="Remove clip"
                     aria-label={`Remove clip ${idx + 1}`}
                   >

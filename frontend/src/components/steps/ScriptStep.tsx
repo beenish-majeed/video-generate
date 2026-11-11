@@ -145,14 +145,14 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       case 'too_short':
         return {
           icon: <Frown size={22} style={{ color: 'var(--ink-amber)', flexShrink: 0 }} />,
-          bgColor: '#fffcf5',
+          bgColor: 'var(--beige-surface)',
           borderColor: 'var(--ink-amber)',
-          textColor: '#874c00',
+          textColor: '#000000',
         };
       case 'too_long':
         return {
           icon: <AlertTriangle size={22} style={{ color: 'var(--ink-terracotta)', flexShrink: 0 }} />,
-          bgColor: '#fff8f6',
+          bgColor: 'var(--beige-surface)',
           borderColor: 'var(--ink-terracotta)',
           textColor: 'var(--ink-terracotta)',
         };
@@ -160,7 +160,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
       default:
         return {
           icon: <Smile size={22} style={{ color: 'var(--ink-sage)', flexShrink: 0 }} />,
-          bgColor: '#f5faf6',
+          bgColor: 'var(--beige-surface)',
           borderColor: 'var(--ink-sage)',
           textColor: 'var(--ink-sage)',
         };
@@ -274,7 +274,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               maxWidth: '440px',
               padding: '16px 20px',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(255, 255, 255, 0.7)',
+              background: 'var(--beige-surface)',
               border: '1px solid var(--border-subtle)',
               display: 'flex',
               flexDirection: 'column',
@@ -574,7 +574,7 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
               style={{
                 width: '100%',
                 height: '8px',
-                backgroundColor: 'rgba(108, 77, 255, 0.08)',
+                backgroundColor: 'rgba(0, 128, 128, 0.08)',
                 borderRadius: 'var(--radius-full)',
                 overflow: 'hidden',
                 boxShadow: 'inset 0 1px 2px rgba(45, 38, 74, 0.06)',
@@ -585,11 +585,9 @@ export const ScriptStep: React.FC<ScriptStepProps> = ({
                   width: `${Math.min(100, analysis.percentage)}%`,
                   height: '100%',
                   background:
-                    analysis.status === 'perfect'
-                      ? 'linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%)'
-                      : analysis.status === 'too_long'
-                      ? 'linear-gradient(90deg, #ff9e7d 0%, #e67e50 100%)'
-                      : 'linear-gradient(90deg, var(--accent) 0%, var(--blob-lavender) 100%)',
+                    analysis.status === 'too_long'
+                      ? '#000000'
+                      : 'var(--teal-primary)',
                   borderRadius: 'var(--radius-full)',
                   transition: 'width 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.35s ease',
                 }}

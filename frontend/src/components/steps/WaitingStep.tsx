@@ -384,19 +384,19 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          {/* Flowing Dreamy Gradient Orb with Story Icon */}
+          {/* Flowing Teal Orb with Story Icon */}
           <div className="flowing-orb" aria-hidden="true" style={{ margin: '8px 0' }}>
             <div
               style={{
                 width: '54px',
                 height: '54px',
                 borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.92)',
+                background: 'var(--beige-surface)',
                 backdropFilter: 'blur(10px)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(45, 38, 74, 0.08)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.08)',
               }}
             >
               {renderStoryIcon()}
@@ -412,7 +412,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               margin: '2px 0 6px 0',
               padding: '8px 16px',
               borderRadius: 'var(--radius-pill)',
-              background: 'rgba(255, 255, 255, 0.65)',
+              background: 'var(--beige-surface)',
               border: '1px solid var(--border-subtle)',
               backdropFilter: 'blur(8px)',
               flexWrap: 'wrap',
@@ -435,7 +435,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                           ? 'var(--accent-success)'
                           : isCurrent
                           ? 'var(--accent)'
-                          : 'rgba(108, 77, 255, 0.15)',
+                          : 'rgba(0, 128, 128, 0.15)',
                         color: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
@@ -465,7 +465,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                       style={{
                         width: '12px',
                         height: '2px',
-                        backgroundColor: isDone ? 'var(--accent-success)' : 'rgba(108, 77, 255, 0.15)',
+                        backgroundColor: isDone ? 'var(--accent-success)' : 'rgba(0, 128, 128, 0.15)',
                         borderRadius: '1px',
                       }}
                     />
@@ -551,7 +551,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   width: '100%',
                   height: '8px',
                   borderRadius: 'var(--radius-full)',
-                  backgroundColor: 'rgba(108, 77, 255, 0.08)',
+                  backgroundColor: 'rgba(0, 128, 128, 0.08)',
                   overflow: 'hidden',
                 }}
               >
@@ -559,7 +559,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
                   style={{
                     width: `${realSegmentPercent}%`,
                     height: '100%',
-                    background: 'linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%)',
+                    background: 'var(--teal-primary)',
                     borderRadius: 'var(--radius-full)',
                     transition: 'width 0.35s ease',
                   }}
@@ -571,7 +571,7 @@ export const WaitingStep: React.FC<WaitingStepProps> = ({
               style={{
                 padding: '12px 18px',
                 borderRadius: 'var(--radius-md)',
-                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                backgroundColor: 'var(--beige-surface)',
                 border: '1px solid var(--border-subtle)',
                 backdropFilter: 'blur(8px)',
                 display: 'flex',

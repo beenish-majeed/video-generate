@@ -13,17 +13,11 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const colorTokens = [
-    { name: '--bg', hex: '#F6F1FF', desc: 'Airy Pastel Base', role: 'Main Page Canvas' },
-    { name: '--blob-lavender', hex: '#CDB8FF', desc: 'Soft Lavender Blob', role: 'Background Drift' },
-    { name: '--blob-peach', hex: '#FFC9B5', desc: 'Warm Peach Blob', role: 'Background Drift' },
-    { name: '--blob-sky', hex: '#B9DDFF', desc: 'Airy Sky Blob', role: 'Background Drift' },
-    { name: '--blob-pink', hex: '#FFD3E8', desc: 'Soft Rose Blob', role: 'Accent Drift' },
-    { name: '--glass', hex: 'rgba(255,255,255,0.6)', desc: 'Frosted Glass Surface', role: 'Cards & Panels' },
-    { name: '--glass-border', hex: 'rgba(255,255,255,0.85)', desc: 'Subtle Glass Border', role: 'Card Outlines' },
-    { name: '--text', hex: '#241F3A', desc: 'Deep Violet Navy', role: 'Primary Text (14.2:1 AA)' },
-    { name: '--text-muted', hex: '#5E587A', desc: 'Muted Lavender Slate', role: 'Secondary Text (5.95:1 AA)' },
-    { name: '--accent', hex: '#6C4DFF', desc: 'Vibrant Violet Accent', role: 'Primary CTA & Focus' },
-    { name: '--accent-2', hex: '#B28CFF', desc: 'Lilac Gradient Stop', role: 'Gradient Accent' },
+    { name: '--teal-primary', hex: '#008080', desc: 'Deep Teal Accent', role: 'Primary CTA, Highlights & Dots' },
+    { name: '--beige-bg', hex: '#F5F5DC', desc: 'Classic Warm Beige', role: 'Main Canvas & Surfaces' },
+    { name: '--text', hex: '#000000', desc: 'Pure High-Contrast Black', role: 'Text & Icons (>19:1 AAA)' },
+    { name: '--teal-subtle', hex: 'rgba(0,128,128,0.12)', desc: 'Subtle Teal Wash', role: 'Hover & Selection Tints' },
+    { name: '--teal-border', hex: 'rgba(0,128,128,0.28)', desc: 'Teal Outline', role: 'Card & Input Borders' },
   ];
 
   return (
@@ -51,7 +45,7 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
             alignItems: 'center',
             textAlign: 'center',
             paddingBottom: '24px',
-            borderBottom: '1px solid rgba(205, 184, 255, 0.35)',
+            borderBottom: '1px solid var(--border-light)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between', width: '100%' }}>
@@ -431,7 +425,7 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
                   width: '44px',
                   height: '44px',
                   borderRadius: '14px',
-                  background: 'linear-gradient(135deg, rgba(205, 184, 255, 0.4) 0%, rgba(255, 201, 181, 0.4) 100%)',
+                  background: 'var(--teal-subtle)',
                   border: '1px solid var(--glass-border)',
                   display: 'flex',
                   alignItems: 'center',
@@ -474,7 +468,7 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
                   width: '44px',
                   height: '44px',
                   borderRadius: '14px',
-                  background: 'linear-gradient(135deg, rgba(185, 221, 255, 0.4) 0%, rgba(255, 211, 232, 0.4) 100%)',
+                  background: 'var(--teal-subtle)',
                   border: '1px solid var(--glass-border)',
                   display: 'flex',
                   alignItems: 'center',
@@ -685,7 +679,7 @@ export const StyleGuide: React.FC<StyleGuideProps> = ({ onClose }) => {
                   width: '100%',
                   height: '8px',
                   borderRadius: 'var(--radius-pill)',
-                  background: 'rgba(205, 184, 255, 0.3)',
+                  background: 'var(--teal-subtle)',
                   overflow: 'hidden',
                 }}
               >

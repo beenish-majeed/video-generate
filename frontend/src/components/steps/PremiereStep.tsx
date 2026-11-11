@@ -145,7 +145,7 @@ export const PremiereStep: React.FC<PremiereStepProps> = ({ job, onRestart }) =>
           position: 'relative',
           borderRadius: 'var(--radius-card)',
           backgroundColor: '#0f172a',
-          boxShadow: '0 12px 40px rgba(108, 77, 255, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06)',
+          boxShadow: '0 12px 40px rgba(0, 128, 128, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',

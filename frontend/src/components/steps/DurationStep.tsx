@@ -5,6 +5,7 @@ import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
 import { motion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Clock, Sparkles, Loader2, AlertCircle, RefreshCw, Hourglass } from 'lucide-react';
+import StoryScrollSection from '../ui/StoryScrollSection';
 
 interface DurationStepProps {
   selectedPreset: DurationPreset;
@@ -76,17 +77,17 @@ export const DurationStep: React.FC<DurationStepProps> = ({
       }}
     >
       {/* Header Copy */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <StoryScrollSection as="header" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Select video duration
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
           How long should your animated film be? We load options dynamically from the studio backend.
         </p>
-      </header>
+      </StoryScrollSection>
 
       {/* Main Interactive Preset Selection - Fluid Grid */}
-      <div role="region" aria-label="Duration preset selection" style={{ width: '100%' }}>
+      <StoryScrollSection as="div" delay={0.06} role="region" aria-label="Duration preset selection" style={{ width: '100%' }}>
         {loading ? (
           /* Loading State */
           <div
@@ -180,7 +181,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
                         inset: -2,
                         borderRadius: 'calc(var(--radius-card) + 2px)',
                         border: '2px solid var(--accent)',
-                        boxShadow: '0 0 20px rgba(108, 77, 255, 0.22), inset 0 0 10px rgba(108, 77, 255, 0.05)',
+                        boxShadow: '0 0 20px rgba(0, 128, 128, 0.22), inset 0 0 10px rgba(0, 128, 128, 0.05)',
                         pointerEvents: 'none',
                         zIndex: 1,
                       }}
@@ -206,10 +207,12 @@ export const DurationStep: React.FC<DurationStepProps> = ({
             })}
           </div>
         )}
-      </div>
+      </StoryScrollSection>
 
       {/* Kind Note about Render Time & Pacing */}
-      <section
+      <StoryScrollSection
+        as="section"
+        delay={0.12}
         className="card"
         style={{
           padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
@@ -241,10 +244,15 @@ export const DurationStep: React.FC<DurationStepProps> = ({
             For {currentOption.label} ({currentOption.seconds}s), aim for ~{approxWords} spoken words (at {wpm} words/min rate).
           </p>
         </div>
-      </section>
+      </StoryScrollSection>
 
       {/* Navigation Footer */}
-      <footer className="step-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+      <StoryScrollSection
+        as="footer"
+        delay={0.18}
+        className="step-footer"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}
+      >
         <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '10px 20px' }}>
           <ArrowLeft size={16} />
           <span>Back</span>
@@ -256,7 +264,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
           <ArrowRight size={16} />
           <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
-      </footer>
+      </StoryScrollSection>
     </div>
   );
 };

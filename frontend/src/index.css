@@ -892,19 +892,16 @@ button:active:not(:disabled),
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Waiting Room Motion: Flowing Gradient Orb & Pulsing Stage Dots */
+/* Waiting Room Motion: Flowing Teal Orb & Pulsing Stage Dots */
 @keyframes gradientOrbFlow {
   0% {
     transform: rotate(0deg) scale(1);
-    filter: hue-rotate(0deg);
   }
   50% {
     transform: rotate(180deg) scale(1.04);
-    filter: hue-rotate(12deg);
   }
   100% {
     transform: rotate(360deg) scale(1);
-    filter: hue-rotate(0deg);
   }
 }
 

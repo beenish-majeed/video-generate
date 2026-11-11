@@ -146,7 +146,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
               className="btn-secondary"
               style={{ fontSize: '13px', padding: '10px 16px', minHeight: '44px', minWidth: '44px' }}
             >
-              {copiedAll ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+              {copiedAll ? <Check size={14} color="var(--teal-primary)" /> : <Copy size={14} />}
               <span>{copiedAll ? 'Copied All' : 'Copy All Prompts'}</span>
             </button>
             <button
@@ -229,8 +229,8 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
           style={{
             padding: '14px 18px',
             borderRadius: '12px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            background: 'var(--beige-surface)',
+            border: '1px solid rgba(0, 0, 0, 0.4)',
             color: 'var(--text-primary)',
             fontSize: '14px',
             display: 'flex',
@@ -299,7 +299,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                         textTransform: 'uppercase',
                         padding: '4px 10px',
                         borderRadius: '6px',
-                        background: '#5835ea',
+                        background: 'var(--teal-primary)',
                         color: '#ffffff',
                       }}
                     >
@@ -316,7 +316,7 @@ export const ScenePlanStep: React.FC<ScenePlanStepProps> = ({
                     className="btn-secondary"
                     style={{ fontSize: '12px', padding: '8px 14px', minHeight: '44px', minWidth: '44px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    {isCopied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                    {isCopied ? <Check size={13} color="var(--teal-primary)" /> : <Copy size={13} />}
                     <span>{isCopied ? 'Copied' : 'Copy Prompt'}</span>
                   </button>
                 </div>
