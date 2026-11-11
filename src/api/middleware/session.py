@@ -9,6 +9,20 @@ from src.core.session import generate_session_token, verify_session_token
 logger = logging.getLogger(__name__)
 
 
+def _is_https_request(request: Request) -> bool:
+    """Determine if the request arrived over HTTPS (direct or behind reverse proxies)."""
+    if request.url.scheme == "https":
+        return True
+    if request.headers.get("x-forwarded-proto", "").lower() == "https":
+        return True
+    if request.headers.get("x-forwarded-ssl", "").lower() in ("on", "1"):
+        return True
+    fwd = request.headers.get("forwarded", "").lower()
+    if "proto=https" in fwd:
+        return True
+    return False
+
+
 class AnonymousSessionMiddleware(BaseHTTPMiddleware):
     """
     Enforces cryptographically signed anonymous sessions for all visitors.
@@ -37,7 +51,7 @@ class AnonymousSessionMiddleware(BaseHTTPMiddleware):
         response: Response = await call_next(request)
 
         if needs_cookie:
-            is_secure = request.url.scheme == "https"
+            is_secure = _is_https_request(request)
             response.set_cookie(
                 key=settings.session_cookie_name,
                 value=token,

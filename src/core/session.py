@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import re
+import secrets
 import time
 import uuid
 from typing import Optional
@@ -8,6 +9,7 @@ from typing import Optional
 from src.core.config import settings
 
 _SESSION_ID_PATTERN = re.compile(r"^sess_[a-f0-9]{32}$")
+_CACHED_SECRET_KEY: Optional[bytes] = None
 
 
 def create_session_id() -> str:
@@ -23,9 +25,42 @@ def is_valid_session_id(session_id: Optional[str]) -> bool:
 
 
 def _get_signing_key() -> bytes:
-    """Derive HMAC secret key for signing anonymous session cookies."""
-    raw = getattr(settings, "session_secret", None) or getattr(settings, "jwt_secret", "") or "default_secret"
-    return raw.encode("utf-8")
+    """
+    Derive HMAC secret key for signing anonymous session cookies.
+    Priority:
+    1. Explicit non-placeholder settings.session_secret.
+    2. Persistent key file in storage/.session_secret (survives restarts).
+    3. Fallback to settings.jwt_secret.
+    """
+    global _CACHED_SECRET_KEY
+    if _CACHED_SECRET_KEY is not None:
+        return _CACHED_SECRET_KEY
+
+    env_sec = (getattr(settings, "session_secret", None) or "").strip()
+    if env_sec and env_sec != "insecure_dev_session_secret_change_in_production_min32chars":
+        _CACHED_SECRET_KEY = env_sec.encode("utf-8")
+        return _CACHED_SECRET_KEY
+
+    storage_dir = getattr(settings, "storage_dir", None)
+    if storage_dir:
+        secret_file = storage_dir / ".session_secret"
+        try:
+            storage_dir.mkdir(parents=True, exist_ok=True)
+            if secret_file.exists():
+                val = secret_file.read_text(encoding="utf-8").strip()
+                if len(val) >= 32:
+                    _CACHED_SECRET_KEY = val.encode("utf-8")
+                    return _CACHED_SECRET_KEY
+            new_key = secrets.token_hex(32)
+            secret_file.write_text(new_key, encoding="utf-8")
+            _CACHED_SECRET_KEY = new_key.encode("utf-8")
+            return _CACHED_SECRET_KEY
+        except Exception:
+            pass
+
+    raw = env_sec or getattr(settings, "jwt_secret", "") or "default_secret"
+    _CACHED_SECRET_KEY = raw.encode("utf-8")
+    return _CACHED_SECRET_KEY
 
 
 def generate_session_token(
