@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Sparkles, Image, User, Film } from 'lucide-react';
+import StoryScrollSection from '../ui/StoryScrollSection';
 
 export const ENABLE_PROMPT_PATH = true;
 
@@ -139,7 +140,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
       </div>
 
       {/* Header Section */}
-      <header style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <StoryScrollSection as="header" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <h1
           ref={headingRef}
           tabIndex={-1}
@@ -151,33 +152,35 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         <p className="page-lead" style={{ margin: 0 }}>
           Choose your creative path below to begin crafting your personal film.
         </p>
-      </header>
+      </StoryScrollSection>
 
-      {/* Three Choice Cards: Staggered entrance, Hover lift & Spotlight, Ripple feedback */}
-      <motion.div
-        className="choice-cards-grid"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 'clamp(16px, 2vw, 24px)',
-          alignItems: 'stretch',
-          width: '100%',
-        }}
-      >
-        {cards.map((card) => (
-          <ChoiceCardItem
-            key={card.id}
-            card={card}
-            variants={cardVariants}
-            isSelected={selectedId === card.id}
-            shouldReduceMotion={shouldReduceMotion}
-            onClick={() => handleCardClick(card.id, card.onSelect)}
-          />
-        ))}
-      </motion.div>
+      {/* Choice Cards: Staggered entrance, Hover lift & Spotlight, Ripple feedback */}
+      <StoryScrollSection delay={0.08}>
+        <motion.div
+          className="choice-cards-grid"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 'clamp(16px, 2vw, 24px)',
+            alignItems: 'stretch',
+            width: '100%',
+          }}
+        >
+          {cards.map((card) => (
+            <ChoiceCardItem
+              key={card.id}
+              card={card}
+              variants={cardVariants}
+              isSelected={selectedId === card.id}
+              shouldReduceMotion={shouldReduceMotion}
+              onClick={() => handleCardClick(card.id, card.onSelect)}
+            />
+          ))}
+        </motion.div>
+      </StoryScrollSection>
     </div>
   );
 };
@@ -245,7 +248,7 @@ const ChoiceCardItem: React.FC<ChoiceCardItemProps> = ({
             position: 'absolute',
             inset: 0,
             pointerEvents: 'none',
-            background: `radial-gradient(320px circle at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.45), transparent 70%)`,
+            background: `radial-gradient(320px circle at ${mousePos.x}px ${mousePos.y}px, rgba(0, 128, 128, 0.08), transparent 70%)`,
             zIndex: 1,
           }}
         />
@@ -267,7 +270,7 @@ const ChoiceCardItem: React.FC<ChoiceCardItemProps> = ({
             marginTop: '-60px',
             marginLeft: '-60px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(108, 77, 255, 0.3) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(0, 128, 128, 0.35) 0%, transparent 70%)',
             pointerEvents: 'none',
             zIndex: 2,
           }}
@@ -281,10 +284,8 @@ const ChoiceCardItem: React.FC<ChoiceCardItemProps> = ({
             width: '48px',
             height: '48px',
             borderRadius: '14px',
-            background: card.isPrimary
-              ? 'linear-gradient(135deg, rgba(205, 184, 255, 0.4) 0%, rgba(255, 201, 181, 0.4) 100%)'
-              : 'linear-gradient(135deg, rgba(185, 221, 255, 0.4) 0%, rgba(255, 211, 232, 0.4) 100%)',
-            border: '1px solid var(--glass-border)',
+            background: card.isPrimary ? 'var(--teal-subtle)' : 'var(--beige-surface)',
+            border: '1px solid var(--teal-border)',
             color: 'var(--accent)',
             display: 'flex',
             alignItems: 'center',

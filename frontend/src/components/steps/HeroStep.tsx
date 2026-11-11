@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import StoryScrollSection from '../ui/StoryScrollSection';
 
 export interface HeroStepProps {
   onGetStarted: () => void;
@@ -150,16 +151,16 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
             width: 'clamp(80px, 10vw, 130px)',
             height: 'clamp(80px, 10vw, 130px)',
             borderRadius: 'var(--radius-pill)',
-            background: 'linear-gradient(135deg, rgba(205, 184, 255, 0.45) 0%, rgba(255, 255, 255, 0.35) 100%)',
+            background: 'rgba(0, 128, 128, 0.08)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(0, 128, 128, 0.25)',
             boxShadow: 'var(--shadow-card)',
             opacity: 0.85,
           }}
         />
 
-        {/* Shape 2: Bottom-Right Warm Peach Glass Disc */}
+        {/* Shape 2: Bottom-Right Warm Beige Glass Disc */}
         <motion.div
           animate={
             shouldReduceMotion || !isVisible
@@ -182,16 +183,16 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
             width: 'clamp(90px, 12vw, 150px)',
             height: 'clamp(90px, 12vw, 150px)',
             borderRadius: '28px',
-            background: 'linear-gradient(135deg, rgba(255, 201, 181, 0.4) 0%, rgba(255, 211, 232, 0.3) 100%)',
+            background: 'rgba(245, 245, 220, 0.9)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(0, 128, 128, 0.2)',
             boxShadow: 'var(--shadow-card)',
             opacity: 0.8,
           }}
         />
 
-        {/* Shape 3: Middle-Right Sky Accent Bubble */}
+        {/* Shape 3: Middle-Right Subtle Teal Accent Bubble */}
         <motion.div
           animate={
             shouldReduceMotion || !isVisible
@@ -214,17 +215,18 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
             width: 'clamp(50px, 7vw, 85px)',
             height: 'clamp(50px, 7vw, 85px)',
             borderRadius: 'var(--radius-pill)',
-            background: 'linear-gradient(135deg, rgba(185, 221, 255, 0.45) 0%, rgba(255, 255, 255, 0.3) 100%)',
+            background: 'rgba(0, 128, 128, 0.06)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(0, 128, 128, 0.2)',
             boxShadow: 'var(--shadow-sm)',
             opacity: 0.75,
           }}
         />
       </div>
 
-      <header
+      <StoryScrollSection
+        as="header"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -293,10 +295,12 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         >
           Craft an intimate animated memory with gentle sound.
         </motion.p>
-      </header>
+      </StoryScrollSection>
 
       {/* Single "Get started" button with magnetic hover & shine sweep */}
-      <div
+      <StoryScrollSection
+        as="div"
+        delay={0.15}
         style={{
           display: 'flex',
           justifyContent: 'center',
@@ -330,7 +334,7 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
           <ArrowRight size={20} aria-hidden="true" />
           <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </motion.button>
-      </div>
+      </StoryScrollSection>
     </div>
   );
 };
