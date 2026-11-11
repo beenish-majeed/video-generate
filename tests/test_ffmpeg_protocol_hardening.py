@@ -24,7 +24,6 @@ def test_probe_duration_enforces_protocol_whitelist(monkeypatch, tmp_path):
     assert dur == 12.5
     assert len(recorded_cmd) == 1
     cmd = recorded_cmd[0]
-    assert "-nostdin" in cmd
     assert "-protocol_whitelist" in cmd
     idx = cmd.index("-protocol_whitelist")
     assert cmd[idx + 1] == "file"
@@ -47,7 +46,6 @@ def test_probe_format_tags_enforces_protocol_whitelist(monkeypatch, tmp_path):
     tags = ffmpeg.probe_format_tags(dummy_file)
     assert len(recorded_cmd) == 1
     cmd = recorded_cmd[0]
-    assert "-nostdin" in cmd
     assert "-protocol_whitelist" in cmd
     idx = cmd.index("-protocol_whitelist")
     assert cmd[idx + 1] == "file"

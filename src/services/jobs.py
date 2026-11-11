@@ -30,9 +30,14 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db_path() -> Path:
-    target = getattr(settings, "db_path", None)
-    if target is None:
-        target = settings.storage_dir / "jobs.db"
+    import sys
+    this_mod = sys.modules.get("src.services.jobs")
+    mod_db_path = getattr(this_mod, "DB_PATH", None) if this_mod else None
+    default_db_path = getattr(settings, "db_path", settings.storage_dir / "jobs.db")
+    if mod_db_path is not None and Path(mod_db_path).name != default_db_path.name:
+        target = Path(mod_db_path)
+    else:
+        target = default_db_path
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
 
@@ -600,7 +605,6 @@ def run_job(job_id: str) -> None:
                     settings.ffprobe_bin,
                     "-v",
                     "error",
-                    "-nostdin",
                     "-protocol_whitelist",
                     "file",
                     "-select_streams",
