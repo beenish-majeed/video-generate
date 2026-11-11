@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     api_key: Optional[str] = None
     allow_insecure_dev: bool = False
     jwt_secret: str = "insecure_dev_jwt_secret_change_in_production_min32chars"
+    session_cookie_name: str = "anon_session"
+    session_secret: str = Field(
+        default="insecure_dev_session_secret_change_in_production_min32chars",
+        description="HMAC secret key used for signing anonymous user session tokens.",
+    )
+    session_max_age_seconds: int = Field(
+        default=7 * 24 * 3600,  # 7 days
+        description="Anonymous session expiration period in seconds.",
+    )
     cors_allowed_origins: list[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"],
         description="Allowed CORS origins list. Configurable via CORS_ALLOWED_ORIGINS.",
