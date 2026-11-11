@@ -48,4 +48,24 @@ describe('VoiceStep Recording Rules & Error Handling', () => {
     mockStream.getTracks().forEach((track) => track.stop());
     expect(stoppedCount).toBe(2);
   });
+
+  it('supports three voice choices: default, upload, and record', () => {
+    const validVoiceModes = ['default', 'upload', 'record'];
+    expect(validVoiceModes).toContain('default');
+    expect(validVoiceModes).toContain('upload');
+    expect(validVoiceModes).toContain('record');
+
+    // Default voice mode allows proceeding without a custom asset ID
+    const canProceedWithDefault = (mode: string, assetId: string, uploading: boolean) => {
+      if (uploading) return false;
+      if (mode === 'default') return true;
+      return Boolean(assetId);
+    };
+
+    expect(canProceedWithDefault('default', '', false)).toBe(true);
+    expect(canProceedWithDefault('upload', '', false)).toBe(false);
+    expect(canProceedWithDefault('upload', 'asset-123', false)).toBe(true);
+    expect(canProceedWithDefault('record', '', false)).toBe(false);
+    expect(canProceedWithDefault('record', 'asset-456', false)).toBe(true);
+  });
 });

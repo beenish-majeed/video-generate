@@ -35,7 +35,7 @@ import {
   validateRecordingDuration,
 } from '../../utils/recordingLimits';
 
-type VoiceMode = 'upload' | 'record';
+export type VoiceMode = 'default' | 'upload' | 'record';
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'recorded' | 'too_short' | 'error';
 
 export const VoiceStep: React.FC<VoiceStepProps> = ({
@@ -45,8 +45,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   onBack,
   isAiClipsMode = false,
 }) => {
-  // Voice Mode & State
-  const [voiceMode, setVoiceMode] = useState<VoiceMode>('upload');
+  // Voice Mode & State: Default studio voice, upload audio file, or record voice now
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>(selectedAssetId ? 'upload' : 'default');
 
   // File Upload State
   const [uploading, setUploading] = useState(false);
@@ -131,7 +131,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     cleanupRecordingHardware();
     playStickerPopSound();
     setVoiceMode(mode);
-    if (mode === 'upload') {
+    if (mode === 'default') {
+      onAssetSelected('');
+      setPreviewUrl(null);
+      setRecordedFile(null);
+      setWaveform(null);
+    } else if (mode === 'upload') {
       resetRecording();
     }
   };
@@ -473,9 +478,11 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         </p>
       </header>
 
-      {/* Segmented Option Mode Selector (Upload vs Record Now) */}
-      {!previewUrl && (
+      {/* 3 Optional Choices: Default Voice, Upload File, Record Voice */}
+      {!previewUrl && !isAiClipsMode && (
         <div
+          role="tablist"
+          aria-label="Voice input options"
           style={{
             display: 'flex',
             flexWrap: 'wrap',
@@ -486,23 +493,55 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             borderRadius: 'var(--radius-pill)',
             border: '1px solid var(--border-light)',
             width: '100%',
-            maxWidth: '360px',
+            maxWidth: '520px',
             boxSizing: 'border-box',
           }}
         >
           <button
             type="button"
-            onClick={() => handleSwitchMode('upload')}
+            role="tab"
+            aria-selected={voiceMode === 'default'}
+            onClick={() => handleSwitchMode('default')}
             style={{
-              flex: '1 1 120px',
+              flex: '1 1 130px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 14px',
               minHeight: '40px',
               borderRadius: 'var(--radius-pill)',
-              fontSize: '14px',
+              fontSize: '13.5px',
+              border: voiceMode === 'default' ? '1px solid var(--border-light)' : '1px solid transparent',
+              backgroundColor: voiceMode === 'default' ? 'var(--bg-surface)' : 'transparent',
+              color: voiceMode === 'default' ? 'var(--text-primary)' : 'var(--text-muted)',
+              boxShadow: voiceMode === 'default' ? 'var(--shadow-sm)' : 'none',
+              cursor: 'pointer',
+              fontWeight: voiceMode === 'default' ? 600 : 500,
+              fontFamily: 'var(--font-sans)',
+              transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Volume2 size={15} />
+            <span>Use default voice</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={voiceMode === 'upload'}
+            onClick={() => handleSwitchMode('upload')}
+            style={{
+              flex: '1 1 130px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              minHeight: '40px',
+              borderRadius: 'var(--radius-pill)',
+              fontSize: '13.5px',
               border: voiceMode === 'upload' ? '1px solid var(--border-light)' : '1px solid transparent',
               backgroundColor: voiceMode === 'upload' ? 'var(--bg-surface)' : 'transparent',
               color: voiceMode === 'upload' ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -515,22 +554,24 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             }}
           >
             <Upload size={15} />
-            <span>Upload a file</span>
+            <span>Upload an audio file</span>
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={voiceMode === 'record'}
             onClick={() => handleSwitchMode('record')}
             style={{
-              flex: '1 1 120px',
+              flex: '1 1 130px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '8px 14px',
               minHeight: '40px',
               borderRadius: 'var(--radius-pill)',
-              fontSize: '14px',
+              fontSize: '13.5px',
               border: voiceMode === 'record' ? '1px solid var(--border-light)' : '1px solid transparent',
               backgroundColor: voiceMode === 'record' ? 'var(--bg-surface)' : 'transparent',
               color: voiceMode === 'record' ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -543,14 +584,71 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             }}
           >
             <Mic size={15} />
-            <span>Record now</span>
+            <span>Record voice now</span>
           </button>
         </div>
       )}
 
       {/* Main Interactive Content */}
       <div role="region" aria-label="Voice recording workspace" style={{ width: '100%' }}>
-        {previewUrl ? (
+        {voiceMode === 'default' && !previewUrl ? (
+          <div
+            className="card"
+            style={{
+              padding: 'clamp(28px, 4vw, 44px) clamp(20px, 3vw, 36px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: '16px',
+              width: '100%',
+              maxWidth: '640px',
+              margin: '0 auto',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--teal-subtle)',
+                border: '1px solid var(--teal-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--teal-primary)',
+              }}
+            >
+              <Volume2 size={26} aria-hidden="true" />
+            </div>
+            <div style={{ maxWidth: '480px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Studio Default Voice
+              </h3>
+              <p style={{ margin: 0, fontSize: '14.5px', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                Your film will be narrated using our natural, balanced studio preset voice. You do not need to record or upload anything.
+              </p>
+            </div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: 'var(--radius-pill)',
+                backgroundColor: 'rgba(0, 128, 128, 0.1)',
+                border: '1px solid var(--teal-border)',
+                color: 'var(--teal-primary)',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              <CheckCircle2 size={15} />
+              <span>Default voice selected</span>
+            </div>
+          </div>
+        ) : previewUrl ? (
           /* Waveform Preview Player Box - Clean 16px Card */
           <div
             className="card"
@@ -1148,12 +1246,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         <button
           type="button"
           onClick={onNext}
-          disabled={(!selectedAssetId && !isAiClipsMode) || uploading}
+          disabled={((!selectedAssetId && voiceMode !== 'default' && !isAiClipsMode) || uploading)}
           className="btn-primary"
           style={{
             minHeight: '44px',
             padding: '10px 24px',
-            cursor: (!selectedAssetId && !isAiClipsMode) || uploading ? 'not-allowed' : 'pointer',
+            cursor: ((!selectedAssetId && voiceMode !== 'default' && !isAiClipsMode) || uploading) ? 'not-allowed' : 'pointer',
           }}
         >
           <span>{isAiClipsMode ? 'Continue to Consent' : 'Continue to Duration'}</span>
