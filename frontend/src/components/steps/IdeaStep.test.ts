@@ -1,10 +1,10 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
-import { IdeaStep } from './IdeaStep';
+import { IdeaStep, EXAMPLE_CHIPS, TONE_OPTIONS } from './IdeaStep';
 
-describe('IdeaStep component tests', () => {
-  it('1. Renders prompt textarea, counter, 4 example chips, and tone selector', () => {
+describe('IdeaStep prompt screen tests', () => {
+  it('1. Renders label "Your prompt" by default, 4 example chips, and 4 tone chips in tidy rows', () => {
     const markup = renderToStaticMarkup(
       React.createElement(IdeaStep, {
         initialIdea: 'A story about a garden',
@@ -14,21 +14,46 @@ describe('IdeaStep component tests', () => {
       })
     );
 
-    expect(markup).toContain('What is your video about?');
-    expect(markup).toContain('Your Idea Prompt');
-    expect(markup).toContain('/ 1000 characters');
-    expect(markup).toContain('Narrator Tone');
+    // Default label
+    expect(markup).toContain('Your prompt');
+    // No extra helper headings
+    expect(markup).not.toContain('What is your video about?');
+    expect(markup).not.toContain('Write a thought, a memory, or an idea.');
+
+    // 4 example chips
+    expect(EXAMPLE_CHIPS.length).toBe(4);
     expect(markup).toContain('Autumn Walk');
     expect(markup).toContain('Community Thanks');
     expect(markup).toContain('Studio Journey');
     expect(markup).toContain('Starlit Tale');
+
+    // 4 tone chips
+    expect(TONE_OPTIONS.length).toBe(4);
     expect(markup).toContain('Friendly');
     expect(markup).toContain('Professional');
     expect(markup).toContain('Storytelling');
     expect(markup).toContain('Educational');
+
+    // Only two buttons: Back and Continue
+    expect(markup).toContain('Back');
+    expect(markup).toContain('Continue');
   });
 
-  it('2. Disables Next button when initial idea is empty', () => {
+  it('2. Supports custom label "Prompt" for Flow B', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(IdeaStep, {
+        label: 'Prompt',
+        initialIdea: 'Flow B prompt text',
+        onNext: () => {},
+        onBack: () => {},
+      })
+    );
+
+    expect(markup).toContain('Prompt');
+    expect(markup).not.toContain('Your prompt');
+  });
+
+  it('3. Disables Continue button when prompt is empty', () => {
     const markup = renderToStaticMarkup(
       React.createElement(IdeaStep, {
         initialIdea: '',
