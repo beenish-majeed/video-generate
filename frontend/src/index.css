@@ -1032,3 +1032,14 @@ button:focus-visible .kbd-hint {
     display: none !important;
   }
 }
+
+/* Story Timeline Vertical Rail */
+.story-timeline-rail {
+  transition: opacity 0.3s ease;
+}
+
+@media (max-width: 900px) {
+  .story-timeline-rail {
+    display: none !important;
+  }
+}
