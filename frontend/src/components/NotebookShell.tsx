@@ -3,6 +3,7 @@ import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
 import StoryTimeline from './StoryTimeline';
 import SoundToggle from './SoundToggle';
 import CursorGlow from './ui/CursorGlow';
+import SparkleCanvas from './ui/SparkleCanvas';
 import { ToastProvider } from './ui/Toast';
 
 interface NotebookShellProps {
@@ -21,6 +22,9 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   return (
     <ToastProvider>
       <div className="app-shell">
+        {/* Full-screen subtle shimmer sparkle canvas layer */}
+        <SparkleCanvas density={currentStep === 'hero' ? 'full' : 'subtle'} />
+
         {/* Desktop subtle cursor glow follower */}
         <CursorGlow />
 

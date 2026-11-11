@@ -26,62 +26,12 @@ const HEADLINE_WORDS = [
 export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shouldReduceMotion = useReducedMotion();
-  const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 });
   const [btnOffset, setBtnOffset] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(true);
 
   // Focus heading for accessibility on entrance
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
   }, []);
-
-  // Listen to tab visibility to pause motion when hidden
-  useEffect(() => {
-    const handleVisibility = () => {
-      setIsVisible(document.visibilityState === 'visible');
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
-
-  // Mouse parallax on desktop, tilt on mobile with fallback
-  useEffect(() => {
-    if (shouldReduceMotion || !isVisible) return;
-
-    let rafId: number;
-    const handleMouseMove = (e: MouseEvent) => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const x = (e.clientX / window.innerWidth) - 0.5;
-        const y = (e.clientY / window.innerHeight) - 0.5;
-        setMouseOffset({ x, y });
-      });
-    };
-
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (e.gamma !== null && e.beta !== null) {
-        cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          const x = Math.max(-0.5, Math.min(0.5, e.gamma! / 60));
-          const y = Math.max(-0.5, Math.min(0.5, (e.beta! - 45) / 60));
-          setMouseOffset({ x, y });
-        });
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
-    }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (window.DeviceOrientationEvent) {
-        window.removeEventListener('deviceorientation', handleOrientation);
-      }
-      cancelAnimationFrame(rafId);
-    };
-  }, [shouldReduceMotion, isVisible]);
 
   // Subtle magnetic hover for primary CTA button
   const handleBtnMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -116,115 +66,6 @@ export const HeroStep: React.FC<HeroStepProps> = ({ onGetStarted }) => {
         boxSizing: 'border-box',
       }}
     >
-      {/* Floating Glass Parallax Shapes (Desktop Mouse & Mobile Tilt with Ambient Drift) */}
-      <div
-        className="hero-floating-shapes"
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-          zIndex: 0,
-        }}
-      >
-        {/* Shape 1: Top-Left Soft Lavender Glass Pill */}
-        <motion.div
-          animate={
-            shouldReduceMotion || !isVisible
-              ? {}
-              : {
-                  x: mouseOffset.x * -24,
-                  y: mouseOffset.y * -20,
-                  rotate: [0, 4, -4, 0],
-                }
-          }
-          transition={{
-            x: { type: 'spring', stiffness: 60, damping: 20 },
-            y: { type: 'spring', stiffness: 60, damping: 20 },
-            rotate: { duration: 16, repeat: Infinity, ease: 'easeInOut' },
-          }}
-          style={{
-            position: 'absolute',
-            top: '12%',
-            left: '8%',
-            width: 'clamp(80px, 10vw, 130px)',
-            height: 'clamp(80px, 10vw, 130px)',
-            borderRadius: 'var(--radius-pill)',
-            background: 'rgba(0, 128, 128, 0.08)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(0, 128, 128, 0.25)',
-            boxShadow: 'var(--shadow-card)',
-            opacity: 0.85,
-          }}
-        />
-
-        {/* Shape 2: Bottom-Right Warm Beige Glass Disc */}
-        <motion.div
-          animate={
-            shouldReduceMotion || !isVisible
-              ? {}
-              : {
-                  x: mouseOffset.x * 28,
-                  y: mouseOffset.y * 24,
-                  rotate: [0, -6, 6, 0],
-                }
-          }
-          transition={{
-            x: { type: 'spring', stiffness: 50, damping: 18 },
-            y: { type: 'spring', stiffness: 50, damping: 18 },
-            rotate: { duration: 20, repeat: Infinity, ease: 'easeInOut' },
-          }}
-          style={{
-            position: 'absolute',
-            bottom: '15%',
-            right: '10%',
-            width: 'clamp(90px, 12vw, 150px)',
-            height: 'clamp(90px, 12vw, 150px)',
-            borderRadius: '28px',
-            background: 'rgba(245, 245, 220, 0.9)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(0, 128, 128, 0.2)',
-            boxShadow: 'var(--shadow-card)',
-            opacity: 0.8,
-          }}
-        />
-
-        {/* Shape 3: Middle-Right Subtle Teal Accent Bubble */}
-        <motion.div
-          animate={
-            shouldReduceMotion || !isVisible
-              ? {}
-              : {
-                  x: mouseOffset.x * -16,
-                  y: mouseOffset.y * 18,
-                  scale: [1, 1.05, 0.95, 1],
-                }
-          }
-          transition={{
-            x: { type: 'spring', stiffness: 70, damping: 22 },
-            y: { type: 'spring', stiffness: 70, damping: 22 },
-            scale: { duration: 12, repeat: Infinity, ease: 'easeInOut' },
-          }}
-          style={{
-            position: 'absolute',
-            top: '40%',
-            right: '6%',
-            width: 'clamp(50px, 7vw, 85px)',
-            height: 'clamp(50px, 7vw, 85px)',
-            borderRadius: 'var(--radius-pill)',
-            background: 'rgba(0, 128, 128, 0.06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(0, 128, 128, 0.2)',
-            boxShadow: 'var(--shadow-sm)',
-            opacity: 0.75,
-          }}
-        />
-      </div>
-
       <StoryScrollSection
         as="header"
         style={{
