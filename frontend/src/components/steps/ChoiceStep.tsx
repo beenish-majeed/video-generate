@@ -4,6 +4,8 @@ import { ArrowRight, ArrowLeft, Sparkles, Image, User, Film } from 'lucide-react
 import StoryScrollSection from '../ui/StoryScrollSection';
 
 export const ENABLE_PROMPT_PATH = true;
+// Configuration flag: hide extended modes (Talking Face and AI Scene Clips) by default while preserving their implementation
+export const SHOW_EXTENDED_MODES = false;
 
 export interface ChoiceStepProps {
   onSelectPromptFlow: () => void;
@@ -50,41 +52,49 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
     }
   };
 
-  const cards: CardConfig[] = [
+  const primaryCards: CardConfig[] = [
     {
       id: 'prompt',
-      title: 'Write an idea',
-      description: 'Type an idea, pick an animated visual style, and generate scenes with gentle camera moves.',
+      title: 'Text to video',
+      description: 'Turn your written script into an animated film.',
       icon: 'sparkles',
-      badge: 'AI Concept',
+      badge: 'Text',
       onSelect: onSelectPromptFlow,
       isPrimary: true,
     },
     {
+      id: 'custom_media',
+      title: 'Picture to video',
+      description: 'Bring your photograph to life with speech and motion.',
+      icon: 'image',
+      badge: 'Picture',
+      onSelect: onSelectCustomMediaFlow,
+      isPrimary: false,
+    },
+  ];
+
+  const extendedCards: CardConfig[] = [
+    {
       id: 'images_audio',
       title: 'Use my photos and voice',
-      description: 'Upload 1 to 30 photos with custom timing, your voice recording, and optional face lip sync.',
+      description: 'Upload photos with custom timing and your voice recording.',
       icon: 'image',
-      badge: 'Your Memories',
+      badge: 'Memories',
       onSelect: onSelectImagesAudioFlow,
-    },
-    {
-      id: 'custom_media',
-      title: 'A talking face',
-      description: 'Bring a single portrait photo to life with synchronized facial expressions and speech.',
-      icon: 'user',
-      badge: 'Portrait Animator',
-      onSelect: onSelectCustomMediaFlow,
     },
     {
       id: 'ai_clips',
       title: 'AI scene clips',
-      description: 'Export structured scene prompts for Colab video models, then assemble rendered clips into your film.',
+      description: 'Export structured scene prompts and assemble rendered clips.',
       icon: 'film',
       badge: 'Diffusion Clips',
       onSelect: onSelectAiClipsFlow || onSelectPromptFlow,
     },
   ];
+
+  const cards: CardConfig[] = SHOW_EXTENDED_MODES
+    ? [...primaryCards, ...extendedCards]
+    : primaryCards;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -119,7 +129,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         flexDirection: 'column',
         gap: 'clamp(16px, 2dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1280px, 100%)',
+        maxWidth: 'min(980px, 100%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
@@ -139,22 +149,54 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
         </button>
       </div>
 
-      {/* Header Section */}
-      <StoryScrollSection as="header" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* Header Section with Small Introductory Label */}
+      <StoryScrollSection
+        as="header"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          alignItems: 'center',
+          textAlign: 'center',
+        }}
+      >
+        <span
+          style={{
+            color: 'var(--teal-primary)',
+            fontSize: '12px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+          }}
+        >
+          Creation Mode
+        </span>
         <h1
           ref={headingRef}
           tabIndex={-1}
           className="editorial-title"
-          style={{ fontSize: 'clamp(26px, 2.8vw, 36px)', margin: 0, outline: 'none' }}
+          style={{
+            fontSize: 'clamp(22px, 2.2vw, 30px)',
+            margin: 0,
+            outline: 'none',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+          }}
         >
-          How would you like to begin?
+          Choose how to create your video
         </h1>
-        <p className="page-lead" style={{ margin: 0 }}>
-          Choose your creative path below to begin crafting your personal film.
+        <p
+          style={{
+            margin: 0,
+            color: 'var(--text-muted)',
+            fontSize: 'clamp(14px, 1vw, 16px)',
+          }}
+        >
+          Select your preferred starting format to begin.
         </p>
       </StoryScrollSection>
 
-      {/* Choice Cards: Staggered entrance, Hover lift & Spotlight, Ripple feedback */}
+      {/* Choice Cards: Exactly two compact, balanced, centered cards */}
       <StoryScrollSection delay={0.08}>
         <motion.div
           className="choice-cards-grid"
@@ -163,7 +205,9 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
           animate="visible"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            maxWidth: '680px',
+            margin: '0 auto',
             gap: 'clamp(16px, 2vw, 24px)',
             alignItems: 'stretch',
             width: '100%',

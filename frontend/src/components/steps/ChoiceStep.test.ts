@@ -1,14 +1,18 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
-import { ChoiceStep, ENABLE_PROMPT_PATH } from './ChoiceStep';
+import { ChoiceStep, ENABLE_PROMPT_PATH, SHOW_EXTENDED_MODES } from './ChoiceStep';
 
-describe('ChoiceStep screen with three creative paths', () => {
+describe('ChoiceStep screen with two creative paths', () => {
   it('has ENABLE_PROMPT_PATH configured as true', () => {
     expect(ENABLE_PROMPT_PATH).toBe(true);
   });
 
-  it('renders all three path cards on the choice screen', () => {
+  it('has SHOW_EXTENDED_MODES configured as false by default', () => {
+    expect(SHOW_EXTENDED_MODES).toBe(false);
+  });
+
+  it('renders exactly two primary cards: Text to video and Picture to video', () => {
     const html = renderToStaticMarkup(
       React.createElement(ChoiceStep, {
         onSelectPromptFlow: () => {},
@@ -18,14 +22,17 @@ describe('ChoiceStep screen with three creative paths', () => {
       })
     );
 
-    // Screen heading
-    expect(html).toContain('How would you like to begin?');
+    // Screen heading & label
+    expect(html).toContain('Creation Mode');
+    expect(html).toContain('Choose how to create your video');
 
-    // All cards must be present
-    expect(html).toContain('Write an idea');
-    expect(html).toContain('Use my photos and voice');
-    expect(html).toContain('A talking face');
-    expect(html).toContain('AI scene clips');
+    // Exactly two primary cards
+    expect(html).toContain('Text to video');
+    expect(html).toContain('Picture to video');
+
+    // Extended options hidden behind configuration flag
+    expect(html).not.toContain('A talking face');
+    expect(html).not.toContain('AI scene clips');
 
     // Back button to welcome page
     expect(html).toContain('Back');
