@@ -151,11 +151,19 @@ def _sanitize_error_message(message: str) -> str:
     """Mask any API keys or authorization tokens from error output."""
     sanitized = str(message)
     # Redact config key
-    key = file_ai_config.api_key
+    key = getattr(file_ai_config, "api_key", None)
     if key and len(key) > 4:
         sanitized = sanitized.replace(key, "[REDACTED_API_KEY]")
+    # Redact server api key
+    try:
+        from src.core.config import settings
+        srv_key = getattr(settings, "api_key", None)
+        if srv_key and len(srv_key) > 4:
+            sanitized = sanitized.replace(srv_key, "[REDACTED_API_KEY]")
+    except Exception:
+        pass
     # Redact env keys
-    for env_k in ("FAL_KEY", "FILE_AI_API_KEY"):
+    for env_k in ("FAL_KEY", "FILE_AI_API_KEY", "API_KEY"):
         val = os.getenv(env_k)
         if val and len(val) > 4:
             sanitized = sanitized.replace(val, "[REDACTED_API_KEY]")
@@ -163,6 +171,8 @@ def _sanitize_error_message(message: str) -> str:
     sanitized = re.sub(r"fal_sk_[a-zA-Z0-9_\.:\-]+", "[REDACTED_FAL_KEY]", sanitized)
     sanitized = re.sub(r"(Bearer\s+)[a-zA-Z0-9_\.\-]+", r"\1[REDACTED_API_KEY]", sanitized)
     sanitized = re.sub(r"(Key\s+)[a-zA-Z0-9_\.:\-]+", r"\1[REDACTED_API_KEY]", sanitized)
+    sanitized = re.sub(r"(://[^:]+:)[^@]+@", r"\1[REDACTED_PASSWORD]@", sanitized)
+    sanitized = re.sub(r"([?&](?:api_key|token|secret|key)=)[^&]+", r"\1[REDACTED_SECRET]", sanitized, flags=re.IGNORECASE)
     return sanitized
 
 

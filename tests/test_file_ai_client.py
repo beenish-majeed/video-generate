@@ -60,6 +60,14 @@ def test_sanitize_error_message(monkeypatch):
     assert test_key not in sanitized
     assert "[REDACTED_API_KEY]" in sanitized
 
+    # Test URL basic auth and query param sanitization
+    secret_url = "https://admin:super_secret_pw@example.com/api?api_key=my_secret_token_12345&other=1"
+    sanitized_url = _sanitize_error_message(secret_url)
+    assert "super_secret_pw" not in sanitized_url
+    assert "my_secret_token_12345" not in sanitized_url
+    assert "[REDACTED_PASSWORD]" in sanitized_url
+    assert "[REDACTED_SECRET]" in sanitized_url
+
 
 def test_file_ai_client_live_mock():
     config = FileAIConfig(api_key="fileai_valid_test_key_abc123")

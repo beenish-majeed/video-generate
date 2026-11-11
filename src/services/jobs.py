@@ -1396,14 +1396,16 @@ def run_job(job_id: str) -> None:
             job.state = JobState.CANCELLED
             job.error = "Job was cancelled by the user."
         else:
-            logger.exception(f"Job execution failed for {job_id}: {exc}")
+            from src.clients.file_ai import _sanitize_error_message
+            clean_err = _sanitize_error_message(str(exc))
+            logger.error(f"Job execution failed for {job_id}: {type(exc).__name__}: {clean_err}")
             job.state = JobState.FAILED
-            job.error = f"{type(exc).__name__}: {exc}"
+            job.error = f"{type(exc).__name__}: {clean_err}"
             if job.music_applied is not True and (job.request.music_asset_id or job.request.music_preset_id):
                 job.music_applied = False
                 if not job.music_error:
-                    job.music_error = str(exc)
-                    job.music_failure_reason = str(exc)
+                    job.music_error = clean_err
+                    job.music_failure_reason = clean_err
 
     finally:
         if should_save_and_cleanup and job is not None and job_path is not None:
