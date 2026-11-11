@@ -64,3 +64,27 @@ def check_upload_rate_limit(request: Request) -> None:
 def check_job_creation_rate_limit(request: Request) -> None:
     ip = get_client_ip(request)
     JOB_CREATION_LIMITER.check(ip)
+
+
+def get_current_session_id(request: Request) -> str:
+    """
+    Retrieve authenticated anonymous session identifier.
+    Guaranteed to return a non-empty, validated session_id.
+    Never trusts client-supplied identity headers like X-Client-ID or X-User-ID.
+    """
+    sid = getattr(request.state, "session_id", None)
+    if sid and isinstance(sid, str):
+        return sid
+
+    # Fallback extraction if middleware was bypassed or in test fixtures
+    cookie_val = request.cookies.get(settings.session_cookie_name)
+    from src.core.session import generate_session_token, verify_session_token
+    verified = verify_session_token(cookie_val)
+    if verified:
+        request.state.session_id = verified
+        return verified
+
+    # Fallback to generating a fresh session ID
+    _, new_sid = generate_session_token()
+    request.state.session_id = new_sid
+    return new_sid

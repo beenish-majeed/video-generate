@@ -36,6 +36,7 @@ from src.services.jobs import (
 from src.services.script_writer import ScriptWriterError, generate_script
 from src.services.store import save_upload
 from src.utils.body_limit_middleware import RequestBodyLimitMiddleware
+from src.api.middleware.session import AnonymousSessionMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +138,9 @@ app.add_middleware(
 
 # Request body size enforcement
 app.add_middleware(RequestBodyLimitMiddleware)
+
+# Anonymous session enforcement & cookie management
+app.add_middleware(AnonymousSessionMiddleware)
 
 
 # Security headers enforcement
