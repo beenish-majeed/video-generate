@@ -508,6 +508,7 @@ def download_job_video(job_id: str, request: Request):
     allowed_dirs = [
         (storage_root / "outputs").resolve(),
         (storage_root / "jobs").resolve(),
+        (storage_root / job_id).resolve(),
     ]
     if not any(path.is_relative_to(allowed_dir) for allowed_dir in allowed_dirs):
         raise HTTPException(
