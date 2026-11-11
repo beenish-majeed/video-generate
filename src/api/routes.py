@@ -22,6 +22,7 @@ from src.api.dependencies import (
     check_job_creation_rate_limit,
     check_script_rate_limit,
     check_upload_rate_limit,
+    get_current_session_id,
     verify_api_key,
 )
 from src.core.config import settings
@@ -288,10 +289,25 @@ def _validate_safe_job_id(job_id: str) -> str:
 
 
 def _check_job_authorization(job: JobRecord, request: Request) -> None:
-    """Enforce cross-user IDOR authorization for multi-tenant deployments."""
-    req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+    """
+    Enforce strict cross-visitor anonymous session isolation and IDOR protection.
+    Refuses to trust client-supplied identity headers (X-Client-ID, X-User-ID) for session-owned jobs.
+    """
+    req_session = get_current_session_id(request)
+    owner_session = getattr(job, "session_id", None)
     owner_client = getattr(job, "client_id", None)
+
+    # 1. Enforce anonymous session ownership
+    if owner_session:
+        if req_session != owner_session:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: job belongs to another session.",
+            )
+
+    # 2. Multi-tenant client_id check (for tests/APIs using explicit client IDs)
     if owner_client:
+        req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
         if not req_client or req_client.strip() != owner_client:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -358,10 +374,12 @@ def create_video_job(payload: JobCreate, request: Request):
 
         try:
             job = create_fn(payload)
+            req_session = get_current_session_id(request)
+            job.session_id = req_session
             client_id = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
             if client_id:
                 job.client_id = client_id.strip()
-                save_fn(job)
+            save_fn(job)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -374,11 +392,29 @@ def list_jobs(request: Request):
     import src.main as main_mod
     list_fn = getattr(main_mod, "list_all_jobs", list_all_jobs)
     all_jobs = list_fn()
+    req_session = get_current_session_id(request)
     req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+
     if req_client:
         req_client_clean = req_client.strip()
-        return [j for j in all_jobs if getattr(j, "client_id", None) in (None, req_client_clean)]
-    return all_jobs
+        return [
+            j for j in all_jobs
+            if getattr(j, "client_id", None) in (None, req_client_clean)
+            and getattr(j, "session_id", None) in (None, req_session)
+        ]
+
+    # When no explicit client header is provided:
+    # 1. Any job owned by another session (j.session_id is not None and != req_session) is STRICTLY EXCLUDED.
+    # 2. Jobs matching req_session are included.
+    # 3. Legacy jobs (j.session_id is None) are included for backward compatibility in legacy test harnesses.
+    return [
+        j for j in all_jobs
+        if (
+            getattr(j, "session_id", None) == req_session
+            or (getattr(j, "session_id", None) is None and getattr(j, "client_id", None) is None)
+            or (getattr(j, "session_id", None) is None and not req_client)
+        )
+    ]
 
 
 @router.get("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
