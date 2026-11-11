@@ -215,6 +215,17 @@ def create_scene_plan_endpoint(
     request: Request,
     format: Optional[str] = Query("json"),
 ):
+    if payload.audio_asset_id:
+        from src.db.repository import AssetRepository
+        rec = AssetRepository.get(payload.audio_asset_id)
+        if rec and getattr(rec, "session_id", None):
+            req_session = get_current_session_id(request)
+            if rec.session_id != req_session:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Access denied: audio asset '{payload.audio_asset_id}' belongs to another session.",
+                )
+
     from src.services.scene_planner import build_clip_scene_plan
     from src.services.llm import get_llm_provider
 
