@@ -44,6 +44,7 @@ from src.services.jobs import (
     load_job_record,
     list_all_jobs,
     run_job,
+    save_job_record,
 )
 from src.services.llm import LLMError
 from src.services.music_presets import get_music_presets
@@ -286,6 +287,18 @@ def _validate_safe_job_id(job_id: str) -> str:
     return job_id
 
 
+def _check_job_authorization(job: JobRecord, request: Request) -> None:
+    """Enforce cross-user IDOR authorization for multi-tenant deployments."""
+    req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+    owner_client = getattr(job, "client_id", None)
+    if owner_client:
+        if not req_client or req_client.strip() != owner_client:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: job belongs to another client.",
+            )
+
+
 # =============================================================================
 # Jobs
 # =============================================================================
@@ -323,11 +336,12 @@ def estimate_job_render(payload: JobEstimateRequest):
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(verify_api_key), Depends(check_job_creation_rate_limit)],
 )
-def create_video_job(payload: JobCreate):
+def create_video_job(payload: JobCreate, request: Request):
     import src.main as main_mod
     lock = getattr(main_mod, "JOB_CREATION_LOCK", JOB_CREATION_LOCK)
     active_fn = getattr(main_mod, "count_active_jobs", count_active_jobs)
     create_fn = getattr(main_mod, "create_job", create_job)
+    save_fn = getattr(main_mod, "save_job_record", save_job_record)
     executor = getattr(main_mod, "JOB_EXECUTOR", None)
     if executor is None or getattr(executor, "_shutdown", False):
         executor = get_job_executor()
@@ -344,6 +358,10 @@ def create_video_job(payload: JobCreate):
 
         try:
             job = create_fn(payload)
+            client_id = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+            if client_id:
+                job.client_id = client_id.strip()
+                save_fn(job)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -352,42 +370,51 @@ def create_video_job(payload: JobCreate):
 
 
 @router.get("/v1/jobs", dependencies=[Depends(verify_api_key)])
-def list_jobs():
+def list_jobs(request: Request):
     import src.main as main_mod
     list_fn = getattr(main_mod, "list_all_jobs", list_all_jobs)
-    return list_fn()
+    all_jobs = list_fn()
+    req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+    if req_client:
+        req_client_clean = req_client.strip()
+        return [j for j in all_jobs if getattr(j, "client_id", None) in (None, req_client_clean)]
+    return all_jobs
 
 
 @router.get("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
-def read_job(job_id: str):
+def read_job(job_id: str, request: Request):
     job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     get_fn = getattr(main_mod, "get_job", load_job_record)
     job = get_fn(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found.")
+    _check_job_authorization(job, request)
     return job
 
 
 @router.post("/v1/jobs/{job_id}/cancel", dependencies=[Depends(verify_api_key)])
-def cancel_video_job(job_id: str):
-    job_id = _validate_safe_job_id(job_id)
-    import src.main as main_mod
-    cancel_fn = getattr(main_mod, "cancel_job", cancel_job)
-    job = cancel_fn(job_id)
-    if job is None:
-        raise HTTPException(status_code=404, detail="Job not found.")
-    return job
-
-
-@router.get("/v1/jobs/{job_id}/download", dependencies=[Depends(verify_api_key)])
-def download_job_video(job_id: str):
+def cancel_video_job(job_id: str, request: Request):
     job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
     get_fn = getattr(main_mod, "get_job", load_job_record)
     job = get_fn(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found.")
+    _check_job_authorization(job, request)
+    cancel_fn = getattr(main_mod, "cancel_job", cancel_job)
+    return cancel_fn(job_id)
+
+
+@router.get("/v1/jobs/{job_id}/download", dependencies=[Depends(verify_api_key)])
+def download_job_video(job_id: str, request: Request):
+    job_id = _validate_safe_job_id(job_id)
+    import src.main as main_mod
+    get_fn = getattr(main_mod, "get_job", load_job_record)
+    job = get_fn(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    _check_job_authorization(job, request)
 
     if job.state != JobState.COMPLETED:
         raise HTTPException(status_code=409, detail="Job is not completed yet.")
@@ -421,9 +448,15 @@ def download_job_video(job_id: str):
 
 
 @router.delete("/v1/jobs/{job_id}", dependencies=[Depends(verify_api_key)])
-def delete_video_job(job_id: str):
+def delete_video_job(job_id: str, request: Request):
     job_id = _validate_safe_job_id(job_id)
     import src.main as main_mod
+    get_fn = getattr(main_mod, "get_job", load_job_record)
+    job = get_fn(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    _check_job_authorization(job, request)
+
     del_fn = getattr(main_mod, "delete_job_record", delete_job_record)
     try:
         success = del_fn(job_id)

@@ -602,6 +602,7 @@ class JobCreate(BaseModel):
 
 class JobRecord(BaseModel):
     job_id: str
+    client_id: Optional[str] = Field(default=None, description="Client or tenant identifier for cross-user IDOR access control.")
     state: JobState = JobState.RECEIVED
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
