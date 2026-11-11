@@ -54,3 +54,32 @@ def test_persistent_session_secret(tmp_path, monkeypatch):
     monkeypatch.setattr(session_mod, "_CACHED_SECRET_KEY", None)
     key2 = _get_signing_key()
     assert key1 == key2, "Session secret key must persist across server restarts"
+
+
+def test_session_secret_restrictive_permissions(tmp_path, monkeypatch):
+    """
+    Verify restrictive OS-level permissions (NTFS ACL or chmod 0600) on session-secret.
+    """
+    import os
+    import subprocess
+    from src.core.session import enforce_restrictive_file_permissions
+
+    secret_file = tmp_path / ".session_secret"
+    secret_file.write_text("test_secret_32_characters_long_123456", encoding="utf-8")
+
+    enforce_restrictive_file_permissions(secret_file)
+
+    if os.name == "nt":
+        # Check icacls output: verify inheritance is disabled and username is present
+        cmd = ["icacls", str(secret_file.resolve())]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        assert res.returncode == 0
+        username = os.environ.get("USERNAME") or ""
+        if username:
+            assert username.lower() in res.stdout.lower()
+        # Verify no '(I)' flag indicating inheritance
+        assert "(I)" not in res.stdout
+    else:
+        # Check POSIX permission bits
+        mode = secret_file.stat().st_mode & 0o777
+        assert mode == 0o600

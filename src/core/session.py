@@ -25,6 +25,30 @@ def is_valid_session_id(session_id: Optional[str]) -> bool:
     return bool(_SESSION_ID_PATTERN.match(session_id.strip()))
 
 
+def enforce_restrictive_file_permissions(file_path: Path) -> None:
+    """
+    Enforce restrictive OS-level file permissions:
+    - On Windows (NTFS): remove inheritance and grant Full Control strictly to current user.
+    - On Linux/POSIX: chmod 0600 (owner read/write only).
+    """
+    try:
+        resolved = str(file_path.resolve())
+        if os.name == "nt":
+            import subprocess
+            username = os.environ.get("USERNAME") or os.environ.get("USER")
+            if username:
+                subprocess.run(
+                    ["icacls", resolved, "/inheritance:r", "/grant:r", f"{username}:(F)"],
+                    capture_output=True,
+                    check=False,
+                    timeout=5.0,
+                )
+        else:
+            os.chmod(resolved, 0o600)
+    except Exception:
+        pass
+
+
 def _get_signing_key() -> bytes:
     """
     Derive HMAC secret key for signing anonymous session cookies.
@@ -48,10 +72,7 @@ def _get_signing_key() -> bytes:
         try:
             storage_dir.mkdir(parents=True, exist_ok=True)
             if secret_file.exists():
-                try:
-                    os.chmod(str(secret_file), 0o600)
-                except Exception:
-                    pass
+                enforce_restrictive_file_permissions(secret_file)
                 val = secret_file.read_text(encoding="utf-8").strip()
                 if len(val) >= 32:
                     _CACHED_SECRET_KEY = val.encode("utf-8")
@@ -63,10 +84,7 @@ def _get_signing_key() -> bytes:
                     f.write(new_key)
             except Exception:
                 secret_file.write_text(new_key, encoding="utf-8")
-                try:
-                    os.chmod(str(secret_file), 0o600)
-                except Exception:
-                    pass
+            enforce_restrictive_file_permissions(secret_file)
             _CACHED_SECRET_KEY = new_key.encode("utf-8")
             return _CACHED_SECRET_KEY
         except Exception:
