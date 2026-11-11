@@ -497,10 +497,37 @@ def download_job_video(job_id: str, request: Request):
         raise HTTPException(status_code=409, detail="Output file is missing.")
 
     path = Path(job.output_path).resolve()
-    if not path.is_relative_to(settings.storage_dir.resolve()):
+    storage_root = settings.storage_dir.resolve()
+    if not path.is_relative_to(storage_root):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: invalid file location.",
+        )
+
+    # Hardening: Prevent public exposure of sensitive files, database, session secrets, or non-video files
+    allowed_dirs = [
+        (storage_root / "outputs").resolve(),
+        (storage_root / "jobs").resolve(),
+    ]
+    if not any(path.is_relative_to(allowed_dir) for allowed_dir in allowed_dirs):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: sensitive or invalid file location.",
+        )
+
+    if path.name.startswith(".") or path.suffix.lower() not in {".mp4", ".mov", ".webm", ".mkv"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: invalid or non-video file type.",
+        )
+
+    if (
+        hasattr(settings, "db_path") and path == settings.db_path.resolve()
+        or hasattr(settings, "session_secret_file") and path == settings.session_secret_file.resolve()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: access to sensitive server file is forbidden.",
         )
 
     if not path.exists():

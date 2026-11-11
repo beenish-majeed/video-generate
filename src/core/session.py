@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import os
 import re
 import secrets
 import time
@@ -47,12 +48,25 @@ def _get_signing_key() -> bytes:
         try:
             storage_dir.mkdir(parents=True, exist_ok=True)
             if secret_file.exists():
+                try:
+                    os.chmod(str(secret_file), 0o600)
+                except Exception:
+                    pass
                 val = secret_file.read_text(encoding="utf-8").strip()
                 if len(val) >= 32:
                     _CACHED_SECRET_KEY = val.encode("utf-8")
                     return _CACHED_SECRET_KEY
             new_key = secrets.token_hex(32)
-            secret_file.write_text(new_key, encoding="utf-8")
+            try:
+                fd = os.open(str(secret_file), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                with open(fd, "w", encoding="utf-8") as f:
+                    f.write(new_key)
+            except Exception:
+                secret_file.write_text(new_key, encoding="utf-8")
+                try:
+                    os.chmod(str(secret_file), 0o600)
+                except Exception:
+                    pass
             _CACHED_SECRET_KEY = new_key.encode("utf-8")
             return _CACHED_SECRET_KEY
         except Exception:
