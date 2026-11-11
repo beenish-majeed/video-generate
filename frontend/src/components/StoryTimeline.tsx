@@ -5,6 +5,7 @@ import { type JourneyStepId, type FlowMode, getStepListForMode } from './PageTab
 export interface StoryTimelineProps {
   currentStep: JourneyStepId;
   flowMode?: FlowMode;
+  hasOwnVoice?: boolean;
   onSelectStep?: (step: JourneyStepId) => void;
 }
 
@@ -17,6 +18,7 @@ export interface StoryChapter {
 export const StoryTimeline: React.FC<StoryTimelineProps> = ({
   currentStep,
   flowMode = 'custom_media',
+  hasOwnVoice = false,
   onSelectStep,
 }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -34,7 +36,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
         { id: 'waiting' as JourneyStepId, label: 'Render', tabTitle: 'Studio' },
         { id: 'premiere' as JourneyStepId, label: 'Film', tabTitle: 'Premiere' },
       ]
-    : getStepListForMode(flowMode);
+    : getStepListForMode(flowMode, hasOwnVoice);
 
   const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
   const activeIndex = currentIndex >= 0 ? currentIndex : 0;

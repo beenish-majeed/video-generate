@@ -29,10 +29,10 @@ describe('StoryTimeline Unit Tests', () => {
         flowMode: 'prompt_first',
       })
     );
-    expect(markup).toContain('Idea');
-    expect(markup).toContain('Length');
-    expect(markup).toContain('Look &amp; Voice');
-    expect(markup).toContain('Final Film');
+    expect(markup).toContain('Prompt');
+    expect(markup).toContain('Duration');
+    expect(markup).toContain('Studio Render');
+    expect(markup).toContain('Premiere');
   });
 
   it('4. Highlights the active step with aria-current="step"', () => {

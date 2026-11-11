@@ -9,6 +9,7 @@ import { ToastProvider } from './ui/Toast';
 interface NotebookShellProps {
   currentStep: JourneyStepId;
   flowMode?: FlowMode;
+  hasOwnVoice?: boolean;
   onSelectStep?: (step: JourneyStepId) => void;
   children: React.ReactNode;
 }
@@ -16,6 +17,7 @@ interface NotebookShellProps {
 export const NotebookShell: React.FC<NotebookShellProps> = ({
   currentStep,
   flowMode,
+  hasOwnVoice = false,
   onSelectStep,
   children,
 }) => {
@@ -62,6 +64,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
             <StoryTimeline
               currentStep={currentStep}
               flowMode={flowMode}
+              hasOwnVoice={hasOwnVoice}
               onSelectStep={onSelectStep}
             />
           </div>

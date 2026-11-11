@@ -27,6 +27,39 @@ export interface StepDefinition {
   tabTitle: string;
 }
 
+// Single config flag to toggle between streamlined 2-mode workflows and legacy studio steps
+export const ENABLE_EXTENDED_WORKFLOWS = false;
+
+// Streamlined Flow A: Text to video
+export const STREAMLINED_PROMPT_STEPS: StepDefinition[] = [
+  { id: 'idea', label: 'Prompt', tabTitle: '01. Prompt' },
+  { id: 'duration', label: 'Duration', tabTitle: '02. Duration' },
+  { id: 'waiting', label: 'Creating', tabTitle: '03. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '04. Premiere' },
+];
+
+// Streamlined Flow B: Picture to video (Default voice: includes prompt for script generation)
+export const STREAMLINED_PICTURE_STEPS: StepDefinition[] = [
+  { id: 'photo', label: 'Picture', tabTitle: '01. Picture' },
+  { id: 'voice', label: 'Voice', tabTitle: '02. Voice' },
+  { id: 'duration', label: 'Duration', tabTitle: '03. Duration' },
+  { id: 'idea', label: 'Prompt', tabTitle: '04. Prompt' },
+  { id: 'consent', label: 'Consent', tabTitle: '05. Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '06. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '07. Premiere' },
+];
+
+// Streamlined Flow B: Picture to video (Own voice uploaded/recorded: skips prompt screen)
+export const STREAMLINED_PICTURE_STEPS_OWN_VOICE: StepDefinition[] = [
+  { id: 'photo', label: 'Picture', tabTitle: '01. Picture' },
+  { id: 'voice', label: 'Voice', tabTitle: '02. Voice' },
+  { id: 'duration', label: 'Duration', tabTitle: '03. Duration' },
+  { id: 'consent', label: 'Consent', tabTitle: '04. Consent' },
+  { id: 'waiting', label: 'Creating', tabTitle: '05. Studio Render' },
+  { id: 'premiere', label: 'Premiere', tabTitle: '06. Premiere' },
+];
+
+// Legacy / Extended workflows (preserved intact behind ENABLE_EXTENDED_WORKFLOWS flag)
 export const CUSTOM_MEDIA_STEPS: StepDefinition[] = [
   { id: 'photo', label: 'Photo', tabTitle: '01. Memory Photo' },
   { id: 'voice', label: 'Voice', tabTitle: '02. Voice Sample' },
@@ -67,22 +100,35 @@ export const AI_CLIPS_STEPS: StepDefinition[] = [
 ];
 
 // Helper to get step definitions for a given flow mode
-export function getStepListForMode(flowMode: FlowMode = 'custom_media'): StepDefinition[] {
-  if (flowMode === 'prompt_first') return PROMPT_FIRST_STEPS;
-  if (flowMode === 'images_audio') return IMAGES_AUDIO_STEPS;
-  if (flowMode === 'ai_clips') return AI_CLIPS_STEPS;
-  return CUSTOM_MEDIA_STEPS;
+export function getStepListForMode(
+  flowMode: FlowMode = 'custom_media',
+  hasOwnVoice: boolean = false,
+  enableExtended: boolean = ENABLE_EXTENDED_WORKFLOWS
+): StepDefinition[] {
+  if (enableExtended) {
+    if (flowMode === 'prompt_first') return PROMPT_FIRST_STEPS;
+    if (flowMode === 'images_audio') return IMAGES_AUDIO_STEPS;
+    if (flowMode === 'ai_clips') return AI_CLIPS_STEPS;
+    return CUSTOM_MEDIA_STEPS;
+  }
+
+  if (flowMode === 'prompt_first') {
+    return STREAMLINED_PROMPT_STEPS;
+  }
+  return hasOwnVoice ? STREAMLINED_PICTURE_STEPS_OWN_VOICE : STREAMLINED_PICTURE_STEPS;
 }
 
-interface PageTabsProps {
+export interface PageTabsProps {
   currentStep: JourneyStepId;
   flowMode?: FlowMode;
+  hasOwnVoice?: boolean;
   onSelectStep?: (step: JourneyStepId) => void;
 }
 
 export const PageTabs: React.FC<PageTabsProps> = ({
   currentStep,
   flowMode = 'custom_media',
+  hasOwnVoice = false,
   onSelectStep,
 }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -92,7 +138,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
     return null;
   }
 
-  const stepsList = getStepListForMode(flowMode);
+  const stepsList = getStepListForMode(flowMode, hasOwnVoice);
   const currentIndex = stepsList.findIndex((s) => s.id === currentStep);
 
   const activeTabRef = useRef<HTMLButtonElement | null>(null);
@@ -106,7 +152,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         block: 'nearest',
       });
     }
-  }, [currentStep, flowMode]);
+  }, [currentStep, flowMode, hasOwnVoice]);
 
   return (
     <div
@@ -148,85 +194,50 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   style={{
                     width: '12px',
                     height: '2px',
-                    backgroundColor: 'rgba(0, 128, 128, 0.2)',
-                    borderRadius: '2px',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                    position: 'relative',
+                    backgroundColor: isCompleted ? 'var(--teal-primary)' : 'rgba(0, 128, 128, 0.2)',
+                    transition: shouldReduceMotion ? 'none' : 'background-color 0.3s ease',
                   }}
-                >
-                  <motion.div
-                    initial={false}
-                    animate={{ scaleX: idx <= currentIndex ? 1 : 0 }}
-                    transition={{
-                      duration: shouldReduceMotion ? 0 : 0.35,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      backgroundColor: 'var(--accent-primary)',
-                      transformOrigin: 'left',
-                    }}
-                  />
-                </div>
+                />
               )}
-              <button
+
+              <motion.button
                 ref={isActive ? activeTabRef : null}
+                type="button"
                 role="tab"
                 aria-selected={isActive}
-                aria-disabled={!isClickable}
-                onClick={() => isClickable && onSelectStep && onSelectStep(step.id)}
                 disabled={!isClickable}
+                onClick={() => isClickable && onSelectStep?.(step.id)}
+                whileHover={isClickable ? { scale: 1.03 } : {}}
+                whileTap={isClickable ? { scale: 0.97 } : {}}
+                transition={{ type: 'spring', stiffness: 450, damping: 28 }}
+                className={`step-tab ${isActive ? 'step-tab-active' : ''} ${
+                  isCompleted ? 'step-tab-completed' : ''
+                }`}
                 style={{
-                  padding: '6px 14px',
-                  minHeight: '36px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
                   borderRadius: 'var(--radius-pill)',
-                  border: isActive
-                    ? '1px solid var(--accent-primary-border)'
-                    : isCompleted
-                    ? '1px solid var(--border-light)'
-                    : '1px solid transparent',
-                  backgroundColor: isActive
-                    ? 'var(--accent-primary-light)'
-                    : isCompleted
-                    ? 'var(--bg-surface)'
-                    : 'transparent',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid transparent',
+                  backgroundColor: isActive ? 'var(--bg-card)' : 'transparent',
                   color: isActive
-                    ? 'var(--accent-primary)'
+                    ? 'var(--accent)'
                     : isCompleted
                     ? 'var(--text-secondary)'
                     : 'var(--text-muted)',
-                  fontFamily: 'var(--font-sans)',
+                  cursor: isClickable ? 'pointer' : 'default',
+                  whiteSpace: 'nowrap',
                   fontSize: '13px',
                   fontWeight: isActive ? 600 : 500,
-                  cursor: isClickable ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
+                  outline: 'none',
                 }}
               >
-                {isCompleted ? (
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '15px',
-                      height: '15px',
-                      borderRadius: '50%',
-                      backgroundColor: 'var(--accent-primary)',
-                      color: '#F5F5DC',
-                    }}
-                  >
-                    <Check size={10} strokeWidth={3} />
-                  </span>
-                ) : null}
-                <span>{step.tabTitle}</span>
-              </button>
+                {isCompleted && (
+                  <Check size={12} style={{ color: 'var(--accent)', strokeWidth: 3 }} />
+                )}
+                <span>{step.label}</span>
+              </motion.button>
             </React.Fragment>
           );
         })}

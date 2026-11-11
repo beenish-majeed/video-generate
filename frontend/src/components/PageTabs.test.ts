@@ -3,95 +3,63 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect } from 'vitest';
 import {
   PageTabs,
+  ENABLE_EXTENDED_WORKFLOWS,
+  STREAMLINED_PROMPT_STEPS,
+  STREAMLINED_PICTURE_STEPS,
+  STREAMLINED_PICTURE_STEPS_OWN_VOICE,
   CUSTOM_MEDIA_STEPS,
   PROMPT_FIRST_STEPS,
+  IMAGES_AUDIO_STEPS,
   getStepListForMode,
 } from './PageTabs';
 
-describe('Path-Based Step List Unit Tests', () => {
-  it('1. Upload path (custom_media): returns 7 steps in exact order (excluding welcome and choice)', () => {
-    const steps = getStepListForMode('custom_media');
-    expect(steps).toHaveLength(7);
+describe('PageTabs and Streamlined Flows Unit Tests', () => {
+  it('1. Default ENABLE_EXTENDED_WORKFLOWS is false', () => {
+    expect(ENABLE_EXTENDED_WORKFLOWS).toBe(false);
+  });
+
+  it('2. Flow A (prompt_first): returns streamlined 4 steps (Prompt, Duration, Creating, Premiere)', () => {
+    const steps = getStepListForMode('prompt_first');
+    expect(steps).toEqual(STREAMLINED_PROMPT_STEPS);
+    expect(steps.map((s) => s.id)).toEqual(['idea', 'duration', 'waiting', 'premiere']);
+    expect(steps.map((s) => s.label)).toEqual(['Prompt', 'Duration', 'Creating', 'Premiere']);
+  });
+
+  it('3. Flow B (custom_media with default voice): returns 7 steps including prompt step', () => {
+    const steps = getStepListForMode('custom_media', false);
+    expect(steps).toEqual(STREAMLINED_PICTURE_STEPS);
     expect(steps.map((s) => s.id)).toEqual([
       'photo',
       'voice',
       'duration',
-      'script',
-      'consent',
-      'waiting',
-      'premiere',
-    ]);
-
-    expect(steps.map((s) => s.tabTitle)).toEqual([
-      '01. Memory Photo',
-      '02. Voice Sample',
-      '03. Pace & Time',
-      '04. Narrative',
-      '05. Rights & Consent',
-      '06. Studio Render',
-      '07. Final Film',
-    ]);
-  });
-
-  it('2. Prompt path (prompt_first): returns 7 steps in exact order (Idea, Length, Look & Voice, Script, Consent, Creating, Premiere)', () => {
-    const steps = getStepListForMode('prompt_first');
-    expect(steps).toHaveLength(7);
-    expect(steps.map((s) => s.id)).toEqual([
       'idea',
-      'duration',
-      'look_voice',
-      'script',
       'consent',
       'waiting',
       'premiere',
     ]);
-
-    expect(steps.map((s) => s.tabTitle)).toEqual([
-      '01. Idea',
-      '02. Length',
-      '03. Look & Voice',
-      '04. Script',
-      '05. Rights & Consent',
-      '06. Studio Render',
-      '07. Final Film',
-    ]);
   });
 
-  it('3. Images + Audio path (images_audio): returns 4 steps (Photos & Voice, Consent, Creating, Premiere)', () => {
-    const steps = getStepListForMode('images_audio');
-    expect(steps).toHaveLength(4);
+  it('4. Flow B (custom_media with own voice): skips prompt step and returns 6 steps', () => {
+    const steps = getStepListForMode('custom_media', true);
+    expect(steps).toEqual(STREAMLINED_PICTURE_STEPS_OWN_VOICE);
     expect(steps.map((s) => s.id)).toEqual([
-      'images_audio',
+      'photo',
+      'voice',
+      'duration',
       'consent',
       'waiting',
       'premiere',
     ]);
-    expect(steps.map((s) => s.tabTitle)).toEqual([
-      '01. Photos & Audio',
-      '02. Rights & Consent',
-      '03. Studio Render',
-      '04. Final Film',
-    ]);
+    expect(steps.map((s) => s.id)).not.toContain('idea');
   });
 
-  it('3. Photo and Voice steps exist ONLY in custom_media path', () => {
-    const customMediaIds = getStepListForMode('custom_media').map((s) => s.id);
-    const promptFirstIds = getStepListForMode('prompt_first').map((s) => s.id);
-
-    expect(customMediaIds).toContain('photo');
-    expect(customMediaIds).toContain('voice');
-
-    expect(promptFirstIds).not.toContain('photo');
-    expect(promptFirstIds).not.toContain('voice');
+  it('5. Legacy / extended workflows preserved intact when enableExtended is true', () => {
+    expect(getStepListForMode('prompt_first', false, true)).toEqual(PROMPT_FIRST_STEPS);
+    expect(getStepListForMode('custom_media', false, true)).toEqual(CUSTOM_MEDIA_STEPS);
+    expect(getStepListForMode('images_audio', false, true)).toEqual(IMAGES_AUDIO_STEPS);
   });
 
-  it('4. Default flowMode falls back to custom_media step list', () => {
-    const steps = getStepListForMode();
-    expect(steps).toEqual(CUSTOM_MEDIA_STEPS);
-    expect(getStepListForMode('prompt_first')).toEqual(PROMPT_FIRST_STEPS);
-  });
-
-  it('5. PageTabs returns null (hidden tabs) on welcome (hero) and choice screens', () => {
+  it('6. PageTabs returns null on hero and choice screens', () => {
     const heroMarkup = renderToStaticMarkup(
       React.createElement(PageTabs, { currentStep: 'hero' })
     );
@@ -103,12 +71,11 @@ describe('Path-Based Step List Unit Tests', () => {
     expect(choiceMarkup).toBe('');
   });
 
-  it('6. PageTabs renders navigation tabs on workflow steps', () => {
+  it('7. PageTabs renders navigation tabs on workflow steps', () => {
     const photoMarkup = renderToStaticMarkup(
       React.createElement(PageTabs, { currentStep: 'photo', flowMode: 'custom_media' })
     );
-    expect(photoMarkup).toContain('01. Memory Photo');
+    expect(photoMarkup).toContain('Picture');
     expect(photoMarkup).toContain('role="tablist"');
   });
 });
-

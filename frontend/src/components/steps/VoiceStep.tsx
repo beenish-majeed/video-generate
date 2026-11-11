@@ -28,6 +28,7 @@ interface VoiceStepProps {
   onNext: () => void;
   onBack: () => void;
   isAiClipsMode?: boolean;
+  onDurationDetected?: (durationSeconds: number) => void;
 }
 
 import {
@@ -44,6 +45,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   onNext,
   onBack,
   isAiClipsMode = false,
+  onDurationDetected,
 }) => {
   // Voice Mode & State: Default studio voice, upload audio file, or record voice now
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(selectedAssetId ? 'upload' : 'default');
@@ -136,6 +138,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       setPreviewUrl(null);
       setRecordedFile(null);
       setWaveform(null);
+      if (onDurationDetected) {
+        onDurationDetected(0);
+      }
     } else if (mode === 'upload') {
       resetRecording();
     }
@@ -185,9 +190,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     try {
       const analysis = await extractWaveformPeaks(file, 44);
       setWaveform(analysis);
+      if (onDurationDetected && analysis.duration > 0) {
+        onDurationDetected(analysis.duration);
+      }
     } catch {
       // Non-fatal fallback for waveform display
       setWaveform({ peaks: Array.from({ length: 44 }, () => Math.random() * 0.6 + 0.2), duration: 15 });
+      if (onDurationDetected) {
+        onDurationDetected(15);
+      }
     } finally {
       setAnalyzingAudio(false);
     }
