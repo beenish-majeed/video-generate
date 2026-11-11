@@ -44,6 +44,10 @@ class Settings(BaseSettings):
         default=["127.0.0.1", "::1", "testclient"],
         description="List of trusted reverse proxy IP addresses or hostnames.",
     )
+    enforce_https: bool = Field(
+        default=False,
+        description="Enforce HTTPS redirect for plain HTTP requests behind reverse proxy.",
+    )
 
     # File.ai API Configuration
     file_ai_api_key: str = Field(default=DEFAULT_FILE_AI_API_KEY)

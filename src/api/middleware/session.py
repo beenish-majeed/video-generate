@@ -9,7 +9,7 @@ from src.core.session import generate_session_token, verify_session_token
 logger = logging.getLogger(__name__)
 
 
-def _is_https_request(request: Request) -> bool:
+def is_request_https(request: Request) -> bool:
     """Determine if the request arrived over HTTPS (direct or behind reverse proxies)."""
     if request.url.scheme == "https":
         return True
@@ -21,6 +21,9 @@ def _is_https_request(request: Request) -> bool:
     if "proto=https" in fwd:
         return True
     return False
+
+
+_is_https_request = is_request_https
 
 
 class AnonymousSessionMiddleware(BaseHTTPMiddleware):

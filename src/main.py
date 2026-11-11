@@ -143,10 +143,18 @@ app.add_middleware(RequestBodyLimitMiddleware)
 app.add_middleware(AnonymousSessionMiddleware)
 
 
-# Security headers enforcement
+# Security headers enforcement & HTTPS redirect
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
+    from src.api.middleware.session import is_request_https
+    if getattr(settings, "enforce_https", False) and not is_request_https(request):
+        url = request.url.replace(scheme="https")
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=str(url), status_code=307)
+
     response = await call_next(request)
+    if is_request_https(request) or getattr(settings, "enforce_https", False):
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Frame-Options"] = "DENY"
