@@ -148,7 +148,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   style={{
                     width: '12px',
                     height: '2px',
-                    backgroundColor: 'rgba(108, 77, 255, 0.12)',
+                    backgroundColor: 'rgba(0, 128, 128, 0.2)',
                     borderRadius: '2px',
                     overflow: 'hidden',
                     flexShrink: 0,
@@ -193,7 +193,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                     ? 'var(--bg-surface)'
                     : 'transparent',
                   color: isActive
-                    ? '#4f2ee8'
+                    ? 'var(--accent-primary)'
                     : isCompleted
                     ? 'var(--text-secondary)'
                     : 'var(--text-muted)',
@@ -219,7 +219,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                       height: '15px',
                       borderRadius: '50%',
                       backgroundColor: 'var(--accent-primary)',
-                      color: '#fff',
+                      color: '#F5F5DC',
                     }}
                   >
                     <Check size={10} strokeWidth={3} />

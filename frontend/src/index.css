@@ -1,51 +1,64 @@
 /* Modern Clean Design System for Memory Studio */
 
 :root {
-  /* Dreamy Pastel Design Tokens */
-  --bg: #F6F1FF;
-  --blob-lavender: #CDB8FF;
-  --blob-peach: #FFC9B5;
-  --blob-sky: #B9DDFF;
-  --blob-pink: #FFD3E8;
+  /* Strict Palette Tokens: Teal (#008080) & Beige (#F5F5DC), Black (#000000) for text */
+  --teal-primary: #008080;
+  --teal-hover: #006666;
+  --teal-active: #004d4d;
+  --teal-subtle: rgba(0, 128, 128, 0.12);
+  --teal-border: rgba(0, 128, 128, 0.28);
+  --teal-glow: rgba(0, 128, 128, 0.35);
 
-  /* Glassmorphism & Surfaces */
-  --glass: rgba(255, 255, 255, 0.6);
-  --glass-fallback: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.85);
-  --bg-surface: var(--glass);
-  --bg-subtle: rgba(255, 255, 255, 0.45);
-  --bg-muted: rgba(246, 241, 255, 0.5);
+  --beige-bg: #F5F5DC;
+  --beige-surface: #F5F5DC;
+  --beige-subtle: rgba(245, 245, 220, 0.85);
+  --beige-muted: rgba(245, 245, 220, 0.6);
+
+  /* Primary Canvas & Backgrounds */
+  --bg: var(--beige-bg);
+  --blob-lavender: var(--beige-bg);
+  --blob-peach: var(--beige-bg);
+  --blob-sky: var(--beige-bg);
+  --blob-pink: var(--beige-bg);
+
+  /* Surfaces */
+  --glass: var(--beige-surface);
+  --glass-fallback: var(--beige-surface);
+  --glass-border: var(--teal-border);
+  --bg-surface: var(--beige-surface);
+  --bg-subtle: var(--beige-subtle);
+  --bg-muted: var(--teal-subtle);
 
   /* Borders & Dividers */
-  --border-light: var(--glass-border);
-  --border-subtle: rgba(205, 184, 255, 0.35);
-  --border-focus: #6C4DFF;
+  --border-light: rgba(0, 128, 128, 0.2);
+  --border-subtle: rgba(0, 128, 128, 0.35);
+  --border-focus: var(--teal-primary);
 
-  /* Typography */
-  --text: #241F3A;
-  --text-primary: var(--text);
-  --text-secondary: #3D3759;
-  --text-muted: #5E587A;
+  /* Typography: Pure Black (#000000) for high-contrast accessibility on Beige */
+  --text: #000000;
+  --text-primary: #000000;
+  --text-secondary: rgba(0, 0, 0, 0.82);
+  --text-muted: rgba(0, 0, 0, 0.65);
 
-  /* Primary Accent & Gradients */
-  --accent: #6C4DFF;
-  --accent-2: #B28CFF;
-  --accent-gradient: linear-gradient(135deg, #6C4DFF 0%, #B28CFF 100%);
-  --accent-primary: var(--accent);
-  --accent-primary-hover: #5835F5;
-  --accent-primary-light: rgba(108, 77, 255, 0.08);
-  --accent-primary-border: rgba(178, 140, 255, 0.4);
+  /* Primary Accent & Solid States (No Rainbow Gradients) */
+  --accent: var(--teal-primary);
+  --accent-2: var(--teal-primary);
+  --accent-gradient: var(--teal-primary);
+  --accent-primary: var(--teal-primary);
+  --accent-primary-hover: var(--teal-hover);
+  --accent-primary-light: var(--teal-subtle);
+  --accent-primary-border: var(--teal-primary);
 
-  /* Status Accents in Soft Pastel Tones (WCAG AA Compliant) */
-  --accent-success: #1B6E44;
-  --accent-success-bg: #D1F4E0;
-  --accent-success-light: #E4F9ED;
-  --accent-danger: #B82846;
-  --accent-danger-bg: #FFE4E8;
-  --accent-danger-light: #FFDEE3;
-  --accent-warning: #8A5200;
-  --accent-warning-bg: #FFF0D4;
-  --accent-warning-light: #FFF8EB;
+  /* Status Accents: Strict High-Contrast */
+  --accent-success: var(--teal-primary);
+  --accent-success-bg: rgba(0, 128, 128, 0.12);
+  --accent-success-light: rgba(0, 128, 128, 0.06);
+  --accent-danger: #000000;
+  --accent-danger-bg: rgba(0, 0, 0, 0.08);
+  --accent-danger-light: rgba(0, 0, 0, 0.04);
+  --accent-warning: var(--teal-primary);
+  --accent-warning-bg: rgba(0, 128, 128, 0.12);
+  --accent-warning-light: rgba(0, 128, 128, 0.06);
 
   /* Typography Stacks (Self-Hosted / Local Native Stacks) */
   --font-serif: "Newsreader", "Playfair Display", "Cormorant Garamond", "Georgia", "Cambria", "Times New Roman", serif;
@@ -84,13 +97,13 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* Lavender-Tinted Soft Shadows (Never Black) */
-  --shadow-sm: 0 2px 8px 0 rgba(108, 77, 255, 0.05), 0 1px 2px 0 rgba(36, 31, 58, 0.03);
-  --shadow-card: 0 8px 32px 0 rgba(108, 77, 255, 0.08), 0 2px 8px 0 rgba(36, 31, 58, 0.04);
-  --shadow-card-hover: 0 16px 40px 0 rgba(108, 77, 255, 0.14), 0 4px 12px 0 rgba(36, 31, 58, 0.06);
-  --shadow-glow: 0 0 24px 0 rgba(178, 140, 255, 0.35);
-  --shadow-glow-accent: 0 4px 20px 0 rgba(108, 77, 255, 0.3);
-  --shadow-dropdown: 0 12px 36px 0 rgba(108, 77, 255, 0.12), 0 4px 12px 0 rgba(36, 31, 58, 0.06);
+  /* Soft Teal-Tinted Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 128, 128, 0.05);
+  --shadow-card: 0 4px 16px rgba(0, 128, 128, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 8px 24px rgba(0, 128, 128, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(0, 128, 128, 0.3);
+  --shadow-glow-accent: 0 4px 18px rgba(0, 128, 128, 0.3);
+  --shadow-dropdown: 0 10px 30px rgba(0, 128, 128, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
 
   /* Easing & Durations (Slow, calm motion) */
   --ease-dreamy: cubic-bezier(0.16, 1, 0.3, 1);
@@ -173,11 +186,11 @@ img, svg, canvas, video {
   max-width: 100%;
 }
 
-/* Accessible Focus Rings with Dreamy Lavender Glow */
+/* Accessible Focus Rings with Teal Glow */
 :focus-visible {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 4px rgba(108, 77, 255, 0.25) !important;
+  box-shadow: 0 0 0 4px rgba(0, 128, 128, 0.25) !important;
   transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), outline-offset 0.15s ease;
 }
 
@@ -215,7 +228,7 @@ h3:focus, h3:focus-visible {
 .app-topbar {
   width: 100%;
   height: 60px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(245, 245, 220, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-light);
   display: flex;
@@ -245,7 +258,7 @@ h3:focus, h3:focus-visible {
   height: 28px;
   border-radius: 8px;
   background: var(--accent-primary);
-  color: #ffffff;
+  color: #F5F5DC;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,14 +323,14 @@ h3:focus, h3:focus-visible {
   }
 }
 
-/* Card Component: White, 16px radius, thin light border, soft shadow, solid only */
+/* Card Component: Strict Beige Surface with Teal Border & Soft Shadow */
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card:hover {
@@ -329,12 +342,12 @@ h3:focus, h3:focus-visible {
   background: var(--accent-primary-light) !important;
 }
 
-/* Buttons: Primary (accent gradient + glow), Secondary (glass), Ghost */
+/* Buttons: Primary (Teal #008080), Secondary (Beige + Teal border), Ghost */
 .btn-primary,
 .btn-terracotta {
-  background: var(--accent-gradient);
-  color: #ffffff;
-  border: 1px solid transparent;
+  background: var(--teal-primary);
+  color: #F5F5DC;
+  border: 1px solid var(--teal-primary);
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 15px;
@@ -342,7 +355,7 @@ h3:focus, h3:focus-visible {
   border-radius: var(--radius-pill);
   cursor: pointer;
   box-shadow: var(--shadow-glow-accent);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, opacity 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -365,7 +378,7 @@ h3:focus, h3:focus-visible {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.4) 50%,
+    rgba(245, 245, 220, 0.35) 50%,
     transparent 100%
   );
   transform: skewX(-20deg);
@@ -381,12 +394,16 @@ h3:focus, h3:focus-visible {
 
 .btn-primary:hover:not(:disabled),
 .btn-terracotta:hover:not(:disabled) {
+  background: var(--teal-hover);
+  border-color: var(--teal-hover);
+  color: #F5F5DC;
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px 0 rgba(108, 77, 255, 0.45);
+  box-shadow: 0 6px 20px 0 rgba(0, 128, 128, 0.4);
 }
 
 .btn-primary:active:not(:disabled),
 .btn-terracotta:active:not(:disabled) {
+  background: var(--teal-active);
   transform: translateY(0px) scale(0.98);
 }
 
@@ -399,11 +416,9 @@ h3:focus, h3:focus-visible {
 }
 
 .btn-secondary {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--accent);
-  border: 1px solid var(--accent-2);
+  background: var(--beige-surface);
+  color: var(--teal-primary);
+  border: 1px solid var(--teal-primary);
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 15px;
@@ -411,7 +426,7 @@ h3:focus, h3:focus-visible {
   border-radius: var(--radius-pill);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -422,13 +437,15 @@ h3:focus, h3:focus-visible {
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: var(--accent);
+  background: rgba(0, 128, 128, 0.1);
+  border-color: var(--teal-hover);
+  color: var(--teal-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-card);
 }
 
 .btn-secondary:active:not(:disabled) {
+  background: rgba(0, 128, 128, 0.18);
   transform: translateY(0px) scale(0.98);
 }
 
@@ -440,7 +457,7 @@ h3:focus, h3:focus-visible {
 
 .btn-ghost {
   background-color: transparent;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   border: 1px solid transparent;
   font-family: var(--font-sans);
   font-weight: 500;
@@ -459,8 +476,8 @@ h3:focus, h3:focus-visible {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background-color: rgba(108, 77, 255, 0.08);
-  color: var(--text-primary);
+  background-color: var(--teal-subtle);
+  color: var(--teal-primary);
 }
 
 .btn-ghost:active:not(:disabled) {
@@ -491,11 +508,8 @@ h3:focus, h3:focus-visible {
 .heading-accent {
   font-style: italic;
   font-family: var(--font-serif);
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
+  color: var(--teal-primary);
+  -webkit-text-fill-color: var(--teal-primary);
   display: inline-block;
   padding-right: 0.06em;
 }
@@ -553,17 +567,15 @@ h3:focus, h3:focus-visible {
   border: 0;
 }
 
-/* Inputs, Textareas & Form Controls with Soft Focus Glow */
+/* Inputs, Textareas & Form Controls */
 input[type="text"],
 input[type="number"],
 input[type="password"],
 input[type="email"],
 textarea,
 select {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
+  background: var(--beige-surface);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -581,17 +593,16 @@ input[type="text"]:hover,
 input[type="number"]:hover,
 textarea:hover,
 select:hover {
-  border-color: rgba(108, 77, 255, 0.4);
-  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--teal-border);
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--accent) !important;
-  background: #ffffff !important;
-  box-shadow: 0 0 0 4px rgba(108, 77, 255, 0.18), 0 2px 12px 0 rgba(108, 77, 255, 0.08) !important;
+  border-color: var(--teal-primary) !important;
+  background: var(--beige-surface) !important;
+  box-shadow: 0 0 0 4px rgba(0, 128, 128, 0.18), 0 2px 12px 0 rgba(0, 128, 128, 0.08) !important;
 }
 
 /* Button & interactive press feedback */
@@ -644,11 +655,9 @@ button:active:not(:disabled),
 /* Upload Dropzones Motion & Reactions */
 .upload-dropzone {
   position: relative;
-  border: 2px dashed rgba(108, 77, 255, 0.28);
+  border: 2px dashed var(--teal-border);
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--beige-surface);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
@@ -657,26 +666,26 @@ button:active:not(:disabled),
 }
 
 .upload-dropzone:hover {
-  border-color: rgba(108, 77, 255, 0.5);
-  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--teal-primary);
+  background: rgba(0, 128, 128, 0.04);
 }
 
 .upload-dropzone--active {
   transform: scale(1.01);
-  border-color: var(--accent) !important;
-  background: rgba(205, 184, 255, 0.15) !important;
-  box-shadow: 0 0 24px rgba(108, 77, 255, 0.25), 0 0 0 1px var(--accent) !important;
+  border-color: var(--teal-primary) !important;
+  background: rgba(0, 128, 128, 0.08) !important;
+  box-shadow: 0 0 24px rgba(0, 128, 128, 0.25), 0 0 0 1px var(--teal-primary) !important;
   animation: dropzonePulse 2s ease-in-out infinite alternate;
 }
 
 @keyframes dropzonePulse {
   0% {
-    border-color: var(--accent);
-    box-shadow: 0 0 20px rgba(108, 77, 255, 0.2), 0 0 0 1px var(--accent);
+    border-color: var(--teal-primary);
+    box-shadow: 0 0 20px rgba(0, 128, 128, 0.2), 0 0 0 1px var(--teal-primary);
   }
   100% {
-    border-color: var(--blob-pink);
-    box-shadow: 0 0 28px rgba(255, 138, 160, 0.3), 0 0 0 1px var(--blob-pink);
+    border-color: var(--teal-hover);
+    box-shadow: 0 0 28px rgba(0, 128, 128, 0.3), 0 0 0 1px var(--teal-hover);
   }
 }
 
@@ -701,20 +710,20 @@ button:active:not(:disabled),
   }
 }
 
-/* Dreamy upload progress bar */
+/* Upload Progress Bar */
 .progress-bar-container {
   width: 100%;
   height: 8px;
-  background-color: rgba(108, 77, 255, 0.08);
-  border-radius: var(--radius-full);
+  background-color: rgba(0, 128, 128, 0.12);
+  border-radius: var(--radius-pill);
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(45, 38, 74, 0.06);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--blob-peach) 100%);
-  border-radius: var(--radius-full);
+  background: var(--teal-primary);
+  border-radius: var(--radius-pill);
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: width;
 }
@@ -722,23 +731,23 @@ button:active:not(:disabled),
 /* Voice Recording & Audio Visualizer */
 @keyframes recordPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 77, 106, 0.45);
+    box-shadow: 0 0 0 0 rgba(0, 128, 128, 0.45);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(255, 77, 106, 0);
+    box-shadow: 0 0 0 12px rgba(0, 128, 128, 0);
     transform: scale(1.025);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 77, 106, 0);
+    box-shadow: 0 0 0 0 rgba(0, 128, 128, 0);
     transform: scale(1);
   }
 }
 
 .record-btn-pulsing {
   animation: recordPulse 1.8s infinite ease-in-out;
-  background: linear-gradient(135deg, #ff4d6a 0%, #ff8aa0 100%) !important;
-  color: #ffffff !important;
+  background: var(--teal-primary) !important;
+  color: #F5F5DC !important;
   border: none !important;
 }
 
@@ -806,9 +815,9 @@ button:active:not(:disabled),
   border-radius: var(--radius-full);
   background: linear-gradient(
     90deg,
-    rgba(205, 184, 255, 0.22) 20%,
-    rgba(255, 201, 181, 0.5) 50%,
-    rgba(205, 184, 255, 0.22) 80%
+    rgba(0, 128, 128, 0.12) 20%,
+    rgba(0, 128, 128, 0.2) 50%,
+    rgba(0, 128, 128, 0.12) 80%
   );
   background-size: 200% 100%;
   animation: writingShimmer 2.4s infinite ease-in-out;
@@ -827,9 +836,9 @@ button:active:not(:disabled),
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(205, 184, 255, 0.2) 20%,
-    rgba(255, 201, 181, 0.45) 50%,
-    rgba(205, 184, 255, 0.2) 80%
+    rgba(0, 128, 128, 0.12) 20%,
+    rgba(0, 128, 128, 0.2) 50%,
+    rgba(0, 128, 128, 0.12) 80%
   );
   background-size: 200% 100%;
   animation: pastelSkeletonShimmer 2.2s infinite ease-in-out;
@@ -839,7 +848,7 @@ button:active:not(:disabled),
 .card-skeleton {
   padding: 16px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--beige-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
@@ -878,9 +887,9 @@ button:active:not(:disabled),
 }
 
 .error-card-tint {
-  background: rgba(255, 243, 245, 0.85) !important;
-  border: 1px solid rgba(255, 138, 160, 0.45) !important;
-  box-shadow: 0 4px 16px rgba(255, 138, 160, 0.1) !important;
+  background: var(--beige-surface) !important;
+  border: 1px solid #000000 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Waiting Room Motion: Flowing Gradient Orb & Pulsing Stage Dots */
@@ -903,8 +912,8 @@ button:active:not(:disabled),
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--blob-peach) 0%, var(--blob-pink) 35%, var(--accent) 75%, var(--blob-sky) 100%);
-  box-shadow: 0 0 32px rgba(108, 77, 255, 0.35), 0 0 54px rgba(255, 201, 181, 0.28);
+  background: var(--teal-primary);
+  box-shadow: 0 0 32px rgba(0, 128, 128, 0.35);
   animation: gradientOrbFlow 9s ease-in-out infinite;
   display: flex;
   align-items: center;
@@ -915,11 +924,11 @@ button:active:not(:disabled),
 @keyframes stageDotPulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(108, 77, 255, 0.45);
+    box-shadow: 0 0 0 0 rgba(0, 128, 128, 0.45);
   }
   50% {
     transform: scale(1.18);
-    box-shadow: 0 0 0 6px rgba(108, 77, 255, 0);
+    box-shadow: 0 0 0 6px rgba(0, 128, 128, 0);
   }
 }
 
@@ -966,7 +975,7 @@ button:active:not(:disabled),
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.4) 50%,
+    rgba(245, 245, 220, 0.5) 50%,
     transparent 100%
   );
   animation: premiereSweep 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -989,8 +998,8 @@ button:active:not(:disabled),
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(108, 77, 255, 0.2);
+  background: var(--beige-surface);
+  border: 1px solid rgba(0, 128, 128, 0.25);
   color: var(--text-muted);
   line-height: 1.2;
   margin-left: 6px;
@@ -1004,7 +1013,7 @@ button:hover .kbd-hint,
 button:focus-visible .kbd-hint {
   opacity: 1;
   color: var(--text-primary);
-  border-color: rgba(108, 77, 255, 0.4);
+  border-color: var(--teal-primary);
 }
 
 /* Performance & Small Screen Optimizations: Reduce blurs and particle counts on mobile/low-power */

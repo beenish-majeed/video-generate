@@ -72,7 +72,7 @@ export const CursorGlow: React.FC = () => {
         pointerEvents: 'none',
         zIndex: 1, // Behind main content (z-index: 2) but above background
         background:
-          'radial-gradient(circle, rgba(205, 184, 255, 0.28) 0%, rgba(255, 201, 181, 0.16) 45%, rgba(185, 221, 255, 0.08) 65%, transparent 75%)',
+          'radial-gradient(circle, rgba(0, 128, 128, 0.16) 0%, rgba(0, 128, 128, 0.05) 50%, transparent 70%)',
         filter: 'blur(32px)',
         transform: 'translate3d(0, 0, 0)',
         willChange: 'transform',
