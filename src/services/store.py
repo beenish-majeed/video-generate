@@ -426,7 +426,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
             file.file.seek(0)
 
 
-def save_upload(file: UploadFile, kind: str) -> dict:
+def save_upload(file: UploadFile, kind: str, session_id: Optional[str] = None) -> dict:
     validate_upload(file, kind)
 
     asset_id = f"{kind}_{uuid.uuid4().hex}"
@@ -551,9 +551,13 @@ def save_upload(file: UploadFile, kind: str) -> dict:
             size_bytes=file_size,
             sha256=ret.get("sha256", ""),
             duration_seconds=ret.get("duration_seconds"),
+            session_id=session_id,
         )
     except Exception:
         pass
+
+    if session_id:
+        ret["session_id"] = session_id
 
     return ret
 

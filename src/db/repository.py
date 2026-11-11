@@ -144,20 +144,22 @@ class AssetRepository:
         size_bytes: int,
         sha256: str,
         duration_seconds: Optional[float] = None,
+        session_id: Optional[str] = None,
     ) -> AssetEntity:
         now_iso = utcnow().isoformat()
         with get_db_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO assets (asset_id, kind, filename, path, size_bytes, sha256, duration_seconds, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO assets (asset_id, kind, filename, path, size_bytes, sha256, duration_seconds, created_at, session_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(asset_id) DO UPDATE SET
                     kind = excluded.kind,
                     filename = excluded.filename,
                     path = excluded.path,
                     size_bytes = excluded.size_bytes,
                     sha256 = excluded.sha256,
-                    duration_seconds = excluded.duration_seconds
+                    duration_seconds = excluded.duration_seconds,
+                    session_id = coalesce(excluded.session_id, assets.session_id)
                 """,
                 (
                     asset_id,
@@ -168,6 +170,7 @@ class AssetRepository:
                     sha256,
                     duration_seconds,
                     now_iso,
+                    session_id,
                 ),
             )
         return AssetEntity(
@@ -179,6 +182,7 @@ class AssetRepository:
             sha256=sha256,
             duration_seconds=duration_seconds,
             created_at=now_iso,
+            session_id=session_id,
         )
 
     @staticmethod
@@ -190,6 +194,8 @@ class AssetRepository:
             ).fetchone()
             if not row:
                 return None
+            keys = row.keys()
+            sess_val = row["session_id"] if "session_id" in keys else None
             return AssetEntity(
                 asset_id=row["asset_id"],
                 kind=row["kind"],
@@ -199,6 +205,7 @@ class AssetRepository:
                 sha256=row["sha256"],
                 duration_seconds=row["duration_seconds"],
                 created_at=row["created_at"],
+                session_id=sess_val,
             )
 
     @staticmethod

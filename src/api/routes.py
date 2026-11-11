@@ -259,6 +259,7 @@ def create_scene_plan_endpoint(
     dependencies=[Depends(verify_api_key), Depends(check_upload_rate_limit)],
 )
 async def upload_asset_endpoint(
+    request: Request,
     kind: str = Form(...),
     file: UploadFile = File(...),
 ):
@@ -270,7 +271,8 @@ async def upload_asset_endpoint(
 
     import src.main as main_mod
     upload_fn = getattr(main_mod, "save_upload", save_upload)
-    return upload_fn(file=file, kind=kind)
+    session_id = get_current_session_id(request)
+    return upload_fn(file=file, kind=kind, session_id=session_id)
 
 
 def _validate_safe_job_id(job_id: str) -> str:
@@ -372,9 +374,34 @@ def create_video_job(payload: JobCreate, request: Request):
                 detail=f"Server busy: maximum capacity of {settings.max_active_jobs_cap} running or queued jobs reached. Please try again later.",
             )
 
+        # Enforce asset ownership: prevent referencing assets uploaded by another anonymous session
+        req_session = get_current_session_id(request)
+        referenced_assets = []
+        if getattr(payload, "photo_asset_id", None):
+            referenced_assets.append(payload.photo_asset_id)
+        if getattr(payload, "voice_asset_id", None):
+            referenced_assets.append(payload.voice_asset_id)
+        if getattr(payload, "music_asset_id", None):
+            referenced_assets.append(payload.music_asset_id)
+        if getattr(payload, "uploaded_audio_asset_id", None):
+            referenced_assets.append(payload.uploaded_audio_asset_id)
+        if getattr(payload, "uploaded_image_asset_ids", None):
+            referenced_assets.extend(payload.uploaded_image_asset_ids)
+        if getattr(payload, "clip_asset_ids", None):
+            referenced_assets.extend(payload.clip_asset_ids)
+
+        from src.db.repository import AssetRepository
+        for aid in referenced_assets:
+            rec = AssetRepository.get(aid)
+            if rec and getattr(rec, "session_id", None):
+                if rec.session_id != req_session:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Access denied: asset '{aid}' belongs to another session.",
+                    )
+
         try:
             job = create_fn(payload)
-            req_session = get_current_session_id(request)
             job.session_id = req_session
             client_id = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
             if client_id:

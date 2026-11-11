@@ -98,11 +98,17 @@ def _execute_schema_ddl(conn: sqlite3.Connection) -> None:
             size_bytes INTEGER NOT NULL,
             sha256 TEXT NOT NULL,
             duration_seconds REAL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            session_id TEXT
         );
     """)
+    asset_cols = {row[1] for row in conn.execute("PRAGMA table_info(assets)").fetchall()}
+    if "session_id" not in asset_cols:
+        conn.execute("ALTER TABLE assets ADD COLUMN session_id TEXT;")
+
     conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_kind ON assets(kind);")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_created ON assets(created_at);")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_assets_session ON assets(session_id);")
 
     # 3. Consents Table
     conn.execute("""

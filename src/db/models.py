@@ -23,6 +23,7 @@ class AssetEntity:
     sha256: str
     duration_seconds: Optional[float]
     created_at: str
+    session_id: Optional[str] = None
 
 
 @dataclass
