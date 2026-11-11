@@ -344,30 +344,12 @@ export const App: React.FC = () => {
       };
     } else {
       // Flow B: Picture to video (or legacy custom_media)
-      let resolvedScript = script;
-      if (!hasOwnVoice && !resolvedScript && ideaText) {
-        try {
-          const scriptRes = await apiClient.generateScript({
-            prompt: ideaText.trim().slice(0, 1000),
-            tone: tone,
-            target_duration_seconds: targetSeconds,
-            duration_preset: durationPreset,
-          });
-          if (scriptRes?.script) {
-            resolvedScript = scriptRes.script;
-            setScript(scriptRes.script);
-          }
-        } catch {
-          resolvedScript = ideaText.trim().slice(0, 500);
-        }
-      }
-
       payload = {
-        visual_mode: 'talking_head',
+        visual_mode: 'picture_to_video',
         photo_asset_id: photoAssetId || DEFAULT_PHOTO_ASSET_ID,
         voice_asset_id: hasOwnVoice ? voiceAssetId : undefined,
         voice_preset_id: hasOwnVoice ? undefined : (voicePresetId || 'voice_piper_lessac'),
-        script: resolvedScript.trim() || ideaText.trim() || undefined,
+        script: script.trim() || undefined,
         prompt: prompt.trim() || ideaText.trim() || 'Warm cinematic light, soft watercolor texture',
         duration_preset: hasOwnVoice ? undefined : durationPreset,
         target_duration_seconds: hasOwnVoice ? (detectedAudioDuration || 15) : targetSeconds,
