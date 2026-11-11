@@ -1,17 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import type { DurationPreset, DurationOption, DurationsResponse } from '../../types/api';
+import type { DurationPreset, DurationsResponse } from '../../types/api';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
 import { motion } from 'framer-motion';
-import { ArrowRight, ArrowLeft, Clock, Sparkles, Loader2, AlertCircle, RefreshCw, Hourglass } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Clock, Loader2, AlertCircle, RefreshCw, Volume2 } from 'lucide-react';
 import StoryScrollSection from '../ui/StoryScrollSection';
 
-interface DurationStepProps {
+export const RENDER_SECONDS_PER_VIDEO_SECOND = 3.7;
+
+export function formatRenderEstimate(videoSeconds: number): string {
+  const renderSeconds = Math.round(videoSeconds * RENDER_SECONDS_PER_VIDEO_SECOND);
+  if (renderSeconds < 60) {
+    return `~${renderSeconds} sec`;
+  }
+  const mins = renderSeconds / 60;
+  const formatted = mins % 1 === 0 ? `${mins}` : mins.toFixed(1).replace(/\.0$/, '');
+  return `~${formatted} min`;
+}
+
+export interface PresetCardItem {
+  value: DurationPreset;
+  label: string;
+  seconds: number;
+}
+
+export const DURATION_ROW_1: PresetCardItem[] = [
+  { value: '5s', label: '5 sec', seconds: 5 },
+  { value: '30s', label: '30 sec', seconds: 30 },
+  { value: '1m', label: '1 min', seconds: 60 },
+];
+
+export const DURATION_ROW_2: PresetCardItem[] = [
+  { value: '2m', label: '2 min', seconds: 120 },
+  { value: '3m', label: '3 min', seconds: 180 },
+  { value: '5m', label: '5 min', seconds: 300 },
+  { value: '10m', label: '10 min', seconds: 600 },
+];
+
+export interface DurationStepProps {
   selectedPreset: DurationPreset;
   onPresetSelected: (preset: DurationPreset, targetSeconds: number) => void;
   onNext: () => void;
   onBack: () => void;
+  detectedAudioSeconds?: number | null;
 }
 
 export const DurationStep: React.FC<DurationStepProps> = ({
@@ -19,18 +51,16 @@ export const DurationStep: React.FC<DurationStepProps> = ({
   onPresetSelected,
   onNext,
   onBack,
+  detectedAudioSeconds,
 }) => {
-  const [durationsInfo, setDurationsInfo] = useState<DurationsResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<MappedAPIError | null>(null);
 
   const fetchDurations = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.getDurations();
-      setDurationsInfo(data);
-      // If no preset selected yet, default to 30s or first preset
+      const data: DurationsResponse = await apiClient.getDurations();
       if (!selectedPreset && data.allowed_presets.length > 0) {
         const defaultOpt = data.allowed_presets.find((p) => p.value === '30s') || data.allowed_presets[0];
         onPresetSelected(defaultOpt.value, defaultOpt.seconds);
@@ -46,19 +76,58 @@ export const DurationStep: React.FC<DurationStepProps> = ({
     fetchDurations();
   }, []);
 
-  const presets: DurationOption[] = durationsInfo?.allowed_presets || [];
-  const currentOption = presets.find((p) => p.value === selectedPreset) || presets[1] || { label: '30s', value: '30s', seconds: 30 };
-  const wpm = durationsInfo?.words_per_minute || 150;
-  const approxWords = Math.round((currentOption.seconds / 60) * wpm);
+  const hasDetectedAudio = typeof detectedAudioSeconds === 'number' && detectedAudioSeconds > 0;
 
-  // Format estimated render time (3.7x multiplier)
-  const formatEstimatedRenderTime = (videoSeconds: number): string => {
-    const renderSeconds = Math.round(videoSeconds * 3.7);
-    if (renderSeconds < 60) {
-      return `~${renderSeconds} sec render time`;
-    }
-    const mins = (renderSeconds / 60).toFixed(1);
-    return `~${mins} min render time`;
+  const renderCard = (card: PresetCardItem) => {
+    const isSelected = card.value === selectedPreset;
+
+    return (
+      <motion.button
+        key={card.value}
+        type="button"
+        onClick={() => {
+          playStickerPopSound();
+          onPresetSelected(card.value, card.seconds);
+        }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        aria-pressed={isSelected}
+        className={`card ${isSelected ? 'card-selected' : ''}`}
+        style={{
+          position: 'relative',
+          padding: 'clamp(14px, 1.8dvh, 18px) clamp(10px, 1.2vw, 16px)',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          flex: '0 1 180px',
+          minWidth: '120px',
+          maxWidth: '220px',
+          textAlign: 'center',
+          border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-light)',
+          background: isSelected ? 'var(--bg-card)' : 'var(--bg-surface)',
+          borderRadius: 'var(--radius-card)',
+          boxSizing: 'border-box',
+        }}
+      >
+        <Clock size={20} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }} />
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: '17px',
+            color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+          }}
+        >
+          {card.label}
+        </span>
+        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {formatRenderEstimate(card.seconds)}
+        </span>
+      </motion.button>
+    );
   };
 
   return (
@@ -68,32 +137,28 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         padding: 'clamp(16px, 2.5dvh, 32px) clamp(16px, 2.5vw, 44px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'clamp(16px, 2dvh, 24px)',
+        gap: 'clamp(18px, 2.5dvh, 28px)',
         position: 'relative',
-        maxWidth: 'min(1100px, 96%)',
+        maxWidth: 'min(900px, 96%)',
         margin: 'auto',
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      {/* Header Copy */}
-      <StoryScrollSection as="header" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {/* Heading only */}
+      <StoryScrollSection as="header" style={{ textAlign: 'center' }}>
         <h2 className="editorial-title" style={{ fontSize: 'clamp(24px, 2.2vw, 34px)', lineHeight: 1.2, margin: 0 }}>
           Select video duration
         </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'clamp(14px, 1vw, 16px)', lineHeight: 1.5, margin: 0 }}>
-          How long should your animated film be? We load options dynamically from the studio backend.
-        </p>
       </StoryScrollSection>
 
-      {/* Main Interactive Preset Selection - Fluid Grid */}
+      {/* Main duration selection */}
       <StoryScrollSection as="div" delay={0.06} role="region" aria-label="Duration preset selection" style={{ width: '100%' }}>
         {loading ? (
-          /* Loading State */
           <div
             className="card"
             style={{
-              padding: '40px 20px',
+              padding: '36px 20px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -103,13 +168,12 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               width: '100%',
             }}
           >
-            <Loader2 size={28} className="animate-spin" />
-            <p style={{ fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
-              Fetching duration options from the studio...
+            <Loader2 size={26} className="animate-spin" />
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, margin: 0 }}>
+              Loading duration presets...
             </p>
           </div>
         ) : error ? (
-          /* Failure / Error State */
           <div
             role="alert"
             className="card"
@@ -124,145 +188,121 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               width: '100%',
             }}
           >
-            <AlertCircle size={28} style={{ color: 'var(--accent-danger)' }} />
+            <AlertCircle size={26} style={{ color: 'var(--accent-danger)' }} />
             <div>
-              <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                 {error.title}
               </h4>
-              <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '460px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
                 {error.message}
               </p>
             </div>
-            <button type="button" onClick={fetchDurations} className="btn-secondary" style={{ fontSize: '14px', minHeight: '44px' }}>
+            <button type="button" onClick={fetchDurations} className="btn-secondary" style={{ fontSize: '13px', minHeight: '40px' }}>
               <RefreshCw size={14} />
-              <span>Retry loading durations</span>
+              <span>Retry</span>
             </button>
           </div>
+        ) : hasDetectedAudio ? (
+          /* Detected Audio Duration Display for Flow B */
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '12px 0' }}>
+            <div
+              className="card card-selected"
+              style={{
+                padding: '28px 32px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                textAlign: 'center',
+                border: '2px solid var(--accent)',
+                borderRadius: 'var(--radius-card)',
+                background: 'var(--bg-card)',
+                maxWidth: '380px',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              <Volume2 size={28} style={{ color: 'var(--accent)' }} />
+              <span style={{ fontWeight: 700, fontSize: '22px', color: 'var(--accent)' }}>
+                {detectedAudioSeconds < 60
+                  ? `${Math.round(detectedAudioSeconds)} sec`
+                  : `${(detectedAudioSeconds / 60).toFixed(1)} min`}
+              </span>
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                Detected from your voice audio
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {formatRenderEstimate(detectedAudioSeconds)} render estimate
+              </span>
+            </div>
+          </div>
         ) : (
-          /* Responsive Fluid Grid of Duration Preset Cards */
-          <div className="duration-cards-grid">
-            {presets.map((preset) => {
-              const isSelected = preset.value === selectedPreset;
+          /* Two rows: Row 1 = 3 cards centered, Row 2 = 4 cards aligned below */
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            {/* Row 1: 3 cards centered (5 sec, 30 sec, 1 min) */}
+            <div
+              className="duration-row-1"
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '12px',
+                flexWrap: 'wrap',
+                width: '100%',
+              }}
+            >
+              {DURATION_ROW_1.map(renderCard)}
+            </div>
 
-              return (
-                <motion.button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => {
-                    playStickerPopSound();
-                    onPresetSelected(preset.value, preset.seconds);
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  aria-pressed={isSelected}
-                  className={`card ${isSelected ? 'card-selected' : ''}`}
-                  style={{
-                    position: 'relative',
-                    padding: 'clamp(14px, 1.8dvh, 20px) clamp(10px, 1.2vw, 16px)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '6px',
-                    height: '100%',
-                    width: '100%',
-                    minHeight: '44px',
-                    textAlign: 'center',
-                    overflow: 'visible',
-                  }}
-                >
-                  {isSelected && (
-                    <motion.div
-                      layoutId="durationCardHighlight"
-                      style={{
-                        position: 'absolute',
-                        inset: -2,
-                        borderRadius: 'calc(var(--radius-card) + 2px)',
-                        border: '2px solid var(--accent)',
-                        boxShadow: '0 0 20px rgba(0, 128, 128, 0.22), inset 0 0 10px rgba(0, 128, 128, 0.05)',
-                        pointerEvents: 'none',
-                        zIndex: 1,
-                      }}
-                      transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-                    />
-                  )}
-
-                  <Clock size={22} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)', position: 'relative', zIndex: 2 }} />
-
-                  <span style={{ fontWeight: 700, fontSize: '18px', color: isSelected ? 'var(--accent)' : 'var(--text-primary)', marginTop: '4px', position: 'relative', zIndex: 2 }}>
-                    {preset.label}
-                  </span>
-
-                  <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500, position: 'relative', zIndex: 2 }}>
-                    {preset.seconds}s length
-                  </span>
-
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', position: 'relative', zIndex: 2 }}>
-                    {formatEstimatedRenderTime(preset.seconds)}
-                  </span>
-                </motion.button>
-              );
-            })}
+            {/* Row 2: 4 cards aligned below (2 min, 3 min, 5 min, 10 min) */}
+            <div
+              className="duration-row-2"
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '12px',
+                flexWrap: 'wrap',
+                width: '100%',
+              }}
+            >
+              {DURATION_ROW_2.map(renderCard)}
+            </div>
           </div>
         )}
       </StoryScrollSection>
 
-      {/* Kind Note about Render Time & Pacing */}
-      <StoryScrollSection
-        as="section"
-        delay={0.12}
-        className="card"
-        style={{
-          padding: 'clamp(14px, 1.8dvh, 20px) clamp(16px, 2vw, 24px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          width: '100%',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <Hourglass size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              Estimated Studio Render Time
-            </h3>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.5, margin: 0 }}>
-              Rendering takes about <strong>3.7 times</strong> the video length.
-              For instance, a 5-minute video takes about 18 minutes to render completely.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ height: '1px', backgroundColor: 'var(--border-light)', margin: '2px 0' }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <Sparkles size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.4, margin: 0 }}>
-            For {currentOption.label} ({currentOption.seconds}s), aim for ~{approxWords} spoken words (at {wpm} words/min rate).
-          </p>
-        </div>
-      </StoryScrollSection>
-
-      {/* Navigation Footer */}
+      {/* Navigation Footer - Only two buttons: Back and Continue */}
       <StoryScrollSection
         as="footer"
-        delay={0.18}
+        delay={0.12}
         className="step-footer"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}
       >
-        <button type="button" onClick={onBack} className="btn-secondary" style={{ minHeight: '44px', padding: '10px 20px' }}>
+        <button
+          type="button"
+          onClick={onBack}
+          className="btn-secondary"
+          style={{ minHeight: '44px', padding: '10px 20px' }}
+        >
           <ArrowLeft size={16} />
           <span>Back</span>
-          <span className="kbd-hint" title="Keyboard shortcut: Esc">Esc</span>
         </button>
 
-        <button type="button" onClick={onNext} className="btn-primary" style={{ minHeight: '44px', padding: '10px 24px' }}>
-          <span>Continue to Script</span>
+        <button
+          type="button"
+          onClick={onNext}
+          className="btn-primary"
+          style={{ minHeight: '44px', padding: '10px 24px' }}
+        >
+          <span>Continue</span>
           <ArrowRight size={16} />
-          <span className="kbd-hint" title="Keyboard shortcut: Enter">↵</span>
         </button>
       </StoryScrollSection>
     </div>
