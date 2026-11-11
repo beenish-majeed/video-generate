@@ -47,6 +47,7 @@ class AnonymousSessionMiddleware(BaseHTTPMiddleware):
         # Explicitly set verified session_id on request state
         request.state.session_id = session_id
         request.state.session_token = token
+        request.state.has_session_cookie = bool(cookie_val is not None)
 
         response: Response = await call_next(request)
 

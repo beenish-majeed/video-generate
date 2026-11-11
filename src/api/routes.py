@@ -218,12 +218,21 @@ def create_scene_plan_endpoint(
     if payload.audio_asset_id:
         from src.db.repository import AssetRepository
         rec = AssetRepository.get(payload.audio_asset_id)
-        if rec and getattr(rec, "session_id", None):
+        if rec:
+            has_cookie = getattr(request.state, "has_session_cookie", False) or bool(
+                request.cookies.get(settings.session_cookie_name)
+            )
             req_session = get_current_session_id(request)
-            if rec.session_id != req_session:
+            asset_session = getattr(rec, "session_id", None)
+            if asset_session and asset_session != req_session:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Access denied: audio asset '{payload.audio_asset_id}' belongs to another session.",
+                )
+            elif asset_session is None and has_cookie:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Access denied: legacy audio asset '{payload.audio_asset_id}' does not belong to this session.",
                 )
 
     from src.services.scene_planner import build_clip_scene_plan
@@ -305,10 +314,14 @@ def _check_job_authorization(job: JobRecord, request: Request) -> None:
     """
     Enforce strict cross-visitor anonymous session isolation and IDOR protection.
     Refuses to trust client-supplied identity headers (X-Client-ID, X-User-ID) for session-owned jobs.
+    Prevents anonymous session visitors from accessing, modifying, or deleting legacy unowned jobs.
     """
     req_session = get_current_session_id(request)
     owner_session = getattr(job, "session_id", None)
     owner_client = getattr(job, "client_id", None)
+    has_session_cookie = getattr(request.state, "has_session_cookie", False) or bool(
+        request.cookies.get(settings.session_cookie_name)
+    )
 
     # 1. Enforce anonymous session ownership
     if owner_session:
@@ -317,6 +330,12 @@ def _check_job_authorization(job: JobRecord, request: Request) -> None:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: job belongs to another session.",
             )
+    elif has_session_cookie:
+        # Legacy job without session_id: anonymous browser visitors must NOT access unowned legacy data
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: legacy job does not belong to this session.",
+        )
 
     # 2. Multi-tenant client_id check (for tests/APIs using explicit client IDs)
     if owner_client:
@@ -402,13 +421,22 @@ def create_video_job(payload: JobCreate, request: Request):
             referenced_assets.extend(payload.clip_asset_ids)
 
         from src.db.repository import AssetRepository
+        has_session_cookie = getattr(request.state, "has_session_cookie", False) or bool(
+            request.cookies.get(settings.session_cookie_name)
+        )
         for aid in referenced_assets:
             rec = AssetRepository.get(aid)
-            if rec and getattr(rec, "session_id", None):
-                if rec.session_id != req_session:
+            if rec:
+                asset_session = getattr(rec, "session_id", None)
+                if asset_session and asset_session != req_session:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Access denied: asset '{aid}' belongs to another session.",
+                    )
+                elif asset_session is None and has_session_cookie:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Access denied: legacy asset '{aid}' does not belong to this session.",
                     )
 
         try:
@@ -432,6 +460,9 @@ def list_jobs(request: Request):
     all_jobs = list_fn()
     req_session = get_current_session_id(request)
     req_client = request.headers.get("X-Client-ID") or request.headers.get("X-User-ID")
+    has_session_cookie = getattr(request.state, "has_session_cookie", False) or bool(
+        request.cookies.get(settings.session_cookie_name)
+    )
 
     if req_client:
         req_client_clean = req_client.strip()
@@ -441,10 +472,16 @@ def list_jobs(request: Request):
             and getattr(j, "session_id", None) in (None, req_session)
         ]
 
-    # When no explicit client header is provided:
-    # 1. Any job owned by another session (j.session_id is not None and != req_session) is STRICTLY EXCLUDED.
-    # 2. Jobs matching req_session are included.
-    # 3. Legacy jobs (j.session_id is None) are included for backward compatibility in legacy test harnesses.
+    # When request comes from an anonymous browser session:
+    # Strictly return only jobs belonging to this verified session.
+    # Legacy jobs (session_id is None) and other sessions' jobs NEVER leak into the workspace.
+    if has_session_cookie:
+        return [
+            j for j in all_jobs
+            if getattr(j, "session_id", None) == req_session
+        ]
+
+    # Direct administrative API access without cookies:
     return [
         j for j in all_jobs
         if (
