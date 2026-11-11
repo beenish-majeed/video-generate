@@ -27,12 +27,23 @@ from src.utils.ffmpeg import probe_duration, adapt_audio_tempo
 
 
 logger = logging.getLogger(__name__)
+
+
+def _get_db_path() -> Path:
+    target = getattr(settings, "db_path", None)
+    if target is None:
+        target = settings.storage_dir / "jobs.db"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return target
+
+
 DB_PATH = settings.storage_dir / "jobs.db"
 
 
-def _init_db() -> None:
-    settings.storage_dir.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+def _init_db(target_db: Optional[Path] = None) -> None:
+    db_file = target_db or _get_db_path()
+    db_file.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(db_file, timeout=30.0) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute(
@@ -85,7 +96,10 @@ def save_job_record(job: JobRecord, update_timestamp: bool = True) -> None:
     JOBS[job.job_id] = job
     try:
         data_json = job.model_dump_json()
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+        db_path = _get_db_path()
+        if not db_path.exists():
+            _init_db(db_path)
+        with sqlite3.connect(db_path, timeout=30.0) as conn:
             cols = _get_job_table_columns(conn)
             if "data_json" in cols and "data" in cols:
                 conn.execute(
@@ -134,7 +148,7 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
         return JOBS[job_id]
 
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+        with sqlite3.connect(_get_db_path(), timeout=30.0) as conn:
             cols = _get_job_table_columns(conn)
             col_expr = "coalesce(data_json, data)" if ("data_json" in cols and "data" in cols) else ("data_json" if "data_json" in cols else "data")
             cursor = conn.execute(f"SELECT {col_expr} FROM jobs WHERE job_id = ?", (job_id,))
@@ -152,7 +166,7 @@ def load_job_record(job_id: str) -> Optional[JobRecord]:
 def list_all_jobs() -> List[JobRecord]:
     records: List[JobRecord] = []
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+        with sqlite3.connect(_get_db_path(), timeout=30.0) as conn:
             cols = _get_job_table_columns(conn)
             col_expr = "coalesce(data_json, data)" if ("data_json" in cols and "data" in cols) else ("data_json" if "data_json" in cols else "data")
             cursor = conn.execute(f"SELECT {col_expr} FROM jobs ORDER BY updated_at DESC")
@@ -309,7 +323,7 @@ def delete_job_record(job_id: str) -> bool:
 
     # Remove from SQLite
     try:
-        with sqlite3.connect(DB_PATH, timeout=30.0) as conn:
+        with sqlite3.connect(_get_db_path(), timeout=30.0) as conn:
             conn.execute("DELETE FROM jobs WHERE job_id = ?", (job_id,))
             conn.commit()
     except Exception as exc:
