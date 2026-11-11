@@ -43,19 +43,18 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
 
   return (
     <aside
-      className="story-timeline-rail"
+      className="story-timeline-rail horizontal-timeline"
       aria-label="Story Progress Timeline"
       role="navigation"
       style={{
-        position: 'fixed',
-        right: 'clamp(12px, 2vw, 32px)',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        zIndex: 40,
+        width: '100%',
+        maxWidth: '680px',
+        margin: '0 auto',
+        padding: '4px 8px',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '12px 6px',
         userSelect: 'none',
       }}
     >
@@ -64,9 +63,11 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
         style={{
           position: 'relative',
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
-          gap: '18px',
+          justifyContent: 'space-between',
+          width: '100%',
+          height: '24px',
         }}
       >
         {/* Background track connecting line */}
@@ -74,11 +75,11 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           aria-hidden="true"
           style={{
             position: 'absolute',
-            top: '8px',
-            bottom: '8px',
-            width: '2px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: '6px',
+            right: '6px',
+            height: '2px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             backgroundColor: 'rgba(0, 128, 128, 0.2)',
             borderRadius: '1px',
             zIndex: 0,
@@ -88,14 +89,14 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
           <motion.div
             initial={false}
             animate={{
-              height: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
+              width: `${Math.min(100, Math.max(0, progressRatio * 100))}%`,
             }}
             transition={{
               duration: shouldReduceMotion ? 0 : 0.4,
               ease: [0.16, 1, 0.3, 1],
             }}
             style={{
-              width: '100%',
+              height: '100%',
               backgroundColor: 'var(--teal-primary)',
               borderRadius: '1px',
             }}
@@ -119,7 +120,9 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
               style={{
                 position: 'relative',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 zIndex: 1,
               }}
               onMouseEnter={() => setHoveredIdx(idx)}
@@ -147,7 +150,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                     ? 'var(--teal-primary)'
                     : 'var(--beige-surface)',
                   boxShadow: isActive
-                    ? '0 0 0 4px rgba(0, 128, 128, 0.25), 0 0 12px rgba(0, 128, 128, 0.35)'
+                    ? '0 0 0 3px rgba(0, 128, 128, 0.25), 0 0 10px rgba(0, 128, 128, 0.35)'
                     : 'none',
                   cursor: isClickable ? 'pointer' : 'default',
                   padding: 0,
@@ -156,7 +159,7 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transform: isHovered && isClickable ? 'scale(1.3)' : 'scale(1)',
+                  transform: isHovered && isClickable ? 'scale(1.25)' : 'scale(1)',
                 }}
               >
                 {isActive && (
@@ -176,27 +179,30 @@ export const StoryTimeline: React.FC<StoryTimelineProps> = ({
                 initial={false}
                 animate={{
                   opacity: isActive || isHovered ? 1 : 0,
-                  x: isActive || isHovered ? 0 : 8,
+                  y: isActive || isHovered ? 0 : -4,
                   pointerEvents: isActive || isHovered ? 'auto' : 'none',
                 }}
                 transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
                 style={{
                   position: 'absolute',
-                  right: '22px',
+                  top: '24px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
                   whiteSpace: 'nowrap',
-                  padding: '4px 10px',
+                  padding: '3px 8px',
                   borderRadius: 'var(--radius-pill)',
                   backgroundColor: 'var(--beige-surface)',
                   border: '1px solid rgba(0, 128, 128, 0.3)',
                   boxShadow: '0 2px 8px rgba(0, 128, 128, 0.12)',
                   color: 'var(--text-primary)',
-                  fontSize: '11.5px',
+                  fontSize: '11px',
                   fontWeight: isActive ? 600 : 500,
                   fontFamily: 'var(--font-sans)',
                   pointerEvents: 'none',
+                  zIndex: 20,
                 }}
               >
-                <span style={{ color: 'var(--teal-primary)', marginRight: '5px', fontWeight: 700 }}>
+                <span style={{ color: 'var(--teal-primary)', marginRight: '4px', fontWeight: 700 }}>
                   {String(idx + 1).padStart(2, '0')}.
                 </span>
                 {step.tabTitle || step.label}

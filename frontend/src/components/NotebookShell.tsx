@@ -1,5 +1,5 @@
 import React from 'react';
-import PageTabs, { type JourneyStepId, type FlowMode } from './PageTabs';
+import { type JourneyStepId, type FlowMode } from './PageTabs';
 import StoryTimeline from './StoryTimeline';
 import SoundToggle from './SoundToggle';
 import CursorGlow from './ui/CursorGlow';
@@ -28,14 +28,7 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
         {/* Desktop subtle cursor glow follower */}
         <CursorGlow />
 
-        {/* Story Progress Vertical Timeline Rail */}
-        <StoryTimeline
-          currentStep={currentStep}
-          flowMode={flowMode}
-          onSelectStep={onSelectStep}
-        />
-
-        {/* Modern Edge-to-Edge Top Bar */}
+        {/* Modern Edge-to-Edge Top Bar with Horizontal Story Progress Indicator */}
         <header className="app-topbar" aria-label="Application Header">
           <div
             className="app-brand"
@@ -53,22 +46,25 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
             <span>Memory Studio</span>
           </div>
 
-          {/* Clean Step Indicator */}
-          {currentStep !== 'hero' && currentStep !== 'choice' && (
-            <nav
-              aria-label="Step navigation"
-              style={{
-                flex: 1,
-                maxWidth: '840px',
-                margin: '0 16px',
-                overflow: 'hidden',
-                display: 'flex',
-                justifyContent: 'center',
-              }}
-            >
-              <PageTabs currentStep={currentStep} flowMode={flowMode} onSelectStep={onSelectStep} />
-            </nav>
-          )}
+          {/* Consistent Horizontal Top Story Progress Indicator across every screen */}
+          <div
+            style={{
+              flex: 1,
+              maxWidth: '680px',
+              margin: '0 clamp(8px, 1.5vw, 24px)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minWidth: 0,
+              overflow: 'visible',
+            }}
+          >
+            <StoryTimeline
+              currentStep={currentStep}
+              flowMode={flowMode}
+              onSelectStep={onSelectStep}
+            />
+          </div>
 
           {/* Top-Right Sound & Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>

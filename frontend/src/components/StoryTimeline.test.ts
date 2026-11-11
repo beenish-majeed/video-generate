@@ -55,4 +55,12 @@ describe('StoryTimeline Unit Tests', () => {
     );
     expect(markup).toContain('(completed)');
   });
+
+  it('6. Renders with horizontal-timeline class and flex row container', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(StoryTimeline, { currentStep: 'idea', flowMode: 'prompt_first' })
+    );
+    expect(markup).toContain('horizontal-timeline');
+    expect(markup).toContain('story-timeline-container');
+  });
 });

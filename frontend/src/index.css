@@ -1030,13 +1030,18 @@ button:focus-visible .kbd-hint {
   }
 }
 
-/* Story Timeline Vertical Rail */
+/* Story Timeline Horizontal Progress Indicator */
 .story-timeline-rail {
   transition: opacity 0.3s ease;
+  min-width: 0;
 }
 
-@media (max-width: 900px) {
-  .story-timeline-rail {
-    display: none !important;
+.horizontal-timeline {
+  display: flex !important;
+}
+
+@media (max-width: 600px) {
+  .horizontal-timeline {
+    padding: 2px 4px !important;
   }
 }
