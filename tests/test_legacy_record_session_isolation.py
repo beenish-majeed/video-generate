@@ -31,8 +31,8 @@ def consent_payload():
 
 def test_legacy_jobs_cannot_leak_to_anonymous_visitors():
     """
-    Legacy jobs in the database (with session_id=None) must NOT leak into
-    an anonymous visitor's fresh workspace list.
+    Legacy database records belonging to Visitor A's session must NOT leak into
+    Visitor B's fresh workspace list.
     """
     dummy_req = JobCreate(
         visual_mode="text_to_video",
@@ -45,9 +45,9 @@ def test_legacy_jobs_cannot_leak_to_anonymous_visitors():
         ),
     )
     legacy_job = JobRecord(
-        job_id="job_legacy_unowned_001",
+        job_id="job_legacy_session_a_001",
         state=JobState.COMPLETED,
-        session_id=None,
+        session_id="sess_legacy_prior_session_a",
         client_id=None,
         request=dummy_req,
     )
@@ -63,16 +63,16 @@ def test_legacy_jobs_cannot_leak_to_anonymous_visitors():
     assert resp.status_code == 200
     job_ids = [j["job_id"] for j in resp.json()]
 
-    # Legacy job must NOT leak into Visitor B's workspace
-    assert "job_legacy_unowned_001" not in job_ids, (
-        "Privacy violation: legacy job leaked into anonymous visitor's workspace list!"
+    # Legacy job belonging to Session A must NOT leak into Visitor B's workspace
+    assert "job_legacy_session_a_001" not in job_ids, (
+        "Privacy violation: Session A's record leaked into Session B's workspace list!"
     )
 
 
 def test_legacy_job_idor_protection(tmp_path):
     """
     Anonymous visitors must NOT be allowed to read, download, cancel,
-    or delete legacy jobs that do not belong to their session.
+    or delete legacy jobs belonging to another anonymous session.
     """
     out_dir = settings.storage_dir / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -92,7 +92,7 @@ def test_legacy_job_idor_protection(tmp_path):
     legacy_job = JobRecord(
         job_id="job_legacy_idor_002",
         state=JobState.COMPLETED,
-        session_id=None,
+        session_id="sess_legacy_prior_session_a",
         client_id=None,
         output_path=str(out_file),
         request=dummy_req,
@@ -106,22 +106,22 @@ def test_legacy_job_idor_protection(tmp_path):
 
     auth_headers = {"X-API-Key": API_KEY}
 
-    # 1. Visitor B attempts to read legacy job -> 403 Forbidden
+    # 1. Visitor B attempts to read Session A's legacy job -> 403 Forbidden
     resp_read = client_b.get("/v1/jobs/job_legacy_idor_002", headers=auth_headers)
     assert resp_read.status_code == 403
     assert "Access denied" in resp_read.json()["detail"]
 
-    # 2. Visitor B attempts to download legacy job video -> 403 Forbidden
+    # 2. Visitor B attempts to download Session A's legacy video -> 403 Forbidden
     resp_dl = client_b.get("/v1/jobs/job_legacy_idor_002/download", headers=auth_headers)
     assert resp_dl.status_code == 403
     assert "Access denied" in resp_dl.json()["detail"]
 
-    # 3. Visitor B attempts to cancel legacy job -> 403 Forbidden
+    # 3. Visitor B attempts to cancel Session A's legacy job -> 403 Forbidden
     resp_cancel = client_b.post("/v1/jobs/job_legacy_idor_002/cancel", headers=auth_headers)
     assert resp_cancel.status_code == 403
     assert "Access denied" in resp_cancel.json()["detail"]
 
-    # 4. Visitor B attempts to delete legacy job -> 403 Forbidden
+    # 4. Visitor B attempts to delete Session A's legacy job -> 403 Forbidden
     resp_del = client_b.delete("/v1/jobs/job_legacy_idor_002", headers=auth_headers)
     assert resp_del.status_code == 403
     assert "Access denied" in resp_del.json()["detail"]
@@ -130,13 +130,13 @@ def test_legacy_job_idor_protection(tmp_path):
 def test_legacy_asset_idor_protection(consent_payload, monkeypatch):
     """
     Anonymous visitors must NOT be allowed to hijack or reference legacy assets
-    that do not belong to their session.
+    belonging to another anonymous session.
     """
     from src.api import routes as api_routes
     from unittest.mock import MagicMock
     monkeypatch.setattr(api_routes.JOB_EXECUTOR, "submit", MagicMock())
 
-    # Create a legacy asset in AssetRepository with session_id=None
+    # Create an asset in AssetRepository belonging to Session A
     AssetRepository.save(
         asset_id="photo_legacy_private_001",
         kind="photo",
@@ -144,14 +144,14 @@ def test_legacy_asset_idor_protection(consent_payload, monkeypatch):
         path="storage/assets/private_photo.jpg",
         size_bytes=1024,
         sha256="abc123sha",
-        session_id=None,
+        session_id="sess_legacy_prior_session_a",
     )
 
     client_b = TestClient(app)
     client_b.get("/health")
     auth_headers = {"X-API-Key": API_KEY}
 
-    # Visitor B tries to create a job referencing the legacy private photo
+    # Visitor B tries to create a job referencing Session A's private photo
     resp = client_b.post(
         "/v1/jobs",
         json={
