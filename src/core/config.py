@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     api_key: Optional[str] = None
     allow_insecure_dev: bool = False
     jwt_secret: str = "insecure_dev_jwt_secret_change_in_production_min32chars"
+    cors_allowed_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"],
+        description="Allowed CORS origins list. Configurable via CORS_ALLOWED_ORIGINS.",
+    )
 
     # File.ai API Configuration
     file_ai_api_key: str = Field(default=DEFAULT_FILE_AI_API_KEY)

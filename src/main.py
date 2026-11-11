@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.dependencies import (
     JOB_CREATION_LIMITER,
@@ -123,6 +124,17 @@ app = FastAPI(
     openapi_url=openapi_url,
 )
 
+# CORS configuration
+allow_all_origins = "*" in settings.cors_allowed_origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allowed_origins,
+    allow_credentials=not allow_all_origins,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition", "X-Content-Type-Options"],
+)
+
 # Request body size enforcement
 app.add_middleware(RequestBodyLimitMiddleware)
 
@@ -134,8 +146,12 @@ async def security_headers_middleware(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-Frame-Options"] = "DENY"
-    if "Content-Security-Policy" not in response.headers:
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    response.headers["Permissions-Policy"] = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    )
+    if not request.url.path.startswith(("/docs", "/redoc", "/openapi.json")):
+        if "Content-Security-Policy" not in response.headers:
+            response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     return response
 
 
