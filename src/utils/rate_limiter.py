@@ -1,3 +1,5 @@
+import ipaddress
+import re
 from collections import OrderedDict
 import threading
 import time
@@ -68,10 +70,42 @@ class BoundedSlidingWindowLimiter:
 
 
 def get_client_ip(request: Request) -> str:
-    """Extract client IP address for rate limiting."""
-    if request.client and request.client.host:
-        return request.client.host
-    return "127.0.0.1"
+    """
+    Extract client IP address for rate limiting and logging with trusted-proxy verification.
+    If the direct connecting client is a trusted proxy, inspects X-Forwarded-For or Forwarded headers.
+    If the direct connecting client is untrusted, X-Forwarded-For is ignored to prevent IP spoofing.
+    """
+    direct_ip = request.client.host if request.client and request.client.host else "127.0.0.1"
+
+    trusted = getattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "testclient"])
+    # If direct connection is not from a trusted proxy, do not trust proxy headers
+    if direct_ip not in trusted:
+        return direct_ip
+
+    # Direct connection is from a trusted proxy: parse X-Forwarded-For (leftmost client IP)
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        parts = [p.strip() for p in xff.split(",") if p.strip()]
+        for p in parts:
+            try:
+                ip_obj = ipaddress.ip_address(p)
+                return str(ip_obj)
+            except ValueError:
+                continue
+
+    # Fallback to Forwarded header (RFC 7239: for=192.0.2.60)
+    fwd = request.headers.get("Forwarded")
+    if fwd:
+        m = re.search(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
+        if m:
+            candidate = m.group(1)
+            try:
+                ip_obj = ipaddress.ip_address(candidate)
+                return str(ip_obj)
+            except ValueError:
+                pass
+
+    return direct_ip
 
 
 # Global bounded rate limiters

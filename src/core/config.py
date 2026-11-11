@@ -40,6 +40,10 @@ class Settings(BaseSettings):
         default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"],
         description="Allowed CORS origins list. Configurable via CORS_ALLOWED_ORIGINS.",
     )
+    trusted_proxies: list[str] = Field(
+        default=["127.0.0.1", "::1", "testclient"],
+        description="List of trusted reverse proxy IP addresses or hostnames.",
+    )
 
     # File.ai API Configuration
     file_ai_api_key: str = Field(default=DEFAULT_FILE_AI_API_KEY)
