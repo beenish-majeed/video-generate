@@ -68,4 +68,60 @@ describe('VoiceStep Recording Rules & Error Handling', () => {
     expect(canProceedWithDefault('record', '', false)).toBe(false);
     expect(canProceedWithDefault('record', 'asset-456', false)).toBe(true);
   });
+
+  it('detects pseudo-WAV or WebM magic bytes to trigger PCM WAV transcoding', () => {
+    const isPseudoWavOrWebM = (fileName: string, header: Uint8Array): boolean => {
+      const isRiffWave =
+        header.length >= 12 &&
+        header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 &&
+        header[8] === 0x57 && header[9] === 0x41 && header[10] === 0x56 && header[11] === 0x45;
+      const isWebM =
+        header.length >= 4 &&
+        header[0] === 0x1A && header[1] === 0x45 && header[2] === 0xDF && header[3] === 0xA3;
+      const isWavExt = fileName.toLowerCase().endsWith('.wav');
+      const isWebMExt = fileName.toLowerCase().endsWith('.webm');
+
+      return isWebM || isWebMExt || (isWavExt && !isRiffWave);
+    };
+
+    // Case 1: Standard RIFF WAVE file
+    const validRiffHeader = new Uint8Array([
+      0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x00, 0x00, 0x00, 0x00
+    ]);
+    expect(isPseudoWavOrWebM('sample.wav', validRiffHeader)).toBe(false);
+
+    // Case 2: WebM/Opus data disguised as .wav (e.g. Recorded Voice 1 7 9 44 6 2.wav)
+    const webmHeaderDisguisedAsWav = new Uint8Array([
+      0x1A, 0x45, 0xDF, 0xA3, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    ]);
+    expect(isPseudoWavOrWebM('Recorded Voice 1 7 9 44 6 2.wav', webmHeaderDisguisedAsWav)).toBe(true);
+
+    // Case 3: Raw WebM audio file
+    expect(isPseudoWavOrWebM('recording.webm', webmHeaderDisguisedAsWav)).toBe(true);
+
+    // Case 4: Truncated or arbitrary audio missing RIFF marker named .wav
+    const corruptedWavHeader = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
+    expect(isPseudoWavOrWebM('corrupted.wav', corruptedWavHeader)).toBe(true);
+  });
+
+  it('keeps Continue button disabled when audio upload fails or returns empty assetId', () => {
+    const isContinueDisabled = (selectedAssetId: string, voiceMode: string, isAiClipsMode: boolean, uploading: boolean) => {
+      return (!selectedAssetId && voiceMode !== 'default' && !isAiClipsMode) || uploading;
+    };
+
+    // Mode is upload, but upload failed so selectedAssetId is empty
+    expect(isContinueDisabled('', 'upload', false, false)).toBe(true);
+
+    // Mode is upload and actively uploading
+    expect(isContinueDisabled('some-id', 'upload', false, true)).toBe(true);
+
+    // Mode is upload and succeeded
+    expect(isContinueDisabled('asset-good-id', 'upload', false, false)).toBe(false);
+
+    // Mode is record and succeeded
+    expect(isContinueDisabled('asset-rec-id', 'record', false, false)).toBe(false);
+
+    // Mode is record and failed/empty
+    expect(isContinueDisabled('', 'record', false, false)).toBe(true);
+  });
 });

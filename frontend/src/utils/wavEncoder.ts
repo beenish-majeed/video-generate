@@ -76,7 +76,52 @@ export async function convertBlobToWavFile(
 
   const audioCtx = new AudioCtx();
   try {
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume().catch(() => {});
+    }
+
+    const audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
+      const bufferCopy = arrayBuffer.slice(0);
+      let settled = false;
+      try {
+        const ret = audioCtx.decodeAudioData(
+          bufferCopy,
+          (decoded) => {
+            if (!settled) {
+              settled = true;
+              resolve(decoded);
+            }
+          },
+          (err) => {
+            if (!settled) {
+              settled = true;
+              reject(err || new Error('Failed to decode audio data'));
+            }
+          }
+        );
+        if (ret && typeof (ret as any).then === 'function') {
+          (ret as Promise<AudioBuffer>)
+            .then((decoded) => {
+              if (!settled) {
+                settled = true;
+                resolve(decoded);
+              }
+            })
+            .catch((err) => {
+              if (!settled) {
+                settled = true;
+                reject(err);
+              }
+            });
+        }
+      } catch (e) {
+        if (!settled) {
+          settled = true;
+          reject(e);
+        }
+      }
+    });
+
     const wavBlob = audioBufferToWav(audioBuffer);
     return new File([wavBlob], fileName, { type: 'audio/wav' });
   } finally {

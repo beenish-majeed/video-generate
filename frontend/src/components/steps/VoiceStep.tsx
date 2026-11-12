@@ -178,37 +178,79 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       return;
     }
 
-    setFileName(file.name);
-    setFileSizeStr(formatFileSize(file.size));
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    setIsPlaying(false);
-    setCurrentTime(0);
-
-    // Extract real Web Audio API waveform peaks
-    setAnalyzingAudio(true);
+    // Inspect magic bytes: convert WebM or pseudo-WAV (e.g. WebM/Opus data labeled as .wav) to genuine PCM WAV
+    let uploadFile = file;
     try {
-      const analysis = await extractWaveformPeaks(file, 44);
-      setWaveform(analysis);
-      if (onDurationDetected && analysis.duration > 0) {
-        onDurationDetected(analysis.duration);
+      const headerBuf = await file.slice(0, 16).arrayBuffer();
+      const headerBytes = new Uint8Array(headerBuf);
+      const isRiffWave =
+        headerBytes.length >= 12 &&
+        headerBytes[0] === 0x52 && headerBytes[1] === 0x49 && headerBytes[2] === 0x46 && headerBytes[3] === 0x46 && // 'RIFF'
+        headerBytes[8] === 0x57 && headerBytes[9] === 0x41 && headerBytes[10] === 0x56 && headerBytes[11] === 0x45; // 'WAVE'
+      const isWebM =
+        headerBytes.length >= 4 &&
+        headerBytes[0] === 0x1A && headerBytes[1] === 0x45 && headerBytes[2] === 0xDF && headerBytes[3] === 0xA3;
+      const isWavExt = file.name.toLowerCase().endsWith('.wav');
+      const isWebMExt = file.name.toLowerCase().endsWith('.webm') || file.type.includes('webm');
+
+      if (isWebM || isWebMExt || (isWavExt && !isRiffWave)) {
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
+        uploadFile = await convertBlobToWavFile(file, `${baseName}.wav`);
       }
     } catch {
-      // Non-fatal fallback for waveform display
-      setWaveform({ peaks: Array.from({ length: 44 }, () => Math.random() * 0.6 + 0.2), duration: 15 });
-      if (onDurationDetected) {
-        onDurationDetected(15);
-      }
+      setMappedError({
+        title: 'Invalid or Corrupted Audio File',
+        message: 'Could not decode audio header or file contains corrupt audio data. Please provide a valid MP3, WAV, or M4A recording.',
+        kind: 'validation',
+      });
+      onAssetSelected('');
+      setPreviewUrl(null);
+      setFileName(null);
+      setFileSizeStr(null);
+      setWaveform(null);
+      return;
+    }
+
+    // Extract real Web Audio API waveform peaks; fail early if audio cannot be decoded
+    setAnalyzingAudio(true);
+    let analysis: WaveformAnalysis;
+    try {
+      analysis = await extractWaveformPeaks(uploadFile, 44);
+    } catch {
+      setMappedError({
+        title: 'Invalid or Corrupted Audio File',
+        message: 'Could not decode audio header or file contains corrupt audio data. Please provide a valid audio recording.',
+        kind: 'validation',
+      });
+      onAssetSelected('');
+      setPreviewUrl(null);
+      setFileName(null);
+      setFileSizeStr(null);
+      setWaveform(null);
+      setAnalyzingAudio(false);
+      return;
     } finally {
       setAnalyzingAudio(false);
     }
+
+    // Audio decoded successfully — update state and waveform
+    setWaveform(analysis);
+    if (onDurationDetected && analysis.duration > 0) {
+      onDurationDetected(analysis.duration);
+    }
+    setFileName(uploadFile.name);
+    setFileSizeStr(formatFileSize(uploadFile.size));
+    const objectUrl = URL.createObjectURL(uploadFile);
+    setPreviewUrl(objectUrl);
+    setIsPlaying(false);
+    setCurrentTime(0);
 
     // Upload asset to backend
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      const res = await apiClient.uploadAsset('voice', file, (percent) => {
+      const res = await apiClient.uploadAsset('voice', uploadFile, (percent) => {
         setUploadProgress(percent);
       });
       playStickerPopSound();
@@ -216,6 +258,11 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     } catch (err: unknown) {
       const mapped = mapAPIError(err);
       setMappedError(mapped);
+      onAssetSelected('');
+      setPreviewUrl(null);
+      setFileName(null);
+      setFileSizeStr(null);
+      setWaveform(null);
     } finally {
       setUploading(false);
     }
@@ -348,8 +395,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           const wavFile = await convertBlobToWavFile(rawBlob, `recorded_voice_${Date.now()}.wav`);
           setRecordedFile(wavFile);
         } catch {
-          const fallbackFile = new File([rawBlob], `recorded_voice_${Date.now()}.wav`, { type: 'audio/wav' });
-          setRecordedFile(fallbackFile);
+          cleanupRecordingHardware();
+          setRecordingStatus('error');
+          setPermissionError(
+            'Failed to convert recorded audio into a valid WAV format. Please try recording again or upload an audio file.'
+          );
+          setRecordedFile(null);
         }
       };
 
