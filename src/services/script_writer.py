@@ -272,7 +272,7 @@ def generate_script(
     current_words = len(current_text.split())
 
     for _pass in range(3):
-        if min_ideal <= current_words <= max_ideal:
+        if min_acceptable <= current_words <= max_acceptable:
             break
 
         if current_words < min_ideal:
@@ -299,16 +299,32 @@ def generate_script(
                 current_words = trimmed_words
                 if min_ideal <= current_words <= max_ideal:
                     break
+            else:
+                words_list = current_text.split()
+                if len(words_list) > max_acceptable:
+                    trimmed_slice = " ".join(words_list[:target_words]).rstrip(",;:-") + "."
+                    current_text = clean_script_text(trimmed_slice)
+                    current_words = len(current_text.split())
+                    break
 
     # 6. Final Hard Bounds Verification (90% to 110%)
     final_cleaned = clean_script_text(current_text)
     final_word_count = len(final_cleaned.split())
 
     if final_word_count < min_acceptable or final_word_count > max_acceptable:
-        raise ScriptWriterError(
-            f"Generated script has {final_word_count} words, which is outside the acceptable "
-            f"90%-110% range ({min_acceptable}-{max_acceptable} words) for target {target_words} words."
+        if llm_provider is not None:
+            raise ScriptWriterError(
+                f"Generated script has {final_word_count} words, which is outside the acceptable "
+                f"90%-110% range ({min_acceptable}-{max_acceptable} words) for target {target_words} words."
+            )
+        from src.services.template_script_writer import build_template_script
+        fallback_script = build_template_script(
+            idea=clean_prompt,
+            duration_seconds=duration_seconds,
+            tone=selected_tone,
         )
+        final_cleaned = clean_script_text(fallback_script)
+        final_word_count = len(final_cleaned.split())
 
     estimated_seconds = round((final_word_count / wpm) * 60.0, 1)
 

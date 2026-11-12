@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { audioBufferToWav } from './wavEncoder';
+import { audioBufferToWav, pcmChunksToWavBlob, pcmChunksToWavFile } from './wavEncoder';
 
 describe('audioBufferToWav PCM WAV Encoder Unit Tests', () => {
   // Helper to read ASCII string from DataView
@@ -162,5 +162,56 @@ describe('audioBufferToWav PCM WAV Encoder Unit Tests', () => {
 
     expect(dataView.getUint32(4, true)).toBe(36); // ChunkSize = 36 + 0
     expect(dataView.getUint32(40, true)).toBe(0); // Subchunk2Size = 0
+  });
+
+  describe('pcmChunksToWavBlob & pcmChunksToWavFile Raw Microphone PCM Tests', () => {
+    it('6. Encodes raw Float32Array PCM chunks directly to valid RIFF WAVE', async () => {
+      const sampleRate = 48000;
+      const chunk1 = new Float32Array([0.0, 0.5, -0.5]);
+      const chunk2 = new Float32Array([1.0, -1.0, 2.0, -2.0]);
+      const totalSamples = chunk1.length + chunk2.length; // 7 samples
+
+      const wavBlob = pcmChunksToWavBlob([chunk1, chunk2], sampleRate);
+      expect(wavBlob).toBeDefined();
+      expect(wavBlob.type).toBe('audio/wav');
+      expect(wavBlob.size).toBe(44 + totalSamples * 2); // 44 + 14 = 58 bytes
+
+      const dataView = new DataView(await wavBlob.arrayBuffer());
+      expect(readString(dataView, 0, 4)).toBe('RIFF');
+      expect(readString(dataView, 8, 4)).toBe('WAVE');
+      expect(readString(dataView, 12, 4)).toBe('fmt ');
+      expect(readString(dataView, 36, 4)).toBe('data');
+
+      // fmt parameters
+      expect(dataView.getUint16(20, true)).toBe(1); // PCM
+      expect(dataView.getUint16(22, true)).toBe(1); // 1 channel (mono)
+      expect(dataView.getUint32(24, true)).toBe(sampleRate); // 48000
+      expect(dataView.getUint32(28, true)).toBe(sampleRate * 2); // Byte rate
+      expect(dataView.getUint16(32, true)).toBe(2); // Block align
+      expect(dataView.getUint16(34, true)).toBe(16); // 16 bits per sample
+
+      // Data chunk size
+      expect(dataView.getUint32(40, true)).toBe(totalSamples * 2);
+
+      // Verify sample values & clamping
+      expect(dataView.getInt16(44, true)).toBe(0); // 0.0
+      expect(dataView.getInt16(46, true)).toBe(16383); // 0.5
+      expect(dataView.getInt16(48, true)).toBe(-16384); // -0.5
+      expect(dataView.getInt16(50, true)).toBe(32767); // 1.0
+      expect(dataView.getInt16(52, true)).toBe(-32768); // -1.0
+      expect(dataView.getInt16(54, true)).toBe(32767); // 2.0 clamped
+      expect(dataView.getInt16(56, true)).toBe(-32768); // -2.0 clamped
+    });
+
+    it('7. pcmChunksToWavFile creates a File with name and audio/wav mime type', () => {
+      const sampleRate = 44100;
+      const chunks = [new Float32Array(100).fill(0.1)];
+      const file = pcmChunksToWavFile(chunks, sampleRate, 'custom_voice.wav');
+
+      expect(file).toBeDefined();
+      expect(file.name).toBe('custom_voice.wav');
+      expect(file.type).toBe('audio/wav');
+      expect(file.size).toBe(44 + 100 * 2);
+    });
   });
 });

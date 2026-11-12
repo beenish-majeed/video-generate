@@ -54,6 +54,18 @@ def is_piper_available() -> bool:
     return Path(piper_path).exists() or Path("assets/voices/default_voice.wav").exists()
 
 
+def is_wav2lip_available() -> bool:
+    """Check if Wav2Lip model checkpoint and dependencies are available."""
+    ckpt_path = Path(getattr(settings, "wav2lip_ckpt_path", "src/models/wav2lip/wav2lip.pth"))
+    if not ckpt_path.exists():
+        return False
+    try:
+        import torch
+        return hasattr(torch, "FloatTensor")
+    except Exception:
+        return False
+
+
 def compute_honest_time_estimate(
     duration_seconds: float,
     mode: str = "text_to_video",
@@ -122,6 +134,7 @@ def get_system_capabilities(
             "diffusers": diffusers_ok,
             "whisper": whisper_ok,
             "piper": piper_ok,
+            "wav2lip": is_wav2lip_available(),
             "cards": True,
         },
         "auto_subtitles": whisper_ok,

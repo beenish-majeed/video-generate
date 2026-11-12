@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { Upload, ArrowRight, ArrowLeft, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, ArrowRight, ArrowLeft, Loader2, RefreshCw, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 
 interface PhotoStepProps {
   selectedAssetId: string;
@@ -24,8 +24,29 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
   const [fileSizeStr, setFileSizeStr] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [mappedError, setMappedError] = useState<MappedAPIError | null>(null);
+  const [wav2lipAvailable, setWav2lipAvailable] = useState<boolean | null>(null);
+  const [facesDetected, setFacesDetected] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiClient
+      .getCapabilities()
+      .then((caps) => {
+        if (isMounted) {
+          setWav2lipAvailable(Boolean(caps?.providers?.wav2lip));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setWav2lipAvailable(false);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024 * 1024) {
@@ -71,6 +92,7 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
         setUploadProgress(percent);
       });
       playStickerPopSound();
+      setFacesDetected(typeof res.faces_detected === 'number' ? res.faces_detected : 1);
       onAssetSelected(res.asset_id);
     } catch (err: unknown) {
       const mapped = mapAPIError(err);
@@ -231,6 +253,54 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 </button>
               </div>
             ) : null}
+
+            {/* Animation Notice & Choice when photo is selected */}
+            {selectedAssetId && !uploading && (
+              <div
+                className="card"
+                style={{
+                  maxWidth: '460px',
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: 'var(--bg-surface)',
+                  border: '1.5px solid var(--accent)',
+                  borderRadius: 'var(--radius-card)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  textAlign: 'left',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
+                    Animation Style: Cinematic Ken Burns Motion
+                  </span>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>
+                  {facesDetected === 0
+                    ? 'No clear frontal face detected in this photo for talking-head lip sync. The engine will animate your photograph with smooth Ken Burns cinematic camera motion, narration speech, subtitles, and background music.'
+                    : wav2lipAvailable === false
+                    ? 'Wav2Lip neural lip-sync model is not installed in this environment. The engine will animate your photograph with smooth Ken Burns cinematic camera motion, narration speech, subtitles, and background music.'
+                    : 'Your photograph will be brought to life with synchronized narration speech, subtitles, and background music.'}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{
+                      padding: '8px 14px',
+                      fontSize: '13px',
+                      borderRadius: '8px',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    Ken Burns Motion (Active)
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Empty / Drag & Drop Dropzone */

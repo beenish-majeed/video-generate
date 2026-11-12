@@ -12,6 +12,7 @@ import type {
   ScriptGenerateResponse,
   ScenePlanRequest,
   ScenePlanResponse,
+  CapabilitiesResponse,
 } from '../types/api';
 
 /**
@@ -230,6 +231,18 @@ class MemoryStudioAPIClient {
     return this.request<JobRecord>(`/v1/jobs/${jobId}/cancel`, {
       method: 'POST',
     });
+  }
+
+  /**
+   * GET /v1/capabilities
+   * Fetches hardware capabilities and available providers.
+   */
+  async getCapabilities(mode?: string, durationSeconds?: number): Promise<CapabilitiesResponse> {
+    const params = new URLSearchParams();
+    if (mode) params.append('mode', mode);
+    if (durationSeconds) params.append('duration_seconds', String(durationSeconds));
+    const qs = params.toString();
+    return this.request<CapabilitiesResponse>(`/v1/capabilities${qs ? `?${qs}` : ''}`);
   }
 
   /**
