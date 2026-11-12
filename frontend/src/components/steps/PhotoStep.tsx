@@ -26,6 +26,13 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
   const [mappedError, setMappedError] = useState<MappedAPIError | null>(null);
   const [wav2lipAvailable, setWav2lipAvailable] = useState<boolean | null>(null);
   const [facesDetected, setFacesDetected] = useState<number | null>(null);
+  const [videoProviderStatus, setVideoProviderStatus] = useState<{
+    configured: boolean;
+    provider_name: string;
+    model?: string;
+    status: string;
+    message?: string;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +43,9 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
       .then((caps) => {
         if (isMounted) {
           setWav2lipAvailable(Boolean(caps?.providers?.wav2lip));
+          if (caps?.video_provider) {
+            setVideoProviderStatus(caps.video_provider);
+          }
         }
       })
       .catch(() => {
@@ -275,15 +285,28 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Sparkles size={18} style={{ color: 'var(--accent)' }} />
                   <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
-                    Animation Style: Cinematic Ken Burns Motion
+                    {videoProviderStatus?.status === 'ready'
+                      ? 'Animation Style: Genuine AI Video Generation (Active)'
+                      : videoProviderStatus?.status === 'exhausted_balance'
+                      ? 'AI Video Engine: Provider Balance Exhausted'
+                      : wav2lipAvailable
+                      ? 'Animation Style: Neural Lip-Sync Animation'
+                      : 'Animation Style: Cinematic Camera Motion'}
                   </span>
                 </div>
+                {facesDetected !== null && (
+                  <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600 }}>
+                    {facesDetected > 0
+                      ? `✓ ${facesDetected} subject face${facesDetected > 1 ? 's' : ''} detected for identity-preserved animation`
+                      : 'ℹ Image subject reference loaded'}
+                  </span>
+                )}
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>
-                  {facesDetected === 0
-                    ? 'No clear frontal face detected in this photo for talking-head lip sync. The engine will animate your photograph with smooth Ken Burns cinematic camera motion, narration speech, subtitles, and background music.'
-                    : wav2lipAvailable === false
-                    ? 'Wav2Lip neural lip-sync model is not installed in this environment. The engine will animate your photograph with smooth Ken Burns cinematic camera motion, narration speech, subtitles, and background music.'
-                    : 'Your photograph will be brought to life with synchronized narration speech, subtitles, and background music.'}
+                  {videoProviderStatus?.status === 'ready'
+                    ? `Powered by ${videoProviderStatus.model || 'Minimax Video-01'} neural image-to-video. The subject in your photo will be animated with authentic movement, expressions, and coherent scene dynamics while preserving their exact visual appearance.`
+                    : videoProviderStatus?.status === 'exhausted_balance'
+                    ? 'fal.ai API key is active, but your account balance is exhausted. Top up your balance at fal.ai/dashboard/billing to enable genuine neural AI videos, or continue with offline Cinematic Camera Motion.'
+                    : 'To enable genuine neural AI video generation (Veo / Minimax / Kling concept), configure FAL_KEY in your .env file. Currently running in offline Cinematic Camera Motion mode.'}
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button
@@ -296,7 +319,11 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                       pointerEvents: 'none',
                     }}
                   >
-                    Ken Burns Motion (Active)
+                    {videoProviderStatus?.status === 'ready'
+                      ? 'Genuine AI Video (Active)'
+                      : videoProviderStatus?.status === 'exhausted_balance'
+                      ? 'Top Up Balance at fal.ai'
+                      : 'Cinematic Motion (Active)'}
                   </button>
                 </div>
               </div>

@@ -250,6 +250,13 @@ export interface CapabilitiesResponse {
   background_music: boolean;
   music_presets: string[];
   modes: string[];
+  video_provider?: {
+    configured: boolean;
+    provider_name: string;
+    model?: string;
+    status: 'ready' | 'exhausted_balance' | 'unconfigured' | 'invalid_key' | 'error' | 'unknown';
+    message?: string;
+  };
   image_provider_configured?: string;
   llm_provider_configured?: string;
   estimate?: JobEstimateResponse | Record<string, unknown>;

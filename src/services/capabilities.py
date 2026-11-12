@@ -66,6 +66,35 @@ def is_wav2lip_available() -> bool:
         return False
 
 
+def get_video_provider_capabilities() -> Dict[str, Any]:
+    """Inspect and report AI video provider availability and account status."""
+    try:
+        from src.services.video_provider import FalAIVideoProvider
+        prov = FalAIVideoProvider()
+        if not prov.is_configured:
+            return {
+                "configured": False,
+                "provider_name": "none",
+                "status": "unconfigured",
+                "message": "FAL_KEY or FILE_AI_API_KEY is not configured in .env.",
+            }
+        status = prov.check_account_status()
+        return {
+            "configured": True,
+            "provider_name": "fal.ai",
+            "model": prov.model,
+            "status": status.get("status", "unknown"),
+            "message": status.get("message", ""),
+        }
+    except Exception as exc:
+        return {
+            "configured": False,
+            "provider_name": "none",
+            "status": "error",
+            "message": str(exc),
+        }
+
+
 def compute_honest_time_estimate(
     duration_seconds: float,
     mode: str = "text_to_video",
@@ -141,6 +170,7 @@ def get_system_capabilities(
         "background_music": True,
         "music_presets": get_allowed_preset_ids(),
         "modes": ["text_to_video", "picture_to_video"],
+        "video_provider": get_video_provider_capabilities(),
         "image_provider_configured": settings.image_provider,
         "llm_provider_configured": settings.llm_provider,
     }

@@ -1118,10 +1118,11 @@ def run_job(job_id: str) -> None:
                 speech_audio_path = Path(tts_res.audio_path)
                 audio_dur = probe_duration(speech_audio_path)
 
-            # 2. Visual Synthesis: Talking Head (Wav2Lip) or Ken Burns Slideshow Motion
+            # 2. Visual Synthesis: Genuine AI Video (Minimax/fal.ai) or Talking Head (Wav2Lip) or Ken Burns
             from src.services.face_detector import count_faces_in_image
             from src.services.capabilities import is_wav2lip_available
             from src.services.slideshow_compositor import SlideshowCompositor
+            from src.services.video_provider import FalAIVideoProvider, VideoProviderError
 
             faces_count = count_faces_in_image(input_image_path)
             wav2lip_avail = is_wav2lip_available()
@@ -1133,7 +1134,59 @@ def run_job(job_id: str) -> None:
             job.state = JobState.GENERATING_SEGMENTS
             save_job_record(job)
 
-            if faces_count >= 1 and wav2lip_avail and not prefer_slideshow:
+            fal_provider = FalAIVideoProvider()
+            if not prefer_slideshow and fal_provider.is_configured:
+                # Genuine AI Video Generation (preserving subject identity & appearance)
+                acc_status = fal_provider.check_account_status()
+                if acc_status["status"] == "ready":
+                    logger.info("Generating genuine AI video using fal.ai Minimax Video-01...")
+                    p2v_prompt = job.request.prompt or (job.plan.script if job.plan else "cinematic natural motion")
+                    vid_result = fal_provider.generate_image_to_video(
+                        image_path=input_image_path,
+                        prompt=p2v_prompt,
+                        duration_seconds=audio_dur,
+                        audio_path=speech_audio_path,
+                        job_path=job_path,
+                    )
+                    video_path = vid_result.video_path
+                    job.visual_mode_used = "picture_to_video"
+                    job.visual_mode_reason = vid_result.reason
+                elif acc_status["status"] == "exhausted_balance":
+                    # Transparently report exhausted balance so user can top up
+                    if not getattr(settings, "file_ai_mock_fallback", True):
+                        raise VideoProviderError(
+                            f"fal.ai Video Generation blocked: {acc_status['message']}. "
+                            "Please top up your balance at fal.ai/dashboard/billing to generate genuine AI videos."
+                        )
+                    logger.warning(f"fal.ai Video Generation balance exhausted; mock fallback active: {acc_status['message']}")
+                    ken_burns_path = job_path / "animated_photo.mp4"
+                    SlideshowCompositor.render_scene_clip(
+                        image_path=input_image_path,
+                        duration_s=audio_dur,
+                        motion_idx=0,
+                        output_path=ken_burns_path,
+                        fps=30,
+                    )
+                    video_path = ken_burns_path
+                    job.visual_mode_used = "picture_to_video"
+                    job.visual_mode_reason = f"Sandbox test fallback: {acc_status['message']}"
+                elif not getattr(settings, "file_ai_mock_fallback", True):
+                    raise VideoProviderError(f"AI Video Provider error: {acc_status['message']}")
+                else:
+                    # In offline test/sandbox fallback mode
+                    ken_burns_path = job_path / "animated_photo.mp4"
+                    SlideshowCompositor.render_scene_clip(
+                        image_path=input_image_path,
+                        duration_s=audio_dur,
+                        motion_idx=0,
+                        output_path=ken_burns_path,
+                        fps=30,
+                    )
+                    video_path = ken_burns_path
+                    job.visual_mode_used = "picture_to_video"
+                    job.visual_mode_reason = f"Test sandbox compositor used ({acc_status['status']})."
+
+            elif faces_count >= 1 and wav2lip_avail and not prefer_slideshow:
                 job.state = JobState.PREPARING_IDENTITY
                 save_job_record(job)
 
