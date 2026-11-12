@@ -3,7 +3,7 @@ import apiClient from '../../api/client';
 import { mapAPIError, type MappedAPIError } from '../../api/errorMapper';
 import { extractWaveformPeaks, formatDuration, type WaveformAnalysis } from '../../utils/audioWaveform';
 import { playStickerPopSound } from '../../utils/soundEffects';
-import { convertBlobToWavFile } from '../../utils/wavEncoder';
+import { convertBlobToWavFile, pcmChunksToWavFile } from '../../utils/wavEncoder';
 import {
   Upload,
   ArrowRight,
@@ -75,9 +75,10 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Recording Hardware Refs
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  // Recording Hardware Refs (Raw PCM direct from microphone)
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const sampleRateRef = useRef<number>(44100);
   const timerIntervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -100,16 +101,17 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
+    if (scriptProcessorRef.current) {
+      try {
+        scriptProcessorRef.current.disconnect();
+      } catch {
+        // Ignore disconnect errors
+      }
+      scriptProcessorRef.current = null;
+    }
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close().catch(() => {});
       audioContextRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch {
-        // Ignore if already stopped
-      }
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => {
@@ -329,8 +331,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       return;
     }
 
-    // Check 2: Browser MediaRecorder and getUserMedia API support
-    if (typeof window.MediaRecorder === 'undefined' || !navigator?.mediaDevices?.getUserMedia) {
+    // Check 2: Browser AudioContext and getUserMedia API support
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx || !navigator?.mediaDevices?.getUserMedia) {
       cleanupRecordingHardware();
       setRecordingStatus('error');
       setPermissionError(
@@ -343,76 +346,47 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Set up AudioContext for live level meter
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx) {
-          const audioCtx = new AudioCtx();
-          audioContextRef.current = audioCtx;
-          const source = audioCtx.createMediaStreamSource(stream);
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 32;
-          source.connect(analyser);
+      const audioCtx = new AudioCtx();
+      audioContextRef.current = audioCtx;
+      sampleRateRef.current = audioCtx.sampleRate || 44100;
+      pcmChunksRef.current = [];
 
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const source = audioCtx.createMediaStreamSource(stream);
 
-          const updateMeter = () => {
-            analyser.getByteFrequencyData(dataArray);
-            const levels: number[] = [];
-            const step = Math.floor(dataArray.length / 10) || 1;
-            for (let i = 0; i < 10; i++) {
-              const val = dataArray[i * step] || 0;
-              levels.push(Math.max(0.12, val / 255));
-            }
-            setAudioLevels(levels);
-            animFrameRef.current = requestAnimationFrame(updateMeter);
-          };
-          updateMeter();
+      // Meter Analyser
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 32;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateMeter = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const levels: number[] = [];
+        const step = Math.floor(dataArray.length / 10) || 1;
+        for (let i = 0; i < 10; i++) {
+          const val = dataArray[i * step] || 0;
+          levels.push(Math.max(0.12, val / 255));
         }
-      } catch {
-        // Non-fatal if AudioContext initialization blocked
-      }
-
-      // Set up MediaRecorder
-      audioChunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : MediaRecorder.isTypeSupported('audio/mp4')
-        ? 'audio/mp4'
-        : '';
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
+        setAudioLevels(levels);
+        animFrameRef.current = requestAnimationFrame(updateMeter);
       };
+      updateMeter();
 
-      recorder.onstop = async () => {
-        const rawBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-        try {
-          const wavFile = await convertBlobToWavFile(rawBlob, `recorded_voice_${Date.now()}.wav`);
-          setRecordedFile(wavFile);
-        } catch {
-          cleanupRecordingHardware();
-          setRecordingStatus('error');
-          setPermissionError(
-            'Failed to convert recorded audio into a valid WAV format. Please try recording again or upload an audio file.'
-          );
-          setRecordedFile(null);
-        }
+      // Raw PCM Capture directly from microphone stream via ScriptProcessor
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      scriptProcessorRef.current = processor;
+      processor.onaudioprocess = (e) => {
+        const inputBuffer = e.inputBuffer.getChannelData(0);
+        pcmChunksRef.current.push(new Float32Array(inputBuffer));
       };
+      source.connect(processor);
 
-      recorder.onerror = () => {
-        cleanupRecordingHardware();
-        setRecordingStatus('error');
-        setPermissionError(
-          'An unexpected recording error occurred. Please try again or choose "Upload a file".'
-        );
-      };
+      // Mute gain node connected to destination keeps processor running without audio feedback
+      const muteGain = audioCtx.createGain();
+      muteGain.gain.value = 0;
+      processor.connect(muteGain);
+      muteGain.connect(audioCtx.destination);
 
-      recorder.start(100);
       playStickerPopSound();
       setRecordingStatus('recording');
       setRecordingTime(0);
@@ -457,22 +431,39 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   };
 
   const stopRecording = () => {
-    cleanupRecordingHardware();
     playStickerPopSound();
 
-    setRecordingTime((finalTime) => {
-      const validation = validateRecordingDuration(finalTime);
-      if (validation === 'too_short') {
-        setRecordingStatus('too_short');
-      } else {
+    const sampleRate = sampleRateRef.current || 44100;
+    const totalSamples = pcmChunksRef.current.reduce((acc, c) => acc + c.length, 0);
+    const durationSeconds = Math.round(totalSamples / sampleRate);
+    const finalSeconds = Math.max(recordingTime, durationSeconds);
+
+    cleanupRecordingHardware();
+
+    setRecordingTime(finalSeconds);
+
+    const validation = validateRecordingDuration(finalSeconds);
+    if (validation === 'too_short') {
+      setRecordingStatus('too_short');
+      setRecordedFile(null);
+    } else {
+      try {
+        const wavFile = pcmChunksToWavFile(pcmChunksRef.current, sampleRate, `recorded_voice_${Date.now()}.wav`);
+        setRecordedFile(wavFile);
         setRecordingStatus('recorded');
+      } catch {
+        setRecordingStatus('error');
+        setPermissionError(
+          'Failed to convert recorded audio into a valid WAV format. Please try recording again or upload an audio file.'
+        );
+        setRecordedFile(null);
       }
-      return finalTime;
-    });
+    }
   };
 
   const resetRecording = () => {
     cleanupRecordingHardware();
+    pcmChunksRef.current = [];
     setRecordingStatus('idle');
     setRecordingTime(0);
     setRecordedFile(null);
