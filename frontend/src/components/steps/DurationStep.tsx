@@ -96,34 +96,42 @@ export const DurationStep: React.FC<DurationStepProps> = ({
         className={`card ${isSelected ? 'card-selected' : ''}`}
         style={{
           position: 'relative',
-          padding: 'clamp(14px, 1.8dvh, 18px) clamp(10px, 1.2vw, 16px)',
+          padding: '12px 14px',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '6px',
-          flex: '0 1 180px',
-          minWidth: '120px',
-          maxWidth: '220px',
+          gap: '4px',
+          flex: '1 1 125px',
+          minWidth: '105px',
+          maxWidth: '155px',
           textAlign: 'center',
           border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-light)',
-          background: isSelected ? 'var(--bg-card)' : 'var(--bg-surface)',
-          borderRadius: 'var(--radius-card)',
+          background: isSelected ? 'rgba(0, 128, 128, 0.08)' : 'var(--bg-surface)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: isSelected ? '0 0 0 1px var(--accent), 0 2px 8px rgba(0, 128, 128, 0.10)' : 'none',
           boxSizing: 'border-box',
+          transition: 'all 0.18s ease',
         }}
       >
-        <Clock size={20} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }} />
+        <Clock size={16} style={{ color: isSelected ? 'var(--accent)' : 'var(--text-muted)' }} />
         <span
           style={{
-            fontWeight: 700,
-            fontSize: '17px',
+            fontWeight: isSelected ? 700 : 600,
+            fontSize: '15px',
             color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
           }}
         >
           {card.label}
         </span>
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+        <span
+          style={{
+            fontSize: '11.5px',
+            color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
+            fontWeight: isSelected ? 500 : 400,
+          }}
+        >
           {formatRenderEstimate(card.seconds)}
         </span>
       </motion.button>
@@ -242,8 +250,10 @@ export const DurationStep: React.FC<DurationStepProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
+              gap: '10px',
               width: '100%',
+              maxWidth: '680px',
+              margin: '0 auto',
               alignItems: 'center',
             }}
           >
@@ -253,7 +263,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               style={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: '12px',
+                gap: '10px',
                 flexWrap: 'wrap',
                 width: '100%',
               }}
@@ -267,7 +277,7 @@ export const DurationStep: React.FC<DurationStepProps> = ({
               style={{
                 display: 'flex',
                 justifyContent: 'center',
-                gap: '12px',
+                gap: '10px',
                 flexWrap: 'wrap',
                 width: '100%',
               }}
