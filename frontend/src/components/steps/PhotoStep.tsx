@@ -303,10 +303,10 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                 )}
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>
                   {videoProviderStatus?.status === 'ready'
-                    ? `Powered by ${videoProviderStatus.model || 'Minimax Video-01'} neural image-to-video. The subject in your photo will be animated with authentic movement, expressions, and coherent scene dynamics while preserving their exact visual appearance.`
+                    ? `Powered by ${videoProviderStatus.provider_name} (${videoProviderStatus.model}). The subject in your photo will be animated with authentic movement, expressions, and coherent scene dynamics while preserving their exact visual appearance.`
                     : videoProviderStatus?.status === 'exhausted_balance'
-                    ? 'fal.ai API key is active, but your account balance is exhausted. Top up your balance at fal.ai/dashboard/billing to enable genuine neural AI videos, or continue with offline Cinematic Camera Motion.'
-                    : 'To enable genuine neural AI video generation (Veo / Minimax / Kling concept), configure FAL_KEY in your .env file. Currently running in offline Cinematic Camera Motion mode.'}
+                    ? 'Provider account balance is exhausted. Top up your balance at fal.ai/dashboard/billing or configure GEMINI_API_KEY (for Google Veo 2/3) to enable genuine neural AI videos, or continue with offline Cinematic Camera Motion.'
+                    : 'To enable genuine neural AI video generation (Veo 2/3 or Minimax/Kling), configure GEMINI_API_KEY or FAL_KEY in your .env file. Currently running in offline Cinematic Camera Motion mode.'}
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button
@@ -320,9 +320,9 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                     }}
                   >
                     {videoProviderStatus?.status === 'ready'
-                      ? 'Genuine AI Video (Active)'
+                      ? `${videoProviderStatus.provider_name} (Active)`
                       : videoProviderStatus?.status === 'exhausted_balance'
-                      ? 'Top Up Balance at fal.ai'
+                      ? 'Top Up Balance or Add Veo Key'
                       : 'Cinematic Motion (Active)'}
                   </button>
                 </div>
