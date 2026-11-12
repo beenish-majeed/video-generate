@@ -36,8 +36,8 @@ def test_check_video_not_static_detects_motion(tmp_path):
     # Verify check_video_not_static detects frame changes
     from unittest.mock import patch
 
-    f1 = np.zeros((100, 100, 3), dtype=np.float32)
-    f2 = np.ones((100, 100, 3), dtype=np.float32) * 50.0
+    f1 = np.tile(np.linspace(0, 200, 100, dtype=np.float32), (100, 3, 1)).T
+    f2 = f1 + 50.0
 
     dummy_video = tmp_path / "dummy.mp4"
     dummy_video.write_bytes(b"dummy_content")
@@ -49,11 +49,11 @@ def test_check_video_not_static_detects_motion(tmp_path):
 
 
 def test_check_video_not_static_fails_on_identical_frames(tmp_path):
-    # Verify check_video_not_static fails when frames are identical
+    # Verify check_video_not_static fails when textured frames are identical
     from unittest.mock import patch
 
-    f1 = np.ones((100, 100, 3), dtype=np.float32) * 128.0
-    f2 = np.ones((100, 100, 3), dtype=np.float32) * 128.0
+    f1 = np.tile(np.linspace(0, 255, 100, dtype=np.float32), (100, 3, 1)).T
+    f2 = f1.copy()
 
     dummy_video = tmp_path / "dummy_static.mp4"
     dummy_video.write_bytes(b"dummy_content")
