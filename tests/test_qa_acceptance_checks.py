@@ -80,3 +80,23 @@ def test_check_final_rejects_silent_or_static_video(tmp_path):
         res = check_final(dummy_video, expected_duration=10.0, tolerance=1.0)
         assert res["passed"] is False
         assert any("Too quiet" in err for err in res["errors"])
+
+
+def test_picture_to_video_ken_burns_acceptance_passed(tmp_path):
+    # Verify picture-to-video with Ken Burns motion passes final QA
+    from unittest.mock import patch
+
+    p2v_video = tmp_path / "p2v_output.mp4"
+    p2v_video.write_bytes(b"p2v_content")
+
+    with patch("src.services.qa.probe_duration", return_value=15.0), \
+         patch("src.services.qa.check_audio_stream_present", return_value=(True, "Audio ok")), \
+         patch("src.services.qa.check_audio_mean_volume", return_value=(True, -28.0, "Audible")), \
+         patch("src.services.qa.check_video_not_static", return_value=(True, 6.5, "Ken Burns Motion ok")):
+
+        res = check_final(p2v_video, expected_duration=15.0, tolerance=1.5)
+        assert res["passed"] is True
+        assert res["audio_stream_present"] is True
+        assert res["mean_volume_db"] == -28.0
+        assert res["frame_difference_mae"] == 6.5
+        assert len(res["errors"]) == 0
