@@ -416,6 +416,125 @@ class SlideshowCompositor:
         return v_dur, a_dur, sync_error_ms
 
     @classmethod
+    def compose_scenes_video_job(
+        cls,
+        job_path: Path,
+        plan,
+        scenes: list,
+        scene_audio_paths: list[Path],
+        scene_clips: list[Path],
+        bg_music_path: Optional[Path] = None,
+        bg_music_volume: float = 0.2,
+        burn_subtitles: bool = False,
+        subtitles_enabled: bool = True,
+        watermark_path: Optional[Path] = None,
+        cancel_check: Optional[Callable[[], bool]] = None,
+    ) -> tuple[Path, Optional[Path]]:
+        """
+        Orchestrator for genuine neural AI video scene composition:
+        1. Takes authentic AI moving scene clips
+        2. Crossfades scene clips with seamless transitions
+        3. Aligns speech audio
+        4. Ducks optional background music under speech
+        5. Generates and optionally burns subtitles
+        6. Multiplexes final 1280x720 30fps H.264+AAC video
+        """
+        job_path.mkdir(parents=True, exist_ok=True)
+        n = len(scenes)
+        if n == 0 or len(scene_audio_paths) == 0:
+            raise ValueError("No scenes or audio paths provided for video composition.")
+
+        if cancel_check and cancel_check():
+            raise RuntimeError("Job cancelled by user.")
+
+        clip_durations = [probe_duration(c) for c in scene_clips]
+
+        # 2. Crossfade clips
+        joined_video = job_path / "joined_ai_video.mp4"
+        cls.build_crossfade_video(
+            scene_clips=scene_clips,
+            scene_durations=clip_durations,
+            crossfade_s=cls.CROSSFADE_SECONDS,
+            output_path=joined_video,
+        )
+
+        # 3. Speech audio
+        aligned_speech = job_path / "speech_aligned.wav"
+        total_audio_dur = cls.build_aligned_speech_audio(
+            speech_paths=scene_audio_paths,
+            tail_seconds=cls.TAIL_SECONDS,
+            output_path=aligned_speech,
+        )
+
+        # 4. Background music ducking
+        if bg_music_path and Path(bg_music_path).exists():
+            mixed_audio = job_path / "final_mixed_audio.wav"
+            try:
+                cls.duck_background_music(
+                    speech_audio_path=aligned_speech,
+                    bg_music_path=Path(bg_music_path),
+                    volume=bg_music_volume,
+                    output_path=mixed_audio,
+                    ducking=getattr(plan, "music_ducking", True),
+                )
+                final_audio_path = mixed_audio
+                plan.music_applied = True
+            except Exception as exc:
+                logger.warning(f"Video background music mixing failed: {exc}. Continuing without music.")
+                plan.music_applied = False
+                plan.music_error = str(exc)
+                final_audio_path = aligned_speech
+        else:
+            final_audio_path = aligned_speech
+
+        # 5. Subtitles
+        subtitle_path = None
+        if subtitles_enabled:
+            from src.models.schemas import Timeline, TimelineEvent, TTSSegment
+            from src.services.subtitles import generate_webvtt
+
+            events = []
+            tts_segments_map = {}
+            curr_s = 0.0
+            for i, sc in enumerate(scenes):
+                sd = probe_duration(scene_audio_paths[i])
+                ev_id = f"scene_sub_{i:04d}"
+                events.append(
+                    TimelineEvent(
+                        event_id=ev_id,
+                        type="speech",
+                        start_s=round(curr_s, 2),
+                        end_s=round(curr_s + sd, 2),
+                        text=sc.text,
+                    )
+                )
+                tts_segments_map[ev_id] = TTSSegment(
+                    event_id=ev_id,
+                    audio_path=str(scene_audio_paths[i]),
+                    duration_seconds=round(sd, 2),
+                )
+                curr_s += sd + cls.TAIL_SECONDS
+
+            sub_timeline = Timeline(events=events, total_duration_seconds=round(curr_s, 2))
+            sub_file = job_path / "subtitles.vtt"
+            generate_webvtt(sub_timeline, tts_segments_map, sub_file)
+            subtitle_path = sub_file
+
+        # 6. Multiplex final video
+        final_video_path = job_path / "final_video.mp4"
+        cls.multiplex_final(
+            video_stream_path=joined_video,
+            audio_stream_path=final_audio_path,
+            output_path=final_video_path,
+            subtitle_path=subtitle_path,
+            burn_subtitles=burn_subtitles,
+            watermark_path=watermark_path,
+            total_duration_s=total_audio_dur,
+        )
+
+        return final_video_path, subtitle_path
+
+    @classmethod
     def compose_slideshow_job(
         cls,
         job_path: Path,

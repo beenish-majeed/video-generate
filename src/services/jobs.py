@@ -979,33 +979,17 @@ def run_job(job_id: str) -> None:
                     f"Consider adjusting script length ({len(job.plan.script.split())} words)."
                 )
 
-            # 4. Generate Images for each scene
+            # 4. Generate Visual Media for each scene (Genuine AI Video or Procedural Slideshow)
             job.state = JobState.GENERATING_SEGMENTS
             save_job_record(job)
 
-            image_provider = get_image_provider(
-                provider_name=settings.image_provider,
-                source_image_path=Path(job.photo_path) if job.photo_path and Path(job.photo_path).exists() else None,
+            from src.services.video_provider import get_video_provider, VideoProviderError
+            prefer_slideshow = (
+                getattr(job.request, "prefer_slideshow", False)
+                or getattr(job.request, "visual_mode", "") == "slideshow"
             )
-
-            scene_images = []
-            for scene in scene_plan.scenes:
-                if is_job_cancelled(job_id):
-                    return
-                img_res = image_provider.generate(
-                    prompt=scene.image_prompt,
-                    style=scene.style,
-                    seed=job.plan.seed + scene.scene_index,
-                    key_phrase=scene.key_phrase,
-                )
-                scene_images.append(img_res.path)
-
-            if is_job_cancelled(job_id):
-                return
-
-            # 5. Assembly
-            job.state = JobState.ASSEMBLING
-            save_job_record(job)
+            vid_provider = get_video_provider(prefer_slideshow=prefer_slideshow)
+            acc_status = vid_provider.check_account_status() if hasattr(vid_provider, "check_account_status") else {"status": "unconfigured"}
 
             label_path = job_path / "ai_label.png"
             from src.utils.images import create_ai_label_png
@@ -1024,19 +1008,85 @@ def run_job(job_id: str) -> None:
                     job.music_applied = False
 
             bg_music_vol = job.request.music_volume if job.request.music_volume is not None else 0.2
-            output_path, subtitle_path = SlideshowCompositor.compose_slideshow_job(
-                job_path=job_path,
-                plan=job.plan,
-                scenes=scene_plan.scenes,
-                scene_audio_paths=scene_audio_paths,
-                scene_images=scene_images,
-                bg_music_path=bg_music_path,
-                bg_music_volume=bg_music_vol,
-                burn_subtitles=job.plan.subtitles.burn_in,
-                subtitles_enabled=job.plan.subtitles.enabled,
-                watermark_path=label_path,
-                cancel_check=lambda: is_job_cancelled(job_id),
-            )
+
+            if not prefer_slideshow and acc_status.get("status") == "ready":
+                # Genuine Neural AI Video Generation
+                logger.info(f"Generating genuine AI video scenes via {vid_provider.name} ({vid_provider.model})...")
+                scene_video_paths = []
+                for idx, scene in enumerate(scene_plan.scenes):
+                    if is_job_cancelled(job_id):
+                        return
+                    sc_audio = scene_audio_paths[idx]
+                    sc_dur = probe_duration(sc_audio)
+                    vid_res = vid_provider.generate_text_to_video(
+                        prompt=scene.image_prompt,
+                        duration_seconds=sc_dur,
+                        job_path=job_path,
+                    )
+                    scene_video_paths.append(vid_res.video_path)
+
+                job.state = JobState.ASSEMBLING
+                save_job_record(job)
+
+                output_path, subtitle_path = SlideshowCompositor.compose_scenes_video_job(
+                    job_path=job_path,
+                    plan=job.plan,
+                    scenes=scene_plan.scenes,
+                    scene_audio_paths=scene_audio_paths,
+                    scene_clips=scene_video_paths,
+                    bg_music_path=bg_music_path,
+                    bg_music_volume=bg_music_vol,
+                    burn_subtitles=job.plan.subtitles.burn_in,
+                    subtitles_enabled=job.plan.subtitles.enabled,
+                    watermark_path=label_path,
+                    cancel_check=lambda: is_job_cancelled(job_id),
+                )
+                job.visual_mode_used = "text_to_video"
+                job.visual_mode_reason = f"Authentic AI video clips synthesized via {vid_provider.name} ({vid_provider.model})."
+            elif not prefer_slideshow and acc_status.get("status") == "exhausted_balance" and not getattr(settings, "file_ai_mock_fallback", True):
+                raise VideoProviderError(
+                    f"{vid_provider.name} Video Generation blocked: {acc_status['message']}. "
+                    "Please top up your balance or configure GEMINI_API_KEY (for Google Veo) to generate genuine AI videos."
+                )
+            else:
+                # Procedural Ken Burns Slideshow
+                image_provider = get_image_provider(
+                    provider_name=settings.image_provider,
+                    source_image_path=Path(job.photo_path) if job.photo_path and Path(job.photo_path).exists() else None,
+                )
+                scene_images = []
+                for scene in scene_plan.scenes:
+                    if is_job_cancelled(job_id):
+                        return
+                    img_res = image_provider.generate(
+                        prompt=scene.image_prompt,
+                        style=scene.style,
+                        seed=job.plan.seed + scene.scene_index,
+                        key_phrase=scene.key_phrase,
+                    )
+                    scene_images.append(img_res.path)
+
+                if is_job_cancelled(job_id):
+                    return
+
+                job.state = JobState.ASSEMBLING
+                save_job_record(job)
+
+                output_path, subtitle_path = SlideshowCompositor.compose_slideshow_job(
+                    job_path=job_path,
+                    plan=job.plan,
+                    scenes=scene_plan.scenes,
+                    scene_audio_paths=scene_audio_paths,
+                    scene_images=scene_images,
+                    bg_music_path=bg_music_path,
+                    bg_music_volume=bg_music_vol,
+                    burn_subtitles=job.plan.subtitles.burn_in,
+                    subtitles_enabled=job.plan.subtitles.enabled,
+                    watermark_path=label_path,
+                    cancel_check=lambda: is_job_cancelled(job_id),
+                )
+                job.visual_mode_used = "slideshow" if prefer_slideshow else "text_to_video"
+                job.visual_mode_reason = "Cinematic camera motion slideshow composited locally."
 
             expected_final_dur = float(job.plan.target_duration_seconds)
             tolerance = expected_final_dur * 0.10
@@ -1134,14 +1184,15 @@ def run_job(job_id: str) -> None:
             job.state = JobState.GENERATING_SEGMENTS
             save_job_record(job)
 
-            fal_provider = FalAIVideoProvider()
-            if not prefer_slideshow and fal_provider.is_configured:
+            from src.services.video_provider import get_video_provider, VideoProviderError
+            vid_provider = get_video_provider(prefer_slideshow=prefer_slideshow)
+            if not prefer_slideshow and vid_provider.is_configured:
                 # Genuine AI Video Generation (preserving subject identity & appearance)
-                acc_status = fal_provider.check_account_status()
+                acc_status = vid_provider.check_account_status()
                 if acc_status["status"] == "ready":
-                    logger.info("Generating genuine AI video using fal.ai Minimax Video-01...")
+                    logger.info(f"Generating genuine AI video using {vid_provider.name} ({vid_provider.model})...")
                     p2v_prompt = job.request.prompt or (job.plan.script if job.plan else "cinematic natural motion")
-                    vid_result = fal_provider.generate_image_to_video(
+                    vid_result = vid_provider.generate_image_to_video(
                         image_path=input_image_path,
                         prompt=p2v_prompt,
                         duration_seconds=audio_dur,
@@ -1155,10 +1206,10 @@ def run_job(job_id: str) -> None:
                     # Transparently report exhausted balance so user can top up
                     if not getattr(settings, "file_ai_mock_fallback", True):
                         raise VideoProviderError(
-                            f"fal.ai Video Generation blocked: {acc_status['message']}. "
-                            "Please top up your balance at fal.ai/dashboard/billing to generate genuine AI videos."
+                            f"{vid_provider.name} Video Generation blocked: {acc_status['message']}. "
+                            "Please top up your balance or configure GEMINI_API_KEY (for Google Veo) to generate genuine AI videos."
                         )
-                    logger.warning(f"fal.ai Video Generation balance exhausted; mock fallback active: {acc_status['message']}")
+                    logger.warning(f"{vid_provider.name} Video Generation balance exhausted; mock fallback active: {acc_status['message']}")
                     ken_burns_path = job_path / "animated_photo.mp4"
                     SlideshowCompositor.render_scene_clip(
                         image_path=input_image_path,

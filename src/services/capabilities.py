@@ -69,22 +69,60 @@ def is_wav2lip_available() -> bool:
 def get_video_provider_capabilities() -> Dict[str, Any]:
     """Inspect and report AI video provider availability and account status."""
     try:
-        from src.services.video_provider import FalAIVideoProvider
-        prov = FalAIVideoProvider()
-        if not prov.is_configured:
-            return {
-                "configured": False,
-                "provider_name": "none",
-                "status": "unconfigured",
-                "message": "FAL_KEY or FILE_AI_API_KEY is not configured in .env.",
-            }
-        status = prov.check_account_status()
+        from src.services.video_provider import GoogleVeoVideoProvider, FalAIVideoProvider
+        
+        veo = GoogleVeoVideoProvider()
+        fal = FalAIVideoProvider()
+
+        veo_status = veo.check_account_status() if veo.is_configured else {"status": "unconfigured", "message": "GEMINI_API_KEY or GOOGLE_API_KEY is not configured."}
+        fal_status = fal.check_account_status() if fal.is_configured else {"status": "unconfigured", "message": "FAL_KEY is not configured."}
+
+        active_provider = "none"
+        active_model = "none"
+        active_status = "unconfigured"
+        active_message = "No AI video provider configured or active."
+
+        if veo.is_configured and veo_status.get("status") == "ready":
+            active_provider = "Google Veo"
+            active_model = veo.model
+            active_status = "ready"
+            active_message = veo_status.get("message", "")
+        elif fal.is_configured and fal_status.get("status") == "ready":
+            active_provider = "fal.ai"
+            active_model = fal.model
+            active_status = "ready"
+            active_message = fal_status.get("message", "")
+        elif veo.is_configured:
+            active_provider = "Google Veo"
+            active_model = veo.model
+            active_status = veo_status.get("status", "error")
+            active_message = veo_status.get("message", "")
+        elif fal.is_configured:
+            active_provider = "fal.ai"
+            active_model = fal.model
+            active_status = fal_status.get("status", "exhausted_balance")
+            active_message = fal_status.get("message", "")
+
         return {
-            "configured": True,
-            "provider_name": "fal.ai",
-            "model": prov.model,
-            "status": status.get("status", "unknown"),
-            "message": status.get("message", ""),
+            "configured": bool(veo.is_configured or fal.is_configured),
+            "provider_name": active_provider,
+            "model": active_model,
+            "status": active_status,
+            "message": active_message,
+            "providers": {
+                "google_veo": {
+                    "configured": veo.is_configured,
+                    "model": veo.model,
+                    "status": veo_status.get("status"),
+                    "message": veo_status.get("message"),
+                },
+                "fal_ai": {
+                    "configured": fal.is_configured,
+                    "model": fal.model,
+                    "status": fal_status.get("status"),
+                    "message": fal_status.get("message"),
+                },
+            },
         }
     except Exception as exc:
         return {
