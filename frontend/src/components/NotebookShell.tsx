@@ -24,8 +24,8 @@ export const NotebookShell: React.FC<NotebookShellProps> = ({
   return (
     <ToastProvider>
       <div className="app-shell">
-        {/* Full-screen subtle shimmer sparkle canvas layer */}
-        <SparkleCanvas density={currentStep === 'hero' ? 'full' : 'subtle'} />
+        {/* Sparkle canvas layer on every page except the Welcome page */}
+        {currentStep !== 'hero' && <SparkleCanvas density="subtle" />}
 
         {/* Desktop subtle cursor glow follower */}
         <CursorGlow />
