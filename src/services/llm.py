@@ -262,10 +262,16 @@ class FileAILLMProvider(LLMProvider):
         if m_tone:
             tone = m_tone.group(1).strip().lower()
 
+        # Extract clean prompt if user contains 'Topic: ...'
+        clean_user = user
+        m_topic = re.search(r"^Topic:\s*([^\n]+)", user, re.MULTILINE)
+        if m_topic:
+            clean_user = m_topic.group(1).strip()
+
         wpm = getattr(settings, "words_per_minute", 148.0)
         duration_seconds = (target_words / wpm) * 60.0
         return self.client.generate_script(
-            prompt=user,
+            prompt=clean_user,
             target_duration_seconds=duration_seconds,
             tone=tone,
         )

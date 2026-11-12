@@ -128,6 +128,16 @@ class CardsImageProvider(BaseImageProvider):
         "photo": ((24, 24, 27), (63, 63, 70), (161, 161, 170), (250, 250, 250)),
     }
 
+    # Varied scene palettes ensuring every scene in a video has a distinct visual background
+    SCENE_PALETTES = [
+        ((15, 23, 42), (49, 46, 129), (99, 102, 241), (248, 250, 252)),    # Midnight Slate / Indigo
+        ((20, 40, 50), (10, 80, 80), (45, 180, 160), (245, 245, 220)),     # Deep Teal / Emerald
+        ((45, 20, 35), (90, 30, 50), (220, 100, 120), (255, 250, 245)),    # Velvet Plum / Rose
+        ((25, 30, 45), (40, 60, 95), (90, 150, 240), (240, 245, 255)),     # Ocean Blue / Sapphire
+        ((40, 25, 15), (95, 55, 25), (230, 140, 50), (255, 248, 235)),     # Warm Amber / Sunset
+        ((20, 35, 25), (35, 75, 45), (100, 195, 115), (245, 255, 245)),    # Forest Jade / Pine
+    ]
+
     def _generate_image(
         self,
         prompt: str,
@@ -140,9 +150,12 @@ class CardsImageProvider(BaseImageProvider):
         img = Image.new("RGB", (width, height))
         draw = ImageDraw.Draw(img)
 
-        # Choose palette based on style or seed variation
+        # Choose palette based on seed variation across scene palettes for visual variety
         style_key = style.strip().lower() if style else "cinematic"
-        palette = self.PALETTES.get(style_key, self.PALETTES["cinematic"])
+        if style_key in self.PALETTES and seed == 0:
+            palette = self.PALETTES[style_key]
+        else:
+            palette = self.SCENE_PALETTES[abs(seed) % len(self.SCENE_PALETTES)]
         top_color, bottom_color, accent_color, text_color = palette
 
         # Seed-based variation in color hue
@@ -195,9 +208,13 @@ class CardsImageProvider(BaseImageProvider):
         img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
         draw = ImageDraw.Draw(img)
 
-        # 3. Render readable text of key phrase or prompt
-        display_text = key_phrase or prompt
-        # Clean text
+        # 3. Render readable text of key phrase (never raw prompt paragraph)
+        if key_phrase and key_phrase.strip():
+            display_text = key_phrase.strip()
+        else:
+            # Extract a clean, concise 3-4 word title phrase from prompt
+            clean_words = [w for w in re.sub(r"[^\w\s]", "", prompt or "").split() if len(w) > 2]
+            display_text = " ".join(clean_words[:4]).title() if clean_words else "Memory Scene"
         display_text = re.sub(r"\s+", " ", display_text).strip()
 
         # Word wrap text into lines (max ~24 chars per line)
