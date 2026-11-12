@@ -413,12 +413,24 @@ def finalize_video(
 
     # 1. Try FFmpeg CLI multiplexing
     try:
+        vid_dur = 0.0
+        try:
+            vid_dur = probe_duration(video_path)
+        except Exception:
+            pass
+
+        stream_loop = []
+        if vid_dur > 0 and vid_dur < duration - 0.1:
+            loops = int(math.ceil(duration / vid_dur))
+            stream_loop = ["-stream_loop", str(loops)]
+
         cmd = [
             settings.ffmpeg_bin,
             "-y",
             "-nostdin",
             "-protocol_whitelist",
             "file",
+            *stream_loop,
             "-i",
             str(video_path),
             "-i",
@@ -542,7 +554,13 @@ def finalize_video(
     while frame_count < max_frames:
         ret, frame = cap.read()
         if not ret or frame is None:
-            break
+            # Video ended before target duration; loop from beginning if frames exist
+            if frame_count == 0:
+                break
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                break
         writer.write(frame)
         frame_count += 1
 
