@@ -805,26 +805,35 @@ class FileAIClient:
                         f"falling back to sandbox video compositor."
                     )
 
-        # High-fidelity sandbox fallback using FFmpeg
+        # High-fidelity sandbox fallback with Ken Burns camera motion
+        from src.services.slideshow_compositor import SlideshowCompositor
+        temp_video = output_path.parent / f"temp_{output_path.name}"
+        SlideshowCompositor.render_scene_clip(
+            image_path=image_path,
+            duration_s=dur,
+            motion_idx=0,
+            output_path=temp_video,
+            fps=30,
+        )
+
         from src.utils.subprocess_runner import run_subprocess
         cmd = [
             settings.ffmpeg_bin,
             "-y",
-            "-loop", "1",
-            "-framerate", "30",
-            "-t", f"{dur:.3f}",
-            "-i", str(image_path),
+            "-i", str(temp_video),
             "-i", str(audio_path),
-            "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "22",
+            "-c:v", "copy",
             "-c:a", "aac",
             "-b:a", "192k",
             "-shortest",
             str(output_path),
         ]
         res = run_subprocess(cmd, timeout=settings.subprocess_render_timeout_seconds)
+        if temp_video.exists():
+            try:
+                temp_video.unlink()
+            except Exception:
+                pass
         if res.returncode != 0 or not output_path.exists():
             err_tail = res.stderr.strip()[-300:] if res.stderr else "unknown error"
             raise FileAIError(f"Failed to generate avatar video: {err_tail}")
