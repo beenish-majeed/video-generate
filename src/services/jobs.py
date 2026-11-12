@@ -1115,21 +1115,75 @@ def run_job(job_id: str) -> None:
                 speech_audio_path = Path(tts_res.audio_path)
                 audio_dur = probe_duration(speech_audio_path)
 
-            # 2. Animate Image using FileAIClient
+            # 2. Visual Synthesis: Talking Head (Wav2Lip) or Ken Burns Slideshow Motion
+            from src.services.face_detector import count_faces_in_image
+            from src.services.capabilities import is_wav2lip_available
+            from src.services.slideshow_compositor import SlideshowCompositor
+
+            faces_count = count_faces_in_image(input_image_path)
+            wav2lip_avail = is_wav2lip_available()
+            prefer_slideshow = (
+                getattr(job.request, "prefer_slideshow", False)
+                or getattr(job.request, "visual_mode", "") == "slideshow"
+            )
+
             job.state = JobState.GENERATING_SEGMENTS
             save_job_record(job)
 
-            p2v_output_path = job_path / "animated_photo.mp4"
-            from src.clients.file_ai import get_file_ai_client
-            client = get_file_ai_client()
-            anim_res = client.generate_image_to_video(
-                image_path=input_image_path,
-                prompt=job.request.prompt or "cinematic animation, natural subtle movement",
-                output_path=p2v_output_path,
-                audio_path=speech_audio_path,
-                duration_seconds=audio_dur,
-            )
-            video_path = Path(anim_res["output_path"])
+            if faces_count >= 1 and wav2lip_avail and not prefer_slideshow:
+                job.state = JobState.PREPARING_IDENTITY
+                save_job_record(job)
+
+                id_builder = RealIdentityBuilder()
+                job.identity_pack = id_builder.build_identity_pack(input_image_path, job_path)
+                voice_pack = build_voice_pack(speech_audio_path, job_path)
+                job.voice_pack = voice_pack
+
+                from src.models.schemas import SegmentSpec, TimelineEvent
+                seg_ev = TimelineEvent(
+                    event_id="p2v_lip",
+                    type="speech",
+                    start_s=0.0,
+                    end_s=round(audio_dur, 2),
+                    text=job.plan.script or "Spoken audio",
+                )
+                segment = SegmentSpec(
+                    segment_id="segment_0000",
+                    start_s=0.0,
+                    duration_s=audio_dur,
+                    events=[seg_ev],
+                )
+
+                anim_provider = RealWav2LipProvider()
+                video_path = anim_provider.generate_segment(
+                    segment=segment,
+                    plan=job.plan,
+                    job_path=job_path,
+                    identity_pack=job.identity_pack,
+                    voice_pack=job.voice_pack,
+                )
+                job.visual_mode_used = "talking_head"
+                job.visual_mode_reason = "Wav2Lip neural lip-sync talking head generated."
+            else:
+                reason = "Ken Burns slideshow compositor used: "
+                if faces_count == 0:
+                    reason += "no clear face detected in uploaded photo."
+                elif not wav2lip_avail:
+                    reason += "Wav2Lip model is not available in this environment."
+                else:
+                    reason += "Ken Burns slideshow chosen by user."
+
+                ken_burns_path = job_path / "animated_photo.mp4"
+                SlideshowCompositor.render_scene_clip(
+                    image_path=input_image_path,
+                    duration_s=audio_dur,
+                    motion_idx=0,
+                    output_path=ken_burns_path,
+                    fps=30,
+                )
+                video_path = ken_burns_path
+                job.visual_mode_used = "slideshow"
+                job.visual_mode_reason = reason
 
             # 3. Subtitles
             subtitle_path = None

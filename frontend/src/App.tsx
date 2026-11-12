@@ -359,6 +359,10 @@ export const App: React.FC = () => {
         prompt: prompt.trim() || ideaText.trim() || 'Warm cinematic light, soft watercolor texture',
         duration_preset: hasOwnVoice ? undefined : durationPreset,
         target_duration_seconds: hasOwnVoice ? (detectedAudioDuration || 15) : targetSeconds,
+        burn_subtitles: true,
+        music_preset_id: 'calm',
+        music_volume: 0.25,
+        music_ducking: true,
         overrides: {
           'voice.tone': tone,
         },

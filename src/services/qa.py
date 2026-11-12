@@ -140,7 +140,7 @@ def extract_video_frame(video_path: Union[str, Path], timestamp_s: float) -> Opt
         "-",
     ]
     try:
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, text=False)
         if res.returncode != 0 or not res.stdout:
             return None
         with Image.open(io.BytesIO(res.stdout)) as img:
