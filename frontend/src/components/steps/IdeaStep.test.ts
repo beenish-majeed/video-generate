@@ -27,6 +27,9 @@ describe('IdeaStep prompt screen tests', () => {
     expect(markup).toContain('Studio Journey');
     expect(markup).toContain('Starlit Tale');
 
+    // Tone selection heading
+    expect(markup).toContain('Select your tone');
+
     // 4 tone chips
     expect(TONE_OPTIONS.length).toBe(4);
     expect(markup).toContain('Friendly');

@@ -52,6 +52,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
 }) => {
   const [idea, setIdea] = useState<string>(initialIdea);
   const [tone, setTone] = useState<ScriptTone>(initialTone);
+  const [isFocused, setIsFocused] = useState<boolean>(false);
 
   // Compute validation
   const wordCount = idea.trim() ? idea.trim().split(/\s+/).length : 0;
@@ -107,35 +108,43 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
       </StoryScrollSection>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-        {/* Large Textarea */}
+        {/* Single clean textarea surface with no double borders */}
         <StoryScrollSection delay={0.04} style={{ width: '100%' }}>
           <div
-            className="card"
             style={{
-              padding: '16px',
+              padding: '14px 16px',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
-              borderColor: (isOverCharLimit || isOverWordLimit) ? 'var(--accent-danger)' : undefined,
-              background: 'var(--bg-surface)',
+              border: (isOverCharLimit || isOverWordLimit)
+                ? '2px solid var(--accent-danger)'
+                : isFocused
+                ? '2px solid var(--accent)'
+                : '1px solid var(--border-light)',
+              boxShadow: isFocused ? '0 0 0 3px rgba(0, 128, 128, 0.15)' : 'none',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-surface)',
               width: '100%',
               boxSizing: 'border-box',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
             }}
           >
             <textarea
               id="idea-input"
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               maxLength={isCharLimited ? MAX_IDEA_PROMPT_LENGTH : undefined}
               placeholder="Describe your video..."
               rows={5}
               style={{
                 width: '100%',
                 boxSizing: 'border-box',
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-light)',
-                backgroundColor: 'var(--bg-subtle)',
+                padding: 0,
+                margin: 0,
+                border: 'none',
+                backgroundColor: 'transparent',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '15px',
                 lineHeight: 1.5,
@@ -143,6 +152,7 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
                 resize: 'vertical',
                 outline: 'none',
                 minHeight: '140px',
+                boxShadow: 'none',
               }}
             />
 
@@ -177,13 +187,13 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
           </div>
         </StoryScrollSection>
 
-        {/* 4 Example Chips in tidy equal-size row */}
+        {/* 4 Example Chips in tidy equal-size row (slightly larger and easier to click) */}
         <StoryScrollSection delay={0.08} style={{ width: '100%' }}>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '8px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: '10px',
               width: '100%',
             }}
           >
@@ -194,16 +204,18 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
                 onClick={() => handleSelectExample(chip.text)}
                 className="btn-secondary"
                 style={{
-                  padding: '8px 12px',
-                  fontSize: '13px',
+                  padding: '10px 16px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   borderRadius: 'var(--radius-pill)',
-                  minHeight: '40px',
+                  minHeight: '46px',
                   cursor: 'pointer',
                   textAlign: 'center',
                   justifyContent: 'center',
                   border: '1px solid var(--border-light)',
                   background: 'var(--bg-surface)',
                   color: 'var(--text-primary)',
+                  transition: 'all 0.18s ease',
                 }}
               >
                 <span>{chip.label}</span>
@@ -212,54 +224,77 @@ export const IdeaStep: React.FC<IdeaStepProps> = ({
           </div>
         </StoryScrollSection>
 
-        {/* Tone Chips in tidy equal-size row */}
+        {/* Tone Selection with "Select your tone" Heading */}
         <StoryScrollSection delay={0.12} style={{ width: '100%' }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '10px',
-              width: '100%',
-            }}
-          >
-            {TONE_OPTIONS.map((opt) => {
-              const isSelected = tone === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleSelectTone(opt.value)}
-                  className={`card ${isSelected ? 'card-selected' : ''}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '12px 10px',
-                    minHeight: '44px',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-light)',
-                    background: isSelected ? 'var(--bg-card)' : 'var(--bg-surface)',
-                    borderRadius: 'var(--radius-card)',
-                  }}
-                  aria-pressed={isSelected}
-                >
-                  <span
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+            <h3
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                margin: '2px 0 0 0',
+                fontFamily: 'var(--font-sans)',
+                textAlign: 'left',
+              }}
+            >
+              Select your tone
+            </h3>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: '10px',
+                width: '100%',
+              }}
+            >
+              {TONE_OPTIONS.map((opt) => {
+                const isSelected = tone === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleSelectTone(opt.value)}
+                    className={`card ${isSelected ? 'card-selected' : ''}`}
                     style={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '12px 10px',
+                      minHeight: '46px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border-light)',
+                      background: isSelected ? 'rgba(0, 128, 128, 0.08)' : 'var(--bg-surface)',
+                      borderRadius: 'var(--radius-md)',
+                      boxShadow: isSelected ? '0 0 0 1px var(--accent)' : 'none',
+                      transition: 'all 0.18s ease',
                     }}
+                    aria-pressed={isSelected}
                   >
-                    {opt.label}
-                  </span>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {opt.description}
-                  </span>
-                </button>
-              );
-            })}
+                    <span
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: isSelected ? 700 : 600,
+                        color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+                      }}
+                    >
+                      {opt.label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
+                        marginTop: '2px',
+                        fontWeight: isSelected ? 500 : 400,
+                      }}
+                    >
+                      {opt.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </StoryScrollSection>
 

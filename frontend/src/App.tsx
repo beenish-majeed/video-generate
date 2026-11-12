@@ -274,7 +274,7 @@ export const App: React.FC = () => {
     };
 
     const payload: JobCreatePayload = {
-      visual_mode: 'slideshow',
+      visual_mode: 'text_to_video',
       image_style: imageStyle || 'cinematic',
       avatar_preset_id: 'avatar_default',
       voice_preset_id: 'voice_piper_lessac',
@@ -283,6 +283,9 @@ export const App: React.FC = () => {
       duration_preset: durationPreset,
       target_duration_seconds: targetSeconds,
       burn_subtitles: true,
+      overrides: {
+        'voice.tone': tone,
+      },
       consent,
     };
 
@@ -353,6 +356,9 @@ export const App: React.FC = () => {
         prompt: prompt.trim() || ideaText.trim() || 'Warm cinematic light, soft watercolor texture',
         duration_preset: hasOwnVoice ? undefined : durationPreset,
         target_duration_seconds: hasOwnVoice ? (detectedAudioDuration || 15) : targetSeconds,
+        overrides: {
+          'voice.tone': tone,
+        },
         consent,
       };
     }
