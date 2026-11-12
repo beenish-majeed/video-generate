@@ -174,6 +174,10 @@ export interface JobCreatePayload {
   burn_subtitles?: boolean;
   bg_music_asset_id?: string;
   bg_music_volume?: number;
+  music_preset_id?: string;
+  music_volume?: number;
+  music_ducking?: boolean;
+  prefer_slideshow?: boolean;
   overrides?: Record<string, unknown>;
 }
 
@@ -226,4 +230,26 @@ export interface APIErrorResponse {
   detail?: string | Array<{ loc: string[]; msg: string; type: string }>;
   error?: string;
   message?: string;
+}
+
+export interface CapabilitiesResponse {
+  gpu: {
+    available: boolean;
+    device_name: string;
+  };
+  providers: {
+    ollama: boolean;
+    diffusers: boolean;
+    whisper: boolean;
+    piper: boolean;
+    wav2lip: boolean;
+    cards: boolean;
+  };
+  auto_subtitles: boolean;
+  background_music: boolean;
+  music_presets: string[];
+  modes: string[];
+  image_provider_configured?: string;
+  llm_provider_configured?: string;
+  estimate?: JobEstimateResponse | Record<string, unknown>;
 }

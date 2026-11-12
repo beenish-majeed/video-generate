@@ -1013,8 +1013,8 @@ def run_job(job_id: str) -> None:
             create_ai_label_png(label_path, label_text)
 
             bg_music_path = None
-            music_preset = job.request.music_preset_id or getattr(settings, "default_music_preset", "calm") or "calm"
-            if job.music_applied is not False:
+            if (job.request.music_asset_id or job.request.music_preset_id) and job.music_applied is not False:
+                music_preset = job.request.music_preset_id or getattr(settings, "default_music_preset", "calm") or "calm"
                 try:
                     from src.services.music_presets import resolve_job_music_path
                     bg_music_path = resolve_job_music_path(job.request.music_asset_id, music_preset)
@@ -1162,7 +1162,7 @@ def run_job(job_id: str) -> None:
                     identity_pack=job.identity_pack,
                     voice_pack=job.voice_pack,
                 )
-                job.visual_mode_used = "talking_head"
+                job.visual_mode_used = "picture_to_video"
                 job.visual_mode_reason = "Wav2Lip neural lip-sync talking head generated."
             else:
                 reason = "Ken Burns slideshow compositor used: "
@@ -1182,7 +1182,7 @@ def run_job(job_id: str) -> None:
                     fps=30,
                 )
                 video_path = ken_burns_path
-                job.visual_mode_used = "slideshow"
+                job.visual_mode_used = "picture_to_video"
                 job.visual_mode_reason = reason
 
             # 3. Subtitles
