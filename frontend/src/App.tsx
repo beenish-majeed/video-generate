@@ -352,6 +352,7 @@ export const App: React.FC = () => {
       // Flow B: Picture to video (or legacy custom_media)
       payload = {
         visual_mode: 'picture_to_video',
+        audio_mode: hasOwnVoice ? 'original_audio' : 'ai_generated',
         photo_asset_id: photoAssetId || DEFAULT_PHOTO_ASSET_ID,
         voice_asset_id: hasOwnVoice ? voiceAssetId : undefined,
         voice_preset_id: hasOwnVoice ? undefined : (voicePresetId || 'voice_piper_lessac'),

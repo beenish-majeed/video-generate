@@ -149,6 +149,31 @@ def test_picture_to_video_mode2_original_audio_end_to_end(test_consent, sample_i
     assert completed.visual_mode_used == "picture_to_video"
 
 
+def test_picture_to_video_preserves_voice_asset_id_as_original_audio(test_consent, sample_image, sample_audio):
+    """Verify that voice_asset_id automatically resolves to original_audio and preserves user voice."""
+    img_asset_id, _ = sample_image
+    aud_asset_id, _ = sample_audio
+    req = JobCreate(
+        visual_mode="picture_to_video",
+        photo_asset_id=img_asset_id,
+        voice_asset_id=aud_asset_id,
+        prompt="Spoken memory with original audio",
+        consent=test_consent,
+    )
+    assert req.canonical_mode == "picture_to_video"
+    assert req.audio_mode == "original_audio"
+
+    job = create_job(req)
+    assert job.state == JobState.CONSENT_VERIFIED
+
+    run_job(job.job_id)
+
+    completed = load_job_record(job.job_id)
+    assert completed is not None
+    assert completed.state == JobState.COMPLETED
+    assert completed.visual_mode_used == "picture_to_video"
+
+
 def test_mode_validation_rules(test_consent, sample_image):
     # Mode 1: text_to_video requires prompt or script
     with pytest.raises(Exception):

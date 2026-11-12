@@ -1067,11 +1067,14 @@ def run_job(job_id: str) -> None:
             input_image_path = Path(job.photo_path)
             audio_mode = getattr(job.request, "audio_mode", "ai_generated")
 
-            # 1. Resolve Audio (Default: AI-generated; Optional: original audio)
-            if audio_mode == "original_audio" and job.request.uploaded_audio_asset_id:
-                speech_audio_path = Path(job.voice_path)
-                audio_dur = probe_duration(speech_audio_path)
-            elif audio_mode == "original_audio" and job.voice_path and Path(job.voice_path).exists():
+            # 1. Resolve Audio (Preserve original user audio; otherwise default to AI-generated narration)
+            has_user_audio = bool(
+                audio_mode == "original_audio"
+                or job.request.uploaded_audio_asset_id
+                or job.request.voice_asset_id
+                or (job.voice_path and Path(job.voice_path).exists() and not job.request.voice_preset_id)
+            )
+            if has_user_audio and job.voice_path and Path(job.voice_path).exists():
                 speech_audio_path = Path(job.voice_path)
                 audio_dur = probe_duration(speech_audio_path)
             else:

@@ -163,6 +163,7 @@ export interface JobCreatePayload {
   duration_preset?: DurationPreset;
   target_duration_seconds?: number;
   visual_mode?: 'slideshow' | 'talking_head' | 'ai_clips' | 'text_to_video' | 'picture_to_video';
+  audio_mode?: 'ai_generated' | 'original_audio';
   image_style?: string;
   uploaded_image_asset_ids?: string[];
   image_durations?: number[];

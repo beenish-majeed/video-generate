@@ -480,7 +480,7 @@ class JobCreate(BaseModel):
                 raise ValueError(
                     "An image must be provided for picture_to_video mode (via photo_asset_id, avatar_preset_id, or uploaded_image_asset_ids)."
                 )
-            if self.uploaded_audio_asset_id:
+            if self.uploaded_audio_asset_id or self.voice_asset_id:
                 object.__setattr__(self, "audio_mode", "original_audio")
             return self
 
