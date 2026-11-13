@@ -2,7 +2,7 @@ import sqlite3
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Optional
 from src.core.config import settings
 
 logger = logging.getLogger(__name__)

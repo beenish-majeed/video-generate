@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     db_filename: str = "jobs.db"
 
     # Server Authentication & Security
+    environment: str = Field(
+        default="development",
+        description="Application environment: development, staging, or production.",
+    )
     api_key: Optional[str] = None
     allow_insecure_dev: bool = False
     jwt_secret: str = "insecure_dev_jwt_secret_change_in_production_min32chars"

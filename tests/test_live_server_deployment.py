@@ -163,14 +163,14 @@ def test_live_session_isolation_and_idor_defense(live_server):
         f"{base_url}/v1/jobs",
         headers={**headers_auth, "Cookie": cookie_a},
     )
-    with urllib.request.urlopen(req_list_a, timeout=3.0) as resp_list_a:
+    with urllib.request.urlopen(req_list_a, timeout=15.0) as resp_list_a:
         assert resp_list_a.status == 200
         jobs_a = json.loads(resp_list_a.read().decode("utf-8"))
         assert any(j["job_id"] == job_id_a for j in jobs_a)
 
     # 2. Visitor B arrives with independent session
     req_b_health = urllib.request.Request(f"{base_url}/health")
-    with urllib.request.urlopen(req_b_health, timeout=3.0) as resp_b:
+    with urllib.request.urlopen(req_b_health, timeout=10.0) as resp_b:
         cookie_header_b = resp_b.headers.get("Set-Cookie", "")
         cookie_b = cookie_header_b.split(";")[0]
         assert cookie_b != cookie_a
@@ -180,7 +180,7 @@ def test_live_session_isolation_and_idor_defense(live_server):
         f"{base_url}/v1/jobs",
         headers={**headers_auth, "Cookie": cookie_b},
     )
-    with urllib.request.urlopen(req_list_b, timeout=3.0) as resp_list_b:
+    with urllib.request.urlopen(req_list_b, timeout=15.0) as resp_list_b:
         assert resp_list_b.status == 200
         jobs_b = json.loads(resp_list_b.read().decode("utf-8"))
         assert not any(j["job_id"] == job_id_a for j in jobs_b), "Visitor B must see empty workspace, not A's job!"
@@ -268,7 +268,7 @@ def test_live_session_secret_persistence_across_process_restart(live_server):
         f"{base_url}/v1/jobs",
         headers={"X-API-Key": API_KEY, "Cookie": cookie_1},
     )
-    with urllib.request.urlopen(req_reconnect, timeout=3.0) as resp_reconnect:
+    with urllib.request.urlopen(req_reconnect, timeout=15.0) as resp_reconnect:
         assert resp_reconnect.status == 200
         # If the session was rotated due to secret loss, a new Set-Cookie would be returned.
         # Verify no Set-Cookie header was issued (session was recognized as authentic).

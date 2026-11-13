@@ -154,21 +154,23 @@ def _sanitize_error_message(message: str) -> str:
     key = getattr(file_ai_config, "api_key", None)
     if key and len(key) > 4:
         sanitized = sanitized.replace(key, "[REDACTED_API_KEY]")
-    # Redact server api key
+    # Redact server api key and provider keys
     try:
         from src.core.config import settings
-        srv_key = getattr(settings, "api_key", None)
-        if srv_key and len(srv_key) > 4:
-            sanitized = sanitized.replace(srv_key, "[REDACTED_API_KEY]")
+        for srv_attr in ("api_key", "gemini_api_key", "google_api_key", "session_secret"):
+            srv_key = getattr(settings, srv_attr, None)
+            if srv_key and len(str(srv_key)) > 4:
+                sanitized = sanitized.replace(str(srv_key), "[REDACTED_API_KEY]")
     except Exception:
         pass
     # Redact env keys
-    for env_k in ("FAL_KEY", "FILE_AI_API_KEY", "API_KEY"):
+    for env_k in ("FAL_KEY", "FILE_AI_API_KEY", "API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "SESSION_SECRET"):
         val = os.getenv(env_k)
         if val and len(val) > 4:
             sanitized = sanitized.replace(val, "[REDACTED_API_KEY]")
     # Redact regex patterns
     sanitized = re.sub(r"fal_sk_[a-zA-Z0-9_\.:\-]+", "[REDACTED_FAL_KEY]", sanitized)
+    sanitized = re.sub(r"AIza[0-9A-Za-z\-_]{35}", "[REDACTED_GOOGLE_KEY]", sanitized)
     sanitized = re.sub(r"(Bearer\s+)[a-zA-Z0-9_\.\-]+", r"\1[REDACTED_API_KEY]", sanitized)
     sanitized = re.sub(r"(Key\s+)[a-zA-Z0-9_\.:\-]+", r"\1[REDACTED_API_KEY]", sanitized)
     sanitized = re.sub(r"(://[^:]+:)[^@]+@", r"\1[REDACTED_PASSWORD]@", sanitized)
@@ -216,6 +218,7 @@ class FileAIClient:
                 base_url=self.config.api_base_url,
                 headers=self.config.get_headers(),
                 timeout=self.config.timeout_seconds,
+                transport=SafeHTTPTransport(),
             )
         return self._http_client
 
@@ -313,6 +316,9 @@ class FileAIClient:
                                         f"Download stream exceeded maximum permitted limit ({max_download_size_bytes} bytes)"
                                     )
                                 f_out.write(chunk)
+
+                        if total_bytes == 0:
+                            raise FileAIError(f"Downloaded asset from {url} is empty (0 bytes)")
 
                         tmp_download_path.replace(target_path)
                         return target_path
@@ -820,6 +826,9 @@ class FileAIClient:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file",
             "-i", str(temp_video),
             "-i", str(audio_path),
             "-c:v", "copy",
@@ -961,6 +970,8 @@ class FileAIClient:
                 settings.ffmpeg_bin,
                 "-y",
                 "-nostdin",
+                "-protocol_whitelist",
+                "file",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",
@@ -980,6 +991,8 @@ class FileAIClient:
                 settings.ffmpeg_bin,
                 "-y",
                 "-nostdin",
+                "-protocol_whitelist",
+                "file",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",

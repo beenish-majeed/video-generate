@@ -30,6 +30,7 @@ from src.models.schemas import (
     JobCreate,
     JobEstimateRequest,
     JobEstimateResponse,
+    JobRecord,
     JobState,
     ScenePlanRequest,
     ScenePlanResponse,

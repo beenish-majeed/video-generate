@@ -26,8 +26,9 @@ def verify_api_key(
     Supports both 'X-API-Key' header and standard 'Authorization: Bearer <key>' header.
     Allows unauthenticated requests only when ALLOW_INSECURE_DEV is True.
     """
+    env = getattr(settings, "environment", "development").lower().strip()
     if not settings.api_key:
-        if settings.allow_insecure_dev:
+        if settings.allow_insecure_dev and env != "production":
             return None
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

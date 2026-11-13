@@ -328,19 +328,21 @@ class FalAIVideoProvider(BaseVideoProvider):
             }
 
         # 1. Query current user profile to inspect is_locked and lock_reason
+        import httpx
+        from src.clients.file_ai import SafeHTTPTransport, _sanitize_error_message
         url = "https://rest.fal.ai/users/current"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "Authorization": f"Key {self.api_key}",
-                "Content-Type": "application/json",
-                "User-Agent": "fal-client/0.5",
-            },
-        )
         try:
-            with urllib.request.urlopen(req, timeout=8) as res:
-                if res.status == 200:
-                    user_data = json.loads(res.read().decode("utf-8"))
+            with httpx.Client(transport=SafeHTTPTransport(), timeout=8.0, follow_redirects=False) as client:
+                res = client.get(
+                    url,
+                    headers={
+                        "Authorization": f"Key {self.api_key}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "fal-client/0.5",
+                    },
+                )
+                if res.status_code == 200:
+                    user_data = res.json()
                     if user_data.get("is_locked"):
                         reason = user_data.get("lock_reason", "Exhausted balance.")
                         return {
@@ -348,26 +350,25 @@ class FalAIVideoProvider(BaseVideoProvider):
                             "message": f"User is locked: {reason}",
                         }
                     return {"status": "ready", "message": "fal.ai API key active and ready."}
-        except urllib.error.HTTPError as err:
-            err_body = err.read().decode("utf-8", errors="replace")
-            if err.code == 403 and "Exhausted balance" in err_body:
-                return {
-                    "status": "exhausted_balance",
-                    "message": "User is locked: Exhausted balance. Top up your balance at fal.ai/dashboard/billing",
-                }
-            if err.code in (401, 403):
-                return {
-                    "status": "invalid_key",
-                    "message": f"Authentication failed ({err.code}): {err_body[:200]}",
-                }
-            return {
-                "status": "error",
-                "message": f"fal.ai API returned error {err.code}: {err_body[:200]}",
-            }
+                elif res.status_code == 403 and "Exhausted balance" in res.text:
+                    return {
+                        "status": "exhausted_balance",
+                        "message": "User is locked: Exhausted balance. Top up your balance at fal.ai/dashboard/billing",
+                    }
+                elif res.status_code in (401, 403):
+                    return {
+                        "status": "invalid_key",
+                        "message": f"Authentication failed ({res.status_code}): {res.text[:200]}",
+                    }
+                else:
+                    return {
+                        "status": "error",
+                        "message": f"fal.ai API returned error {res.status_code}: {res.text[:200]}",
+                    }
         except Exception as exc:
             return {
                 "status": "network_error",
-                "message": f"Could not reach fal.ai API: {exc}",
+                "message": f"Could not reach fal.ai API: {_sanitize_error_message(str(exc))}",
             }
 
         return {"status": "ready", "message": "fal.ai API key verified."}

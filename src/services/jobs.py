@@ -615,7 +615,7 @@ def run_job(job_id: str) -> None:
                     "json",
                     str(music_file),
                 ]
-                probe_res = run_subprocess(probe_cmd)
+                probe_res = run_subprocess(probe_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
                 if probe_res.returncode != 0:
                     raise ValueError(f"ffprobe failed: {probe_res.stderr.strip()[:100]}")
                 data = json.loads(probe_res.stdout)
@@ -639,7 +639,7 @@ def run_job(job_id: str) -> None:
                     "null",
                     "-",
                 ]
-                dec_proc = run_subprocess(dec_cmd)
+                dec_proc = run_subprocess(dec_cmd, timeout=settings.subprocess_default_timeout_seconds)
                 if dec_proc.returncode != 0:
                     raise ValueError(f"ffmpeg decode failed: {dec_proc.stderr.strip()[:100]}")
             except Exception as exc:

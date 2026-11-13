@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 import pickle
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 
 from src.config import settings
 from src.services.animation_wav2lip import RealWav2LipProvider

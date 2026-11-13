@@ -96,6 +96,9 @@ class SlideshowCompositor:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file",
             "-i",
             str(image_path),
             "-vf",
@@ -141,6 +144,9 @@ class SlideshowCompositor:
             cmd = [
                 settings.ffmpeg_bin,
                 "-y",
+                "-nostdin",
+                "-protocol_whitelist",
+                "file",
                 "-i",
                 str(scene_clips[0]),
                 "-c:v",
@@ -153,7 +159,7 @@ class SlideshowCompositor:
             return output_path, 0
 
         # Build filtergraph for N clips
-        cmd = [settings.ffmpeg_bin, "-y"]
+        cmd = [settings.ffmpeg_bin, "-y", "-nostdin", "-protocol_whitelist", "file"]
         for clip in scene_clips:
             cmd.extend(["-i", str(clip)])
 
@@ -269,6 +275,9 @@ class SlideshowCompositor:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file",
             "-i",
             str(video_path),
             "-i",
@@ -389,6 +398,8 @@ class SlideshowCompositor:
             settings.ffprobe_bin,
             "-v",
             "error",
+            "-protocol_whitelist",
+            "file",
             "-show_entries",
             "stream=codec_type,duration:format=duration",
             "-of",

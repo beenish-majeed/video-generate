@@ -5,6 +5,7 @@ import re
 import secrets
 import time
 import uuid
+from pathlib import Path
 from typing import Optional
 
 from src.core.config import settings
@@ -62,6 +63,15 @@ def _get_signing_key() -> bytes:
         return _CACHED_SECRET_KEY
 
     env_sec = (getattr(settings, "session_secret", None) or "").strip()
+    if getattr(settings, "environment", "development").lower() == "production":
+        if not env_sec or env_sec == "insecure_dev_session_secret_change_in_production_min32chars" or len(env_sec) < 32:
+            raise RuntimeError(
+                "CRITICAL SECURITY RISK: Insecure or missing session secret in production environment. "
+                "Configure SESSION_SECRET with a cryptographically secure random string (minimum 32 characters)."
+            )
+        _CACHED_SECRET_KEY = env_sec.encode("utf-8")
+        return _CACHED_SECRET_KEY
+
     if env_sec and env_sec != "insecure_dev_session_secret_change_in_production_min32chars":
         _CACHED_SECRET_KEY = env_sec.encode("utf-8")
         return _CACHED_SECRET_KEY
@@ -89,6 +99,12 @@ def _get_signing_key() -> bytes:
             return _CACHED_SECRET_KEY
         except Exception:
             pass
+
+    if getattr(settings, "environment", "development").lower() == "production":
+        raise RuntimeError(
+            "CRITICAL SECURITY RISK: Insecure or missing session secret in production environment. "
+            "Configure SESSION_SECRET with a cryptographically secure random string (minimum 32 characters)."
+        )
 
     raw = env_sec or getattr(settings, "jwt_secret", "") or "default_secret"
     _CACHED_SECRET_KEY = raw.encode("utf-8")
