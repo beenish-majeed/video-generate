@@ -20,3 +20,6 @@ filelock>=3.12.0
 PyJWT>=2.8.0
 fal-client>=1.0.3
 google-genai>=2.22.0
+psutil>=6.0.0
+PyYAML>=6.0.1
+soundfile>=0.12.1
