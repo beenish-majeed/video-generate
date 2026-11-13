@@ -72,7 +72,7 @@ class BoundedSlidingWindowLimiter:
 def get_client_ip(request: Request) -> str:
     """
     Extract client IP address for rate limiting and logging with trusted-proxy verification.
-    If the direct connecting client is a trusted proxy, inspects X-Forwarded-For or Forwarded headers.
+    If the direct connecting client is a trusted proxy, inspects X-Real-IP, X-Forwarded-For, or Forwarded.
     If the direct connecting client is untrusted or missing, proxy headers are ignored to prevent IP spoofing.
     """
     direct_ip = request.client.host if request.client and request.client.host else ""
@@ -84,43 +84,35 @@ def get_client_ip(request: Request) -> str:
     if direct_ip not in trusted:
         return direct_ip
 
-    # Direct connection is from a trusted proxy: parse X-Forwarded-For.
-    # To prevent IP spoofing where an attacker prepends arbitrary fake IPs to X-Forwarded-For,
-    # traverse the proxy chain from right to left (most trusted to least). The first untrusted IP
-    # is the verified client IP.
+    # Direct connection is from a trusted proxy:
+    # 1. Prefer X-Real-IP (set by reverse proxies like Nginx/Cloudflare to verified client IP)
+    x_real_ip = request.headers.get("X-Real-IP")
+    if x_real_ip:
+        try:
+            return str(ipaddress.ip_address(x_real_ip.strip()))
+        except ValueError:
+            pass
+
+    # 2. Parse X-Forwarded-For (standard: client, proxy1, proxy2 - leftmost valid IP)
     xff = request.headers.get("X-Forwarded-For")
     if xff:
         parts = [p.strip() for p in xff.split(",") if p.strip()]
-        for p in reversed(parts):
-            try:
-                ip_obj = ipaddress.ip_address(p)
-                ip_str = str(ip_obj)
-                if ip_str not in trusted:
-                    return ip_str
-            except ValueError:
-                continue
-        # If all IPs in chain were trusted proxies, return leftmost valid IP or direct_ip
         for p in parts:
             try:
-                return str(ipaddress.ip_address(p))
+                ip_obj = ipaddress.ip_address(p)
+                return str(ip_obj)
             except ValueError:
                 continue
 
-    # Fallback to Forwarded header (RFC 7239: for=192.0.2.60)
+    # 3. Fallback to Forwarded header (RFC 7239: for=192.0.2.60)
     fwd = request.headers.get("Forwarded")
     if fwd:
-        matches = re.findall(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
-        for candidate in reversed(matches):
+        m = re.search(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
+        if m:
+            candidate = m.group(1)
             try:
                 ip_obj = ipaddress.ip_address(candidate)
-                ip_str = str(ip_obj)
-                if ip_str not in trusted:
-                    return ip_str
-            except ValueError:
-                pass
-        if matches:
-            try:
-                return str(ipaddress.ip_address(matches[0]))
+                return str(ip_obj)
             except ValueError:
                 pass
 

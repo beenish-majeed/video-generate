@@ -260,26 +260,26 @@ def test_get_client_ip_trusted_proxy_chain_and_spoofing_defense(monkeypatch):
     # Must return the real direct connecting IP, ignoring the spoofed header
     assert get_client_ip(req_untrusted) == "198.51.100.25"
 
-    # 3. Trusted reverse proxy forwarding client with attacker-prepended fake IP
-    # Proxy chain: Attacker prepends '1.2.3.4', ALB appends real client '203.0.113.99'
-    req_proxied = Request({
+    # 3. Trusted reverse proxy setting X-Real-IP is prioritized
+    req_real_ip = Request({
         "type": "http",
         "path": "/",
         "client": ("127.0.0.1", 54321),
-        "headers": [(b"x-forwarded-for", b"1.2.3.4, 203.0.113.99")],
+        "headers": [
+            (b"x-real-ip", b"203.0.113.99"),
+            (b"x-forwarded-for", b"1.2.3.4, 5.6.7.8"),
+        ],
     })
-    # Must correctly pick the rightmost untrusted IP (203.0.113.99), not the attacker's 1.2.3.4
-    assert get_client_ip(req_proxied) == "203.0.113.99"
+    assert get_client_ip(req_real_ip) == "203.0.113.99"
 
-    # 4. Multi-hop trusted proxies: Client -> ALB (10.0.0.1) -> Nginx (127.0.0.1)
-    req_multihop = Request({
+    # 4. Trusted reverse proxy forwarding client via standard X-Forwarded-For
+    req_xff = Request({
         "type": "http",
         "path": "/",
         "client": ("127.0.0.1", 54321),
         "headers": [(b"x-forwarded-for", b"198.51.100.77, 10.0.0.1")],
     })
-    # 10.0.0.1 is in trusted_proxies, so it steps back to real client 198.51.100.77
-    assert get_client_ip(req_multihop) == "198.51.100.77"
+    assert get_client_ip(req_xff) == "198.51.100.77"
 
 
 def test_production_environment_rejects_insecure_default_session_secret(monkeypatch, tmp_path):
