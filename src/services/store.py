@@ -1,4 +1,5 @@
 import shutil
+from typing import Optional
 import uuid
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
