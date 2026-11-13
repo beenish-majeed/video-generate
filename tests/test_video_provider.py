@@ -101,18 +101,13 @@ def test_fal_video_provider_configuration():
 
 
 def test_fal_video_provider_detects_exhausted_balance():
-    import urllib.error
     prov = FalAIVideoProvider(api_key="fal_sk_testkey12345678901234567890")
 
-    mock_err = urllib.error.HTTPError(
-        url="https://rest.fal.ai",
-        code=403,
-        msg="Forbidden",
-        hdrs={},
-        fp=MagicMock(read=lambda: b'{"detail":"User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing"}')
-    )
+    mock_resp = MagicMock()
+    mock_resp.status_code = 403
+    mock_resp.text = '{"detail":"User is locked. Reason: Exhausted balance. Top up your balance at fal.ai/dashboard/billing"}'
 
-    with patch("urllib.request.urlopen", side_effect=mock_err):
+    with patch("httpx.Client.get", return_value=mock_resp):
         status = prov.check_account_status()
         assert status["status"] == "exhausted_balance"
         assert "Exhausted balance" in status["message"]
