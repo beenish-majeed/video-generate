@@ -18,17 +18,18 @@ The application has successfully undergone an exhaustive, multi-discipline secur
 1. **Zero Production Vulnerabilities**:
    - Python dependencies: `pip-audit -r requirements.txt` reports **0 known vulnerabilities** (resolved 76 known CVEs by updating `Pillow>=13.0.0`).
    - Frontend production dependencies: `npm audit --production` reports **0 vulnerabilities** across all production packages (`react`, `react-dom`, `framer-motion`, `lucide-react`).
+   - Frontend dev dependencies: Pruned unused `@axe-core/playwright`, `axe-core`, and `playwright`, eliminating high-severity Playwright advisories. Local dev server strictly isolated to `127.0.0.1` with `server.fs.strict=true`.
 2. **Comprehensive Automated Verification**:
-   - Backend test suite: **462 passed, 3 skipped, 0 failures** across all unit, integration, and security suites.
+   - Backend test suite: **484 passed, 3 skipped, 0 failures** across all unit, integration, and security suites.
    - Frontend test suite: **137 passed (29 test files), 0 failures** using Vitest.
    - Frontend production build: `npm run build` transforms 1,686 modules without error, emitting optimized production assets (`dist/assets/index-*.js`, 287 kB gzip: 92 kB).
 3. **Production Security Architecture**:
    - Startup enforcement refuses execution in `ENVIRONMENT=production` if `ALLOW_INSECURE_DEV=True`, if `API_KEY` is missing or under 16 characters, or if `SESSION_SECRET` uses default placeholders.
-   - Reverse proxy security defends against spoofed `X-Forwarded-For` and `X-Forwarded-Proto` headers via RFC 1918 / RFC 4193 internal network traversal and trusted proxy whitelisting.
-   - Subprocess executions (`ffmpeg`, `ffprobe`) enforce strict argument separation, `-nostdin`, and `-protocol_whitelist file,concat,lavfi`.
-   - SSRF and DNS rebinding protections intercept all outbound requests via `SafeHTTPTransport` with socket-level IP verification.
+   - Reverse proxy security (`src/utils/proxy.py`) enforces strict explicit trusted proxy validation with IPv4, IPv6, and CIDR range support; untrusted direct connections completely ignore forwarded headers.
+   - Subprocess executions (`ffmpeg`, `ffprobe`) enforce strict argument separation, `-nostdin`, `-protocol_whitelist file,lavfi`, and explicit execution timeouts across all 9 command categories.
+   - SSRF and DNS rebinding protections intercept all outbound requests via `SafeHTTPTransport` with socket-level IP verification across both `FileAIClient` and `FalAIVideoProvider`.
 4. **CI/CD Quality Gates**:
-   - Automated GitHub Actions workflow (`.github/workflows/ci.yml`) runs both backend and frontend suites, enforcing `pip-audit` and `npm audit --production` on every push to `main`, `security/**`, and pull requests.
+   - Automated GitHub Actions workflow (`.github/workflows/ci.yml`) runs both backend and frontend suites, enforcing `pip-audit` and `npm audit --production --audit-level=high` on every push to `main`, `security/**`, and pull requests.
 
 ---
 
@@ -78,10 +79,11 @@ In `src/api/dependencies.py`:
 - Public endpoints (`/health`, `/api/ready`) return minimal diagnostic status without exposing system metrics or configuration.
 
 ### Rate Limiting & Trusted Proxy Handling
-In `src/utils/rate_limiter.py`:
-- Right-to-left parsing of `X-Forwarded-For` walks backwards through verified reverse proxies.
-- Only hops belonging to configured `TRUSTED_PROXIES` or RFC 1918 / RFC 4193 private proxy networks are trusted as intermediate hops.
-- Untrusted direct requests completely ignore `X-Forwarded-For` and `X-Real-IP`, binding rate limits directly to the remote socket IP.
+In `src/utils/proxy.py` and `src/utils/rate_limiter.py`:
+- `src/utils/proxy.py` implements dedicated parsing (`parse_ip_address`), explicit proxy membership checks (`is_ip_in_trusted_proxies`), and right-to-left header parsing (`extract_client_ip`).
+- Supports individual IPv4, IPv6, and CIDR subnets (e.g., `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `::1/128`, `2001:db8::/32`).
+- RFC 1918 / private IPs are NOT automatically trusted unless explicitly declared in `settings.trusted_proxies`.
+- Untrusted direct requests completely ignore `X-Forwarded-For`, `X-Real-IP`, and `Forwarded`, binding client identification and rate limits strictly to the peer remote socket IP.
 - Rate limiter utilizes an in-memory sliding window with automatic garbage collection of expired keys.
 
 ---
@@ -89,21 +91,23 @@ In `src/utils/rate_limiter.py`:
 ## 5. FFmpeg, Media Processing & Subprocess Security
 
 - **Strict Argument Whitelisting**: Subprocesses never invoke shell interpreters (`shell=False` everywhere). Arguments are passed as validated string arrays.
-- **Protocol Whitelisting**: All FFmpeg and FFprobe calls include `-protocol_whitelist file,concat,lavfi` to prevent attackers from referencing network URLs (`http://`, `gopher://`, `rtsp://`) inside concat demuxer playlists or image sequences.
-- **Stdin Isolation**: `-nostdin` is universally prepended to all FFmpeg invocations to prevent subprocesses from hanging or consuming background worker stdin streams.
+- **Protocol Whitelisting**: Universal enforcement of `-protocol_whitelist file,lavfi` (and `concat` where demuxer scripts are required) prevents network protocol traversal (`http://`, `gopher://`, `rtsp://`) inside playlists, filters, or image sequences.
+- **Stdin Isolation**: `-nostdin` is universally prepended to all FFmpeg invocations across all compositors, stores, and QA modules to prevent subprocesses from hanging or consuming background worker stdin streams.
+- **Execution Timeouts**: Explicit subprocess timeouts (e.g. 5s-60s) are enforced on every FFmpeg, FFprobe, and QA probe to prevent zombie processes and resource starvation.
 - **Tempfile Lifecycle Management**: Generated temporary audio slices, crossfade chunks, and concat scripts are managed via Python `tempfile.NamedTemporaryFile` and cleaned up inside strict `try...finally` blocks.
 
 ---
 
 ## 6. SSRF, Outbound Requests & Network Boundary Security
 
-- **SafeHTTPTransport**: In `src/clients/file_ai.py` and outbound HTTP callers, requests are routed through custom transport adapters that intercept DNS resolution.
-- **Socket-Level IP Interception**: Prevents DNS rebinding by resolving the hostname immediately before socket connection and asserting that the target IP does not fall within:
+- **SafeHTTPTransport**: In `src/clients/file_ai.py` and `src/services/video_provider.py`, outbound HTTP callers route requests through `SafeHTTPTransport` adapters that intercept DNS resolution.
+- **Socket-Level IP Interception**: Prevents DNS rebinding and internal network scanning by resolving hostnames prior to connection and asserting that target IPs do not fall within:
   - Loopback (`127.0.0.0/8`, `::1`)
   - RFC 1918 Private Networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`)
   - Cloud Instance Metadata (`169.254.169.254`, `fe80::/10`)
-  - Multicast and Broadcast addresses
-- **Download Payload Validation**: Outbound asset downloads require non-empty responses (`total_bytes > 0`) and enforce maximum content-length ceilings to prevent memory exhaustion (Zip-bomb / decompression bombs).
+  - Carrier-grade NAT (`100.64.0.0/10`) and multicast addresses
+- **Download Payload Validation**: Outbound asset downloads require non-empty responses (`total_bytes > 0`) and enforce maximum content-length ceilings to prevent memory exhaustion (Zip-bomb / decompression bombs). Redirects are strictly disabled (`follow_redirects=False`) or re-validated at each hop.
+- **Sensitive Key Redaction**: URLs and error messages strip API keys and query parameters before logging.
 
 ---
 
