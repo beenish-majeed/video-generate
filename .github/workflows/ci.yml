@@ -31,6 +31,8 @@ jobs:
           pip install pytest-github-actions-annotate-failures
 
       - name: Run Pytest test suite
+        env:
+          API_KEY: "test_key"
         run: |
           python -m pytest tests/ -v --durations=10 --tb=short
 
