@@ -19,4 +19,5 @@ setuptools==84.2.1
 filelock==4.2.4
 PyJWT==2.15.1
 fal-client==1.0.3
+google-genai==2.22.0
 
