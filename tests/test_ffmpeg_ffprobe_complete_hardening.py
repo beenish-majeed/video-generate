@@ -248,3 +248,47 @@ def test_command_capture_lavfi_and_concat_demuxer(tmp_path):
         idx = cmd.index("-protocol_whitelist")
         whitelist_str = cmd[idx + 1]
         assert not any(bad in whitelist_str for bad in ["http", "https", "gopher", "rtsp"])
+
+
+def test_command_capture_store_clip_save_and_metadata_probe(tmp_path):
+    """Verify save_upload for clips hardens both ffmpeg strip and ffprobe metadata probe."""
+    intercepted_cmds = []
+    intercepted_kwargs = []
+
+    def mock_run(cmd, *args, **kwargs):
+        intercepted_cmds.append(cmd)
+        intercepted_kwargs.append(kwargs)
+        if cmd[0] == settings.ffmpeg_bin:
+            Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
+            Path(cmd[-1]).write_bytes(b"\x00" * 32)
+        mock = MagicMock()
+        mock.returncode = 0
+        mock.stdout = '{"streams":[{"codec_type":"video","codec_name":"h264","width":1280,"height":720,"r_frame_rate":"30/1","duration":"2.0"}],"format":{"duration":"2.0"}}'
+        mock.stderr = ""
+        return mock
+
+    dummy_clip = tmp_path / "clip.mp4"
+    dummy_clip.write_bytes(b"\x00" * 128)
+
+    mock_upload = MagicMock()
+    mock_upload.filename = "clip.mp4"
+    mock_upload.file = open(dummy_clip, "rb")
+
+    with patch("src.services.store.validate_upload"), \
+         patch("src.utils.subprocess_runner.run_subprocess", side_effect=mock_run), \
+         patch("src.db.repository.AssetRepository.save"):
+        res = store_mod.save_upload(mock_upload, "clip")
+
+    mock_upload.file.close()
+
+    assert len(intercepted_cmds) == 2
+    ffmpeg_strip = intercepted_cmds[0]
+    ffprobe_probe = intercepted_cmds[1]
+
+    _assert_command_hardened(ffmpeg_strip, allowed_protocols={"file"}, is_ffmpeg=True)
+    _assert_command_hardened(ffprobe_probe, allowed_protocols={"file"}, is_ffmpeg=False)
+
+    # Verify timeout was explicitly passed to ffprobe probe
+    assert "timeout" in intercepted_kwargs[1]
+    assert intercepted_kwargs[1]["timeout"] == settings.subprocess_ffprobe_timeout_seconds
+

@@ -520,13 +520,14 @@ def save_upload(file: UploadFile, kind: str, session_id: Optional[str] = None) -
         probe_cmd = [
             settings.ffprobe_bin,
             "-v", "error",
+            "-protocol_whitelist", "file",
             "-select_streams", "v:0",
             "-show_entries", "stream=codec_name,width,height,r_frame_rate,duration:format=duration",
             "-of", "json",
             str(path),
         ]
         try:
-            pres = run_subprocess(probe_cmd)
+            pres = run_subprocess(probe_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
             pdata = json.loads(pres.stdout)
             vst = pdata.get("streams", [{}])[0]
             ret["codec"] = vst.get("codec_name")
