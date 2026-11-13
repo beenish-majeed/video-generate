@@ -330,3 +330,40 @@ def test_file_ai_client_uses_safe_http_transport():
     assert isinstance(http_client._transport, SafeHTTPTransport)
     client.close()
 
+
+def test_production_environment_rejects_insecure_auth_configurations(monkeypatch):
+    """Verify that production startup strictly rejects insecure development auth flags and keys."""
+    import asyncio
+    from src.main import lifespan, app
+
+    async def _test():
+        # 1. Reject ALLOW_INSECURE_DEV=True in production
+        monkeypatch.setattr(settings, "environment", "production")
+        monkeypatch.setattr(settings, "allow_insecure_dev", True)
+        monkeypatch.setattr(settings, "api_key", "secure_random_key_123456789012")
+        monkeypatch.setattr(settings, "session_secret", "secure_random_session_secret_32chars_long!")
+
+        with pytest.raises(RuntimeError, match="ALLOW_INSECURE_DEV cannot be set to True in a production environment"):
+            async with lifespan(app):
+                pass
+
+        # 2. Reject missing API_KEY in production
+        monkeypatch.setattr(settings, "allow_insecure_dev", False)
+        monkeypatch.setattr(settings, "api_key", "")
+        with pytest.raises(RuntimeError, match="API_KEY is required in production"):
+            async with lifespan(app):
+                pass
+
+        # 3. Reject short/weak API_KEY (< 16 chars) in production
+        monkeypatch.setattr(settings, "api_key", "short_key")
+        with pytest.raises(RuntimeError, match="API_KEY is too short"):
+            async with lifespan(app):
+                pass
+
+        # 4. Valid production credentials start cleanly
+        monkeypatch.setattr(settings, "api_key", "prod_super_secure_key_1234567890")
+        async with lifespan(app):
+            pass
+
+    asyncio.run(_test())
+

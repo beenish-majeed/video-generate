@@ -56,31 +56,54 @@ DISALLOWED_KEY_PLACEHOLDERS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Verify Server API Key Security
+    # 1. Verify Server API Key and Production Security Configuration
     key = (settings.api_key or "").strip()
-    if not settings.allow_insecure_dev:
+    env = getattr(settings, "environment", "development").lower().strip()
+
+    if env == "production":
+        if settings.allow_insecure_dev:
+            raise RuntimeError(
+                "CRITICAL SECURITY RISK: ALLOW_INSECURE_DEV cannot be set to True in a production environment. "
+                "Application refused to start. Set ALLOW_INSECURE_DEV=false and configure secure credentials."
+            )
         if not key:
             raise RuntimeError(
-                "CRITICAL SECURITY RISK: API_KEY is not configured and ALLOW_INSECURE_DEV is False. "
-                "Application refused to start. Set API_KEY or set ALLOW_INSECURE_DEV=true for local dev."
+                "CRITICAL SECURITY RISK: API_KEY is required in production. "
+                "Application refused to start. Set a secure API_KEY environment variable (minimum 16 characters)."
             )
         if key.lower() in DISALLOWED_KEY_PLACEHOLDERS:
             raise RuntimeError(
-                f"CRITICAL SECURITY RISK: API_KEY uses an insecure placeholder ('{key[:4]}...'). "
-                "Application refused to start with insecure credentials. Set a strong random API key."
+                f"CRITICAL SECURITY RISK: API_KEY uses an insecure placeholder ('{key[:4]}...') in production. "
+                "Application refused to start. Set a strong random API key."
             )
         if len(key) < 16:
             raise RuntimeError(
-                f"CRITICAL SECURITY RISK: API_KEY is too short ({len(key)} chars; minimum 16 required). "
-                "Application refused to start. Set a longer API key or set ALLOW_INSECURE_DEV=true for local dev."
+                f"CRITICAL SECURITY RISK: API_KEY is too short ({len(key)} chars; minimum 16 required) for production. "
+                "Application refused to start. Set a longer API key."
             )
-
-        if getattr(settings, "environment", "development").lower() == "production":
-            session_sec = (settings.session_secret or "").strip()
-            if session_sec == "insecure_dev_session_secret_change_in_production_min32chars" or len(session_sec) < 32:
+        session_sec = (settings.session_secret or "").strip()
+        if session_sec == "insecure_dev_session_secret_change_in_production_min32chars" or len(session_sec) < 32:
+            raise RuntimeError(
+                "CRITICAL SECURITY RISK: SESSION_SECRET is not configured or uses insecure default in production. "
+                "Application refused to start. Set a secure SESSION_SECRET environment variable (minimum 32 characters)."
+            )
+    else:
+        # Development / Staging mode checks
+        if not settings.allow_insecure_dev:
+            if not key:
                 raise RuntimeError(
-                    "CRITICAL SECURITY RISK: SESSION_SECRET is not configured or uses insecure default in production. "
-                    "Application refused to start. Set a secure SESSION_SECRET environment variable (minimum 32 characters)."
+                    "CRITICAL SECURITY RISK: API_KEY is not configured and ALLOW_INSECURE_DEV is False. "
+                    "Application refused to start. Set API_KEY or set ALLOW_INSECURE_DEV=true for local dev."
+                )
+            if key.lower() in DISALLOWED_KEY_PLACEHOLDERS:
+                raise RuntimeError(
+                    f"CRITICAL SECURITY RISK: API_KEY uses an insecure placeholder ('{key[:4]}...'). "
+                    "Application refused to start with insecure credentials. Set a strong random API key."
+                )
+            if len(key) < 16:
+                raise RuntimeError(
+                    f"CRITICAL SECURITY RISK: API_KEY is too short ({len(key)} chars; minimum 16 required). "
+                    "Application refused to start. Set a longer API key or set ALLOW_INSECURE_DEV=true for local dev."
                 )
 
     # 2. Initialize SQLite Database Schema
