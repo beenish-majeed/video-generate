@@ -75,6 +75,14 @@ async def lifespan(app: FastAPI):
                 "Application refused to start. Set a longer API key or set ALLOW_INSECURE_DEV=true for local dev."
             )
 
+        if getattr(settings, "environment", "development").lower() == "production":
+            session_sec = (settings.session_secret or "").strip()
+            if session_sec == "insecure_dev_session_secret_change_in_production_min32chars" or len(session_sec) < 32:
+                raise RuntimeError(
+                    "CRITICAL SECURITY RISK: SESSION_SECRET is not configured or uses insecure default in production. "
+                    "Application refused to start. Set a secure SESSION_SECRET environment variable (minimum 32 characters)."
+                )
+
     # 2. Initialize SQLite Database Schema
     try:
         init_database()
