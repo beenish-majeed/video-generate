@@ -24,3 +24,10 @@ frontend/screenshots/
 node_modules/
 dist/
 *.local
+
+# Scratch, one-off scripts, and generated audit reports
+frontend/scratch/
+frontend/scripts/
+*_REPORT.md
+*_AUDIT.md
+*audit_results*.json
