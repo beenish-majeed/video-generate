@@ -14,7 +14,10 @@ def is_request_https(request: Request) -> bool:
     if request.url.scheme == "https":
         return True
 
-    direct_ip = request.client.host if request.client and request.client.host else "127.0.0.1"
+    direct_ip = request.client.host if request.client and request.client.host else ""
+    if not direct_ip:
+        return False
+
     trusted = getattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "testclient"])
     if direct_ip not in trusted:
         return False

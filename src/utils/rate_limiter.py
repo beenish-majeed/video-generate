@@ -73,35 +73,54 @@ def get_client_ip(request: Request) -> str:
     """
     Extract client IP address for rate limiting and logging with trusted-proxy verification.
     If the direct connecting client is a trusted proxy, inspects X-Forwarded-For or Forwarded headers.
-    If the direct connecting client is untrusted, X-Forwarded-For is ignored to prevent IP spoofing.
+    If the direct connecting client is untrusted or missing, proxy headers are ignored to prevent IP spoofing.
     """
-    direct_ip = request.client.host if request.client and request.client.host else "127.0.0.1"
+    direct_ip = request.client.host if request.client and request.client.host else ""
+    if not direct_ip:
+        return "unknown"
 
     trusted = getattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "testclient"])
     # If direct connection is not from a trusted proxy, do not trust proxy headers
     if direct_ip not in trusted:
         return direct_ip
 
-    # Direct connection is from a trusted proxy: parse X-Forwarded-For (leftmost client IP)
+    # Direct connection is from a trusted proxy: parse X-Forwarded-For.
+    # To prevent IP spoofing where an attacker prepends arbitrary fake IPs to X-Forwarded-For,
+    # traverse the proxy chain from right to left (most trusted to least). The first untrusted IP
+    # is the verified client IP.
     xff = request.headers.get("X-Forwarded-For")
     if xff:
         parts = [p.strip() for p in xff.split(",") if p.strip()]
-        for p in parts:
+        for p in reversed(parts):
             try:
                 ip_obj = ipaddress.ip_address(p)
-                return str(ip_obj)
+                ip_str = str(ip_obj)
+                if ip_str not in trusted:
+                    return ip_str
+            except ValueError:
+                continue
+        # If all IPs in chain were trusted proxies, return leftmost valid IP or direct_ip
+        for p in parts:
+            try:
+                return str(ipaddress.ip_address(p))
             except ValueError:
                 continue
 
     # Fallback to Forwarded header (RFC 7239: for=192.0.2.60)
     fwd = request.headers.get("Forwarded")
     if fwd:
-        m = re.search(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
-        if m:
-            candidate = m.group(1)
+        matches = re.findall(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
+        for candidate in reversed(matches):
             try:
                 ip_obj = ipaddress.ip_address(candidate)
-                return str(ip_obj)
+                ip_str = str(ip_obj)
+                if ip_str not in trusted:
+                    return ip_str
+            except ValueError:
+                pass
+        if matches:
+            try:
+                return str(ipaddress.ip_address(matches[0]))
             except ValueError:
                 pass
 
