@@ -286,27 +286,29 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                   <Sparkles size={18} style={{ color: 'var(--accent)' }} />
                   <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
                     {videoProviderStatus?.status === 'ready'
-                      ? 'Animation Style: Genuine AI Video Generation (Active)'
+                      ? 'Animation Style: Cloud AI Video Generation (Active)'
                       : videoProviderStatus?.status === 'exhausted_balance'
                       ? 'AI Video Engine: Provider Balance Exhausted'
                       : wav2lipAvailable
                       ? 'Animation Style: Neural Lip-Sync Animation'
-                      : 'Animation Style: Cinematic Camera Motion'}
+                      : 'Animation Style: Local Camera Motion (Ken Burns)'}
                   </span>
                 </div>
                 {facesDetected !== null && (
                   <span style={{ fontSize: '12px', color: 'var(--accent)', fontWeight: 600 }}>
                     {facesDetected > 0
-                      ? `✓ ${facesDetected} subject face${facesDetected > 1 ? 's' : ''} detected for identity-preserved animation`
-                      : 'ℹ Image subject reference loaded'}
+                      ? `✓ ${facesDetected} subject face${facesDetected > 1 ? 's' : ''} detected`
+                      : 'ℹ Image reference loaded (no clear frontal face detected)'}
                   </span>
                 )}
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>
                   {videoProviderStatus?.status === 'ready'
-                    ? `Powered by ${videoProviderStatus.provider_name} (${videoProviderStatus.model}). The subject in your photo will be animated with authentic movement, expressions, and coherent scene dynamics while preserving their exact visual appearance.`
+                    ? `Using ${videoProviderStatus.provider_name} (${videoProviderStatus.model}) for image-to-video generation.`
                     : videoProviderStatus?.status === 'exhausted_balance'
-                    ? 'Provider account balance is exhausted. Top up your balance at fal.ai/dashboard/billing or configure GEMINI_API_KEY (for Google Veo 2/3) to enable genuine neural AI videos, or continue with offline Cinematic Camera Motion.'
-                    : 'To enable genuine neural AI video generation (Veo 2/3 or Minimax/Kling), configure GEMINI_API_KEY or FAL_KEY in your .env file. Currently running in offline Cinematic Camera Motion mode.'}
+                    ? 'Cloud video provider balance is exhausted. Local offline camera motion will be used instead.'
+                    : wav2lipAvailable && (facesDetected === null || facesDetected > 0)
+                    ? 'Running offline with local Wav2Lip lip-sync animation when a frontal face is detected.'
+                    : 'Running offline with local FFmpeg Ken Burns camera motion over your uploaded photo.'}
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button
@@ -322,8 +324,10 @@ export const PhotoStep: React.FC<PhotoStepProps> = ({
                     {videoProviderStatus?.status === 'ready'
                       ? `${videoProviderStatus.provider_name} (Active)`
                       : videoProviderStatus?.status === 'exhausted_balance'
-                      ? 'Top Up Balance or Add Veo Key'
-                      : 'Cinematic Motion (Active)'}
+                      ? 'Offline Camera Motion Fallback'
+                      : wav2lipAvailable && (facesDetected === null || facesDetected > 0)
+                      ? 'Wav2Lip Lip-Sync (Local)'
+                      : 'Local Camera Motion (Active)'}
                   </button>
                 </div>
               </div>
