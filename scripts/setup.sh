@@ -79,7 +79,21 @@ fi
 echo -e "\n${YELLOW}[...] Verifying local offline models...${NC}"
 "$VENV_PYTHON" scripts/download_models.py
 
-# 6. Check Ollama & Print Instructions
+# 6. Check Node.js and npm for Frontend (requires Node 20+)
+echo -e "\n${YELLOW}[...] Checking Node.js and npm for frontend...${NC}"
+if command -v node &>/dev/null; then
+    NODE_VER=$(node --version 2>&1)
+    NODE_MAJOR=$(echo "$NODE_VER" | sed -E 's/^v([0-9]+).*/\1/')
+    if [ "${NODE_MAJOR:-0}" -ge 20 ] 2>/dev/null; then
+        echo -e "${GREEN}[OK] Node.js found: ${NODE_VER} ($(command -v node))${NC}"
+    else
+        echo -e "${RED}[Warning] Node.js ${NODE_VER} is too old (frontend requires Node.js 20+, recommended 22 LTS).${NC}"
+    fi
+else
+    echo -e "${RED}[Warning] node not found in PATH. Frontend requires Node.js 20+ (recommended 22 LTS).${NC}"
+fi
+
+# 7. Check Ollama & Print Instructions
 echo -e "\n${CYAN}============================================================${NC}"
 echo -e "${CYAN} Ollama Local LLM Engine Status${NC}"
 echo -e "${CYAN}============================================================${NC}"
@@ -100,6 +114,6 @@ echo -e "    back to the built-in rule-based template script writer."
 
 echo -e "\n${CYAN}============================================================${NC}"
 echo -e "${GREEN} Setup complete! Ready to start:${NC}"
-echo -e "   Backend:  source .venv/bin/activate && uvicorn src.main:app --port 8000"
-echo -e "   Frontend: cd frontend && npm run dev"
+echo -e "   Backend:  source .venv/bin/activate && uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1"
+echo -e "   Frontend: cd frontend && npm ci && npm run dev"
 echo -e "${CYAN}============================================================${NC}\n"

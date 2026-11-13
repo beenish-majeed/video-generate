@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -11,7 +12,9 @@ try {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiKey = env.API_KEY || env.VITE_API_KEY || 'dev_key_123';
+  const rootEnv = loadEnv(mode, path.resolve(process.cwd(), '..'), '');
+  const apiKey =
+    env.API_KEY || env.VITE_API_KEY || rootEnv.API_KEY || 'dev_secret_key_123456789';
   const targetHost = env.BACKEND_URL || 'http://127.0.0.1:8000';
   const isHostFlagPassed = process.argv.some(
     (arg) => arg === '--host' || arg.startsWith('--host=')

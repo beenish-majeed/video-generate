@@ -74,7 +74,27 @@ if ($ffprobeCmd) {
 Write-Host "`n[...] Verifying local offline models..." -ForegroundColor Yellow
 & $venvPython scripts/download_models.py
 
-# 6. Check Ollama & Print Instructions
+# 6. Check Node.js and npm for Frontend (requires Node 20+)
+Write-Host "`n[...] Checking Node.js and npm for frontend..." -ForegroundColor Yellow
+$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+if ($nodeCmd) {
+    $nodeVer = (& $nodeCmd.Source --version 2>&1).Trim()
+    $nodeMajor = 0
+    if ($nodeVer -match '^v(\d+)') {
+        $nodeMajor = [int]$Matches[1]
+    }
+    if ($nodeMajor -ge 20) {
+        Write-Host "[OK] Node.js found: $nodeVer ($($nodeCmd.Source))" -ForegroundColor Green
+    } else {
+        Write-Host "[Warning] Node.js $nodeVer is too old (frontend requires Node.js 20+, recommended 22 LTS)." -ForegroundColor Red
+        Write-Host "          Upgrade via: winget install --id OpenJS.NodeJS.LTS -e" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[Warning] node not found in PATH. Frontend requires Node.js 20+ (recommended 22 LTS)." -ForegroundColor Red
+    Write-Host "          Install via: winget install --id OpenJS.NodeJS.LTS -e" -ForegroundColor Yellow
+}
+
+# 7. Check Ollama & Print Instructions
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host " Ollama Local LLM Engine Status" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
@@ -108,6 +128,6 @@ Write-Host "    back to the built-in rule-based template script writer." -Foregr
 
 Write-Host "`n============================================================" -ForegroundColor Cyan
 Write-Host " Setup complete! Ready to start:" -ForegroundColor Green
-Write-Host "   Backend:  .venv\Scripts\uvicorn src.main:app --port 8000" -ForegroundColor White
-Write-Host "   Frontend: cd frontend; npm run dev" -ForegroundColor White
+Write-Host "   Backend:  .venv\Scripts\uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1" -ForegroundColor White
+Write-Host "   Frontend: Set-Location frontend; npm ci; npm run dev" -ForegroundColor White
 Write-Host "============================================================`n" -ForegroundColor Cyan
