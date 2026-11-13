@@ -10,9 +10,15 @@ logger = logging.getLogger(__name__)
 
 
 def is_request_https(request: Request) -> bool:
-    """Determine if the request arrived over HTTPS (direct or behind reverse proxies)."""
+    """Determine if the request arrived over HTTPS (direct or behind trusted reverse proxies)."""
     if request.url.scheme == "https":
         return True
+
+    direct_ip = request.client.host if request.client and request.client.host else "127.0.0.1"
+    trusted = getattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "testclient"])
+    if direct_ip not in trusted:
+        return False
+
     if request.headers.get("x-forwarded-proto", "").lower() == "https":
         return True
     if request.headers.get("x-forwarded-ssl", "").lower() in ("on", "1"):
