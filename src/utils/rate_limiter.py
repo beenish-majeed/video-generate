@@ -69,95 +69,11 @@ class BoundedSlidingWindowLimiter:
             self._history.clear()
 
 
-_INTERNAL_PROXY_NETWORKS = [
-    ipaddress.ip_network("10.0.0.0/8"),
-    ipaddress.ip_network("172.16.0.0/12"),
-    ipaddress.ip_network("192.168.0.0/16"),
-    ipaddress.ip_network("127.0.0.0/8"),
-    ipaddress.ip_network("169.254.0.0/16"),
-    ipaddress.ip_network("::1/128"),
-    ipaddress.ip_network("fc00::/7"),
-    ipaddress.ip_network("fe80::/10"),
-]
-
-
-def _is_proxy_or_internal_network(
-    ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address,
-    trusted_list: list[str],
-) -> bool:
-    """Check if an IP is in the configured trusted_proxies list or is an RFC 1918 / loopback internal hop."""
-    ip_str = str(ip_obj)
-    if ip_str in trusted_list:
-        return True
-    return any(ip_obj in net for net in _INTERNAL_PROXY_NETWORKS)
-
-
-def get_client_ip(request: Request) -> str:
-    """
-    Extract client IP address for rate limiting and logging with trusted-proxy verification.
-    If the direct connecting client is a trusted proxy, inspects X-Forwarded-For, X-Real-IP, or Forwarded.
-    If the direct connecting client is untrusted or missing, proxy headers are ignored to prevent IP spoofing.
-
-    Uses a secure right-to-left traversal over X-Forwarded-For: stepping backwards past trusted and
-    internal proxy hops to find the first untrusted external client IP, completely preventing attackers
-    from prepending arbitrary fake IPs to evade rate limits.
-    """
-    direct_ip = request.client.host if request.client and request.client.host else ""
-    if not direct_ip:
-        return "unknown"
-
-    trusted = getattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "testclient"])
-    # If direct connection is not from a trusted proxy, do not trust proxy headers
-    if direct_ip not in trusted:
-        return direct_ip
-
-    # Direct connection is from a trusted proxy:
-    # 1. Parse X-Forwarded-For (standard: client, proxy1, proxy2) using right-to-left traversal
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        parts = [p.strip() for p in xff.split(",") if p.strip()]
-        for p in reversed(parts):
-            try:
-                ip_obj = ipaddress.ip_address(p)
-                if _is_proxy_or_internal_network(ip_obj, trusted):
-                    continue
-                return str(ip_obj)
-            except ValueError:
-                continue
-        # If all IPs in chain were trusted/internal proxies, fallback to leftmost valid IP
-        for p in parts:
-            try:
-                return str(ipaddress.ip_address(p))
-            except ValueError:
-                continue
-
-    # 2. Check X-Real-IP (only trusted when direct connection is from trusted proxy and no XFF chain)
-    x_real_ip = request.headers.get("X-Real-IP")
-    if x_real_ip:
-        try:
-            return str(ipaddress.ip_address(x_real_ip.strip()))
-        except ValueError:
-            pass
-
-    # 3. Fallback to Forwarded header (RFC 7239: for=192.0.2.60)
-    fwd = request.headers.get("Forwarded")
-    if fwd:
-        matches = re.findall(r'for=(?:"?\[?)([a-zA-Z0-9\.\:]+)(?:\]?"?)', fwd)
-        for candidate in reversed(matches):
-            try:
-                ip_obj = ipaddress.ip_address(candidate)
-                if _is_proxy_or_internal_network(ip_obj, trusted):
-                    continue
-                return str(ip_obj)
-            except ValueError:
-                pass
-        if matches:
-            try:
-                return str(ipaddress.ip_address(matches[0]))
-            except ValueError:
-                pass
-
-    return direct_ip
+from src.utils.proxy import (
+    parse_ip_address,
+    is_ip_in_trusted_proxies,
+    extract_client_ip as get_client_ip,
+)
 
 
 # Global bounded rate limiters
