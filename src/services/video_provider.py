@@ -50,6 +50,8 @@ class VideoResult:
 class BaseVideoProvider(ABC):
     """Abstract base class for video generation providers."""
     name: str = "base"
+    model: str = "default"
+    is_configured: bool = False
 
     @abstractmethod
     def generate_image_to_video(
@@ -545,6 +547,8 @@ class KenBurnsVideoProvider(BaseVideoProvider):
     Available as an offline, zero-quota alternative.
     """
     name = "ken_burns"
+    model = "ken_burns_zoompan"
+    is_configured = False
 
     def check_account_status(self) -> Dict[str, Any]:
         return {"status": "ready", "message": "Offline procedural camera motion available locally."}
@@ -647,10 +651,10 @@ def get_video_provider(
     2. fal.ai (if configured and requested or auto)
     3. Ken Burns procedural motion (if requested or in offline mock sandbox)
     """
-    if prefer_slideshow or provider_name in ("slideshow", "ken_burns"):
-        return KenBurnsVideoProvider()
+    req_prov = (provider_name or getattr(settings, "video_provider", "slideshow") or "slideshow").lower()
 
-    req_prov = (provider_name or getattr(settings, "video_provider", "auto") or "auto").lower()
+    if prefer_slideshow or req_prov in ("slideshow", "ken_burns"):
+        return KenBurnsVideoProvider()
 
     if req_prov == "google_veo":
         return GoogleVeoVideoProvider(model=model)

@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     # Model Paths & Provider Selection (Backward Compatibility & Integration)
     gemini_api_key: Optional[str] = None
     google_api_key: Optional[str] = None
-    video_provider: str = "auto"
+    video_provider: str = "slideshow"
     wav2lip_ckpt_path: str = "src/models/wav2lip/wav2lip.pth"
     piper_model_path: str = "src/models/piper/en_US-lessac-medium.onnx"
     piper_config_path: str = "src/models/piper/en_US-lessac-medium.onnx.json"

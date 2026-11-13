@@ -1009,7 +1009,7 @@ def run_job(job_id: str) -> None:
 
             bg_music_vol = job.request.music_volume if job.request.music_volume is not None else 0.2
 
-            if not prefer_slideshow and acc_status.get("status") == "ready":
+            if not prefer_slideshow and getattr(vid_provider, "is_configured", False) and acc_status.get("status") == "ready":
                 # Genuine Neural AI Video Generation
                 logger.info(f"Generating genuine AI video scenes via {vid_provider.name} ({vid_provider.model})...")
                 scene_video_paths = []
@@ -1043,7 +1043,7 @@ def run_job(job_id: str) -> None:
                 )
                 job.visual_mode_used = "text_to_video"
                 job.visual_mode_reason = f"Authentic AI video clips synthesized via {vid_provider.name} ({vid_provider.model})."
-            elif not prefer_slideshow and acc_status.get("status") == "exhausted_balance" and not getattr(settings, "file_ai_mock_fallback", True):
+            elif not prefer_slideshow and getattr(vid_provider, "is_configured", False) and acc_status.get("status") == "exhausted_balance" and not getattr(settings, "file_ai_mock_fallback", True):
                 raise VideoProviderError(
                     f"{vid_provider.name} Video Generation blocked: {acc_status['message']}. "
                     "Please top up your balance or configure GEMINI_API_KEY (for Google Veo) to generate genuine AI videos."
@@ -1186,7 +1186,7 @@ def run_job(job_id: str) -> None:
 
             from src.services.video_provider import get_video_provider, VideoProviderError
             vid_provider = get_video_provider(prefer_slideshow=prefer_slideshow)
-            if not prefer_slideshow and vid_provider.is_configured:
+            if not prefer_slideshow and getattr(vid_provider, "is_configured", False):
                 # Genuine AI Video Generation (preserving subject identity & appearance)
                 acc_status = vid_provider.check_account_status()
                 if acc_status["status"] == "ready":

@@ -69,6 +69,30 @@ def is_wav2lip_available() -> bool:
 def get_video_provider_capabilities() -> Dict[str, Any]:
     """Inspect and report AI video provider availability and account status."""
     try:
+        req_prov = (getattr(settings, "video_provider", "slideshow") or "slideshow").lower()
+        if req_prov in ("slideshow", "ken_burns"):
+            return {
+                "configured": False,
+                "provider_name": "slideshow",
+                "model": "ken_burns_zoompan",
+                "status": "unconfigured",
+                "message": "Cloud video providers are disabled (VIDEO_PROVIDER=slideshow).",
+                "providers": {
+                    "google_veo": {
+                        "configured": False,
+                        "model": "veo-2.0-generate-001",
+                        "status": "unconfigured",
+                        "message": "Disabled while VIDEO_PROVIDER=slideshow.",
+                    },
+                    "fal_ai": {
+                        "configured": False,
+                        "model": "fal-ai/minimax/video-01/image-to-video",
+                        "status": "unconfigured",
+                        "message": "Disabled while VIDEO_PROVIDER=slideshow.",
+                    },
+                },
+            }
+
         from src.services.video_provider import GoogleVeoVideoProvider, FalAIVideoProvider
         
         veo = GoogleVeoVideoProvider()

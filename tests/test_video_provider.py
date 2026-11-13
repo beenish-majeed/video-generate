@@ -209,3 +209,13 @@ def test_get_video_provider_factory():
     # Google Veo request
     p2 = get_video_provider(provider_name="google_veo")
     assert isinstance(p2, GoogleVeoVideoProvider)
+
+
+def test_default_video_provider_is_slideshow_offline():
+    from src.core.config import settings
+
+    assert settings.video_provider == "slideshow"
+    provider = get_video_provider()
+    assert isinstance(provider, KenBurnsVideoProvider)
+    assert provider.is_configured is False
+
