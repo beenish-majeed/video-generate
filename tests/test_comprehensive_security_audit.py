@@ -124,6 +124,42 @@ def test_slideshow_compositor_protocol_whitelist_enforced(tmp_path):
         assert "-nostdin" in render_cmd
 
 
+def test_ffmpeg_utility_commands_enforce_nostdin_and_whitelisting(tmp_path):
+    """Verify that ffmpeg utilities enforce -nostdin and protocol whitelisting."""
+    intercepted_cmds = []
+
+    def mock_subprocess(cmd, *args, **kwargs):
+        intercepted_cmds.append(cmd)
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = '{"streams":[{"codec_type":"audio"}],"format":{"duration":"5.0"}}'
+        mock_proc.stderr = ""
+        return mock_proc
+
+    from src.utils.ffmpeg import concat_videos, create_placeholder_video
+
+    dummy_clip1 = tmp_path / "c1.mp4"
+    dummy_clip1.write_bytes(b"\x00" * 100)
+    dummy_clip2 = tmp_path / "c2.mp4"
+    dummy_clip2.write_bytes(b"\x00" * 100)
+    concat_out = tmp_path / "concat.mp4"
+
+    with patch("src.utils.subprocess_runner.subprocess.Popen") as mock_popen:
+        mock_p = MagicMock()
+        mock_p.communicate.return_value = ("", "")
+        mock_p.poll.return_value = 0
+        mock_popen.return_value = mock_p
+
+        concat_videos([str(dummy_clip1), str(dummy_clip2)], concat_out)
+
+        assert mock_popen.called
+        call_cmd = mock_popen.call_args[0][0]
+        assert "-nostdin" in call_cmd
+        assert "-protocol_whitelist" in call_cmd
+        assert "file,concat" in call_cmd[call_cmd.index("-protocol_whitelist") + 1]
+
+
+
 def test_anonymous_session_signature_tamper_proofing():
     """Verify cryptographically signed session tokens reject tampering, expiry, and clock skew."""
     token, sid = generate_session_token()
@@ -173,3 +209,98 @@ def test_path_traversal_rejection_across_storage_and_jobs(tmp_path):
         # job_dir must raise ValueError
         with pytest.raises(ValueError):
             job_dir(payload)
+
+
+def test_is_request_https_rejects_missing_client_host():
+    """Verify missing client information cannot cause untrusted forwarded headers to be trusted."""
+    scope_no_client = {
+        "type": "http",
+        "scheme": "http",
+        "path": "/",
+        "client": None,
+        "headers": [
+            (b"host", b"example.com"),
+            (b"x-forwarded-proto", b"https"),
+        ],
+    }
+    req_no_client = Request(scope_no_client)
+    assert is_request_https(req_no_client) is False
+
+    scope_empty_host = {
+        "type": "http",
+        "scheme": "http",
+        "path": "/",
+        "client": ("", 0),
+        "headers": [
+            (b"host", b"example.com"),
+            (b"x-forwarded-proto", b"https"),
+        ],
+    }
+    req_empty_host = Request(scope_empty_host)
+    assert is_request_https(req_empty_host) is False
+
+
+def test_get_client_ip_trusted_proxy_chain_and_spoofing_defense(monkeypatch):
+    """Verify get_client_ip traverses proxy chain safely and blocks IP spoofing."""
+    from src.utils.rate_limiter import get_client_ip
+
+    monkeypatch.setattr(settings, "trusted_proxies", ["127.0.0.1", "::1", "10.0.0.1", "testclient"])
+
+    # 1. Missing client information returns 'unknown'
+    req_none = Request({"type": "http", "path": "/", "client": None, "headers": []})
+    assert get_client_ip(req_none) == "unknown"
+
+    # 2. Untrusted direct client attempting X-Forwarded-For spoofing
+    req_untrusted = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("198.51.100.25", 54321),
+        "headers": [(b"x-forwarded-for", b"203.0.113.50, 1.1.1.1")],
+    })
+    # Must return the real direct connecting IP, ignoring the spoofed header
+    assert get_client_ip(req_untrusted) == "198.51.100.25"
+
+    # 3. Trusted reverse proxy forwarding client with attacker-prepended fake IP
+    # Proxy chain: Attacker prepends '1.2.3.4', ALB appends real client '203.0.113.99'
+    req_proxied = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("127.0.0.1", 54321),
+        "headers": [(b"x-forwarded-for", b"1.2.3.4, 203.0.113.99")],
+    })
+    # Must correctly pick the rightmost untrusted IP (203.0.113.99), not the attacker's 1.2.3.4
+    assert get_client_ip(req_proxied) == "203.0.113.99"
+
+    # 4. Multi-hop trusted proxies: Client -> ALB (10.0.0.1) -> Nginx (127.0.0.1)
+    req_multihop = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("127.0.0.1", 54321),
+        "headers": [(b"x-forwarded-for", b"198.51.100.77, 10.0.0.1")],
+    })
+    # 10.0.0.1 is in trusted_proxies, so it steps back to real client 198.51.100.77
+    assert get_client_ip(req_multihop) == "198.51.100.77"
+
+
+def test_production_environment_rejects_insecure_default_session_secret(monkeypatch, tmp_path):
+    """Verify that in production environment, default placeholder session secret triggers RuntimeError."""
+    import src.core.session as session_mod
+
+    monkeypatch.setattr(session_mod, "_CACHED_SECRET_KEY", None)
+    monkeypatch.setattr(settings, "environment", "production")
+    monkeypatch.setattr(settings, "session_secret", "insecure_dev_session_secret_change_in_production_min32chars")
+    monkeypatch.setattr(settings, "storage_dir", tmp_path / "nonexistent")
+
+    with pytest.raises(RuntimeError, match="CRITICAL SECURITY RISK: Insecure or missing session secret"):
+        session_mod._get_signing_key()
+
+
+def test_file_ai_client_uses_safe_http_transport():
+    """Verify that FileAIClient uses SafeHTTPTransport for SSRF and DNS rebinding protection."""
+    from src.clients.file_ai import FileAIClient, SafeHTTPTransport
+
+    client = FileAIClient()
+    http_client = client._get_client()
+    assert isinstance(http_client._transport, SafeHTTPTransport)
+    client.close()
+
