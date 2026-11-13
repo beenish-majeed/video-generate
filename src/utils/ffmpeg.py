@@ -311,6 +311,7 @@ def create_placeholder_video(
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
             "-f",
             "lavfi",
             "-i",
@@ -356,8 +357,9 @@ def concat_videos(paths: list[str], output_path: str | Path) -> None:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
             "-protocol_whitelist",
-            "file",
+            "file,concat",
             "-f",
             "concat",
             "-safe",
@@ -610,6 +612,9 @@ def loop_audio_to_duration(
     cmd = [
         settings.ffmpeg_bin,
         "-y",
+        "-nostdin",
+        "-protocol_whitelist",
+        "file",
         *inputs,
         "-filter_complex",
         full_filter,
@@ -625,6 +630,9 @@ def loop_audio_to_duration(
     cmd_fallback = [
         settings.ffmpeg_bin,
         "-y",
+        "-nostdin",
+        "-protocol_whitelist",
+        "file",
         "-stream_loop",
         "-1",
         "-i",
@@ -727,6 +735,9 @@ def mix_background_music(
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file",
             "-i",
             str(speech_path),
             "-i",

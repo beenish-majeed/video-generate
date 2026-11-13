@@ -218,6 +218,7 @@ class FileAIClient:
                 base_url=self.config.api_base_url,
                 headers=self.config.get_headers(),
                 timeout=self.config.timeout_seconds,
+                transport=SafeHTTPTransport(),
             )
         return self._http_client
 
@@ -315,6 +316,9 @@ class FileAIClient:
                                         f"Download stream exceeded maximum permitted limit ({max_download_size_bytes} bytes)"
                                     )
                                 f_out.write(chunk)
+
+                        if total_bytes == 0:
+                            raise FileAIError(f"Downloaded asset from {url} is empty (0 bytes)")
 
                         tmp_download_path.replace(target_path)
                         return target_path
@@ -822,6 +826,9 @@ class FileAIClient:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
+            "-nostdin",
+            "-protocol_whitelist",
+            "file",
             "-i", str(temp_video),
             "-i", str(audio_path),
             "-c:v", "copy",
@@ -963,6 +970,8 @@ class FileAIClient:
                 settings.ffmpeg_bin,
                 "-y",
                 "-nostdin",
+                "-protocol_whitelist",
+                "file",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",
@@ -982,6 +991,8 @@ class FileAIClient:
                 settings.ffmpeg_bin,
                 "-y",
                 "-nostdin",
+                "-protocol_whitelist",
+                "file",
                 "-loop", "1",
                 "-framerate", "30",
                 "-t", f"{dur:.3f}",
