@@ -260,26 +260,52 @@ def test_get_client_ip_trusted_proxy_chain_and_spoofing_defense(monkeypatch):
     # Must return the real direct connecting IP, ignoring the spoofed header
     assert get_client_ip(req_untrusted) == "198.51.100.25"
 
-    # 3. Trusted reverse proxy setting X-Real-IP is prioritized
-    req_real_ip = Request({
+    # 3. Untrusted direct client attempting X-Real-IP spoofing
+    req_untrusted_real = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("198.51.100.25", 54321),
+        "headers": [(b"x-real-ip", b"8.8.8.8")],
+    })
+    assert get_client_ip(req_untrusted_real) == "198.51.100.25"
+
+    # 4. Attacker prepends fake IP to X-Forwarded-For behind trusted proxy:
+    # Proxy chain: Attacker '203.0.113.99' prepends '1.2.3.4', ALB appends '203.0.113.99'
+    req_spoof_prepended = Request({
         "type": "http",
         "path": "/",
         "client": ("127.0.0.1", 54321),
-        "headers": [
-            (b"x-real-ip", b"203.0.113.99"),
-            (b"x-forwarded-for", b"1.2.3.4, 5.6.7.8"),
-        ],
+        "headers": [(b"x-forwarded-for", b"1.2.3.4, 203.0.113.99")],
     })
-    assert get_client_ip(req_real_ip) == "203.0.113.99"
+    # Right-to-left traversal safely stops at the first untrusted IP (203.0.113.99)
+    assert get_client_ip(req_spoof_prepended) == "203.0.113.99"
 
-    # 4. Trusted reverse proxy forwarding client via standard X-Forwarded-For
-    req_xff = Request({
+    # 5. Multi-hop trusted proxies with internal network hop (10.0.0.1)
+    req_multihop = Request({
         "type": "http",
         "path": "/",
         "client": ("127.0.0.1", 54321),
         "headers": [(b"x-forwarded-for", b"198.51.100.77, 10.0.0.1")],
     })
-    assert get_client_ip(req_xff) == "198.51.100.77"
+    assert get_client_ip(req_multihop) == "198.51.100.77"
+
+    # 6. IPv6 proxy chain: IPv6 client through IPv6 loopback proxy
+    req_ipv6 = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("::1", 54321),
+        "headers": [(b"x-forwarded-for", b"2001:db8::1, ::1")],
+    })
+    assert get_client_ip(req_ipv6) == "2001:db8::1"
+
+    # 7. Malformed forwarding headers fall back to direct proxy IP
+    req_malformed = Request({
+        "type": "http",
+        "path": "/",
+        "client": ("127.0.0.1", 54321),
+        "headers": [(b"x-forwarded-for", b"invalid_ip, <script>alert(1)</script>")],
+    })
+    assert get_client_ip(req_malformed) == "127.0.0.1"
 
 
 def test_production_environment_rejects_insecure_default_session_secret(monkeypatch, tmp_path):
