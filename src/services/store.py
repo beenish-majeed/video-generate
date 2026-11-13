@@ -83,7 +83,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
             "-of", "json",
             str(tmp_path),
         ]
-        probe_res = run_subprocess(probe_cmd)
+        probe_res = run_subprocess(probe_cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
         if probe_res.returncode == 0:
             data = json.loads(probe_res.stdout)
             streams = data.get("streams", [])
@@ -99,7 +99,7 @@ def _verify_audio_and_get_duration(file: UploadFile, ext: str) -> float:
                     "-f", "null",
                     "-",
                 ]
-                decode_res = run_subprocess(decode_cmd)
+                decode_res = run_subprocess(decode_cmd, timeout=settings.subprocess_default_timeout_seconds)
                 if decode_res.returncode == 0:
                     dur = float(dur_str)
                     if dur > 0:
@@ -388,6 +388,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
             d1_cmd = [
                 settings.ffmpeg_bin,
                 "-v", "error",
+                "-nostdin",
                 "-protocol_whitelist", "file",
                 "-ss", "0",
                 "-t", "1",
@@ -404,6 +405,7 @@ def validate_upload(file: UploadFile, kind: str) -> None:
                 d2_cmd = [
                     settings.ffmpeg_bin,
                     "-v", "error",
+                    "-nostdin",
                     "-protocol_whitelist", "file",
                     "-sseof", "-1",
                     "-i", str(tmp_path),

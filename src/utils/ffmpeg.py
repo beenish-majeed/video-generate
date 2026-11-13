@@ -312,6 +312,8 @@ def create_placeholder_video(
             settings.ffmpeg_bin,
             "-y",
             "-nostdin",
+            "-protocol_whitelist",
+            "file,lavfi",
             "-f",
             "lavfi",
             "-i",

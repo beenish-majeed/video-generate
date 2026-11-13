@@ -55,6 +55,8 @@ def check_audio_stream_present(video_path: Union[str, Path]) -> tuple[bool, str]
         settings.ffprobe_bin,
         "-v",
         "error",
+        "-protocol_whitelist",
+        "file",
         "-select_streams",
         "a:0",
         "-show_entries",
@@ -64,7 +66,7 @@ def check_audio_stream_present(video_path: Union[str, Path]) -> tuple[bool, str]
         str(p),
     ]
     try:
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, timeout=settings.subprocess_ffprobe_timeout_seconds)
         if res.returncode != 0:
             return False, f"ffprobe error: {res.stderr.strip()[:200]}"
         data = json.loads(res.stdout)
@@ -91,6 +93,8 @@ def check_audio_mean_volume(
     cmd = [
         settings.ffmpeg_bin,
         "-nostdin",
+        "-protocol_whitelist",
+        "file",
         "-i",
         str(p),
         "-af",
@@ -103,7 +107,7 @@ def check_audio_mean_volume(
         "-",
     ]
     try:
-        res = run_subprocess(cmd)
+        res = run_subprocess(cmd, timeout=settings.subprocess_default_timeout_seconds)
         m = re.search(r"mean_volume:\s*([-\d\.]+)\s*dB", res.stderr)
         if not m:
             if "mean_volume: -inf dB" in res.stderr:
@@ -127,6 +131,8 @@ def extract_video_frame(video_path: Union[str, Path], timestamp_s: float) -> Opt
     cmd = [
         settings.ffmpeg_bin,
         "-nostdin",
+        "-protocol_whitelist",
+        "file",
         "-ss",
         f"{max(0.0, timestamp_s):.3f}",
         "-i",
@@ -140,7 +146,7 @@ def extract_video_frame(video_path: Union[str, Path], timestamp_s: float) -> Opt
         "-",
     ]
     try:
-        res = run_subprocess(cmd, text=False)
+        res = run_subprocess(cmd, timeout=settings.subprocess_default_timeout_seconds, text=False)
         if res.returncode != 0 or not res.stdout:
             return None
         with Image.open(io.BytesIO(res.stdout)) as img:

@@ -77,7 +77,8 @@ class ClipCompositor:
         cmd = [
             settings.ffmpeg_bin,
             "-y",
-            "-protocol_whitelist", "file,pipe",
+            "-nostdin",
+            "-protocol_whitelist", "file",
             "-i", str(input_clip),
             "-t", f"{target_dur:.3f}",
             "-vf", vf,
