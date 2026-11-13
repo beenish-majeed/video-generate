@@ -4,13 +4,34 @@ An offline-first, 100% free video creation suite that transforms ideas, scripts,
 
 ---
 
-## 100% Free & Local Runtime Statement
+## Architecture: Offline-First Core & Optional Cloud AI
 
-* **Zero API Keys & Subscriptions:** No OpenAI, Anthropic, ElevenLabs, or cloud APIs required.
-* **100% Offline at Runtime:** Once setup is complete and models are cached, all generation (scripts, TTS, lip sync, transitions, subtitling) runs entirely on your local machine with no outbound network calls.
-* **Single-Tenant Architecture:** AvatarStudio is designed strictly as a single-tenant local studio bound to `127.0.0.1`. It uses a shared cryptographic API key and does not provide multi-user accounts or granular user role isolation. Do not expose this service directly to the public internet.
+AvatarStudio is built with an **offline-first local core**, while providing clean, modular adapters for **optional external cloud AI services**:
+
+* **Offline-First Local Core (100% Free, Zero API Keys Required):**
+  * Runs entirely on your local machine by default without requiring any API keys or paid cloud accounts.
+  * Generates narrative scripts with built-in rule-based template writing (or local Ollama LLMs).
+  * Creates video scenes via procedural pan-and-zoom (Ken Burns), gradient motion cards, and FFmpeg compositing.
+  * Synthesizes ambient background music procedurally with NumPy/SciPy audio synthesis (`calm`, `warm`, `bright`).
+  * Performs talking-head lip sync offline using local Piper neural TTS (`Lessac`) and Wav2Lip checkpoints when installed.
+  * In offline mode, zero outbound network requests are made.
+
+* **Optional Cloud AI Video & Audio Providers:**
+  * **Google Veo 3 / Google GenAI:** Configure `GEMINI_API_KEY` or `GOOGLE_API_KEY` in `.env` to enable authentic neural video generation for Text-to-Video and Image-to-Video.
+  * **fal.ai & Minimax Hailuo:** Configure `FAL_KEY` in `.env` to enable cloud diffusion video generation and cloud LLM scriptwriting.
+  * **File.ai:** Configure `FILE_AI_API_KEY` for cloud TTS and image generation services.
+  * **Fail-Safe & Transparency:** If cloud keys are not configured, expired, or balance-exhausted, the application never crashes or silently fakes neural generation. It either falls back to the transparent local engine (explicitly labeled as procedural motion) or informs the user of provider account status with clear actionable guidance.
+
+* **Single-Tenant Architecture & Network Boundary:**
+  * AvatarStudio is designed as a single-tenant studio bound to `127.0.0.1`.
+  * Anonymous visitor sessions are protected with cryptographically signed HMAC-SHA256 cookies.
+  * Uploaded assets and jobs are isolated to the visitor session that created them.
+  * When deploying behind a reverse proxy (e.g. Nginx, Cloudflare, ALB), configure `TRUSTED_PROXIES` to verify client IPs and prevent rate-limit spoofing. Never expose raw backend ports directly to the untrusted public internet.
+
 * **OneDrive & Cloud Sync Advisory:** If this repository is stored inside a cloud-synced folder (such as `OneDrive\Documents\...`), local media in `storage/` (photos, audio recordings, rendered MP4s) may automatically sync to the cloud. For strict offline privacy and optimal performance, store the project in a non-synced directory (such as `C:\dev\video-generate`) or configure OneDrive to exclude the `storage/` directory.
+
 * **Voice Synthesis vs. Voice Cloning:** Offline speech generation uses local built-in Piper neural voices (e.g. Lessac). Uploaded user voice files are used directly as audio tracks in 'My Own Audio' mode; uploaded voices are not dynamically cloned onto novel typed scripts.
+
 * **License & Distribution Terms:** The project is strictly for **personal or educational research use** unless every license is thoroughly reviewed:
   * **piper-tts** is licensed under **GPL-3.0-or-later**; distributing binary packages or combined works carries reciprocal GPL obligations (requiring corresponding source distribution under GPLv3). See root [LICENSE](LICENSE).
   * **insightface** models are strictly for **non-commercial research use only**.
