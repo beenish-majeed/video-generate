@@ -1,98 +1,289 @@
-# AvatarStudio
+<div align="center">
+<img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f3ac.svg" width="100" alt="🎬" />
+<h1>Memory Studio</h1>
 
-A local-first video generation project built with FastAPI and React. It turns text prompts, scripts, photos, and audio clips into MP4 videos using FFmpeg camera motion (Ken Burns slideshows), procedural background music, WebVTT subtitles, and optional local talking-head lip sync.
+<p>
+  <img src="https://img.shields.io/badge/Python-000000?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3C1361?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/FFmpeg-26215C?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="FFmpeg" />
+</p>
 
----
+<p><em>Turn written ideas and personal photos into narrated, scene-based videos, rendered locally.</em></p>
 
-## What Works Locally vs. What Is Optional
+</div>
 
-### Runs locally on CPU (free, no API keys)
-- **Template script generation:** Built-in rule-based script writer in `src/services/template_script_writer.py` (or a local Ollama server at `http://127.0.0.1:11434` if installed).
-- **Text-to-video (`visual_mode: "text_to_video"`):** Generates gradient/text scene cards with Pillow and stitches them into an H.264 MP4 with FFmpeg pan-and-zoom camera motion, burned-in WebVTT subtitles, an AI disclosure badge, and procedural ambient background music (`calm`, `warm`, `bright`) ducked under speech.
-- **Picture-to-video (`visual_mode: "picture_to_video"`):** Uses an uploaded image together with either uploaded/recorded audio (`audio_mode: "original_audio"`) or local TTS.
-- **Browser audio recording:** Records microphone audio in the React frontend and encodes it client-side to 16-bit PCM WAV before uploading.
+## 📖 Overview
 
-### Requires local model downloads
-- **Local Piper TTS:** Requires voice model weights under `src/models/piper/`. If those weights are not present, the backend falls back to `assets/voices/default_voice.wav` (a 2-second sample clip).
-- **Talking-head lip sync (Wav2Lip):** Requires `src/models/wav2lip/wav2lip.pth` and a clear frontal face in the photo. When the checkpoint or a frontal face is missing, Picture-to-Video falls back to FFmpeg Ken Burns camera motion over the still image and records the reason in `visual_mode_reason`.
-- **AI Scene Clips (`notebooks/ai_clips_colab.ipynb`):** Companion Colab notebook for generating diffusion clips externally on a GPU and importing them locally; GPU diffusion in that notebook is not verified locally.
+**Memory Studio** is a web application for creating narrated videos from text and photos. It combines scene composition, voice narration, audio processing, subtitles, and video rendering in a single workflow.
 
-### Optional cloud providers (off by default, paid, not tested)
-- `GoogleVeoVideoProvider`, `FalAIVideoProvider`, and `FileAIClient` exist as optional adapters in `src/services/video_provider.py` and `src/clients/file_ai.py`.
-- By default, `VIDEO_PROVIDER=slideshow` in `.env.example` and `src/core/config.py`, so **cloud video providers are disabled and zero outbound network calls are made** unless you explicitly enable another provider and supply paid API keys (`GEMINI_API_KEY` / `GOOGLE_API_KEY`, `FAL_KEY`, `FILE_AI_API_KEY`).
-- End-to-end cloud video generation with live paid accounts has **not** been tested.
+It offers two creation modes:
 
----
+- **Text-to-Video:** Turn prompts and scripts into scene-based videos with narration and subtitles.
+- **Picture-to-Video:** Bring personal photos to life with narration, uploaded audio, or a browser recording of your voice.
 
-## Honest Limitations
+Rendering is local-first by default. Cloud and AI integrations are optional.
 
-- **Output quality:** Local CPU output is a Ken Burns slideshow over gradient cards/photos, or a 2D Wav2Lip mouth crop when `wav2lip.pth` is installed. It is **not** full-motion neural video generation like Google Veo or OpenAI Sora.
-- **CPU speed:** Slideshows render quickly on CPU (~5–15 seconds for a 30-second video). Running Wav2Lip on CPU is slow (~2–4x video duration) and impractical for long videos without a CUDA GPU.
-- **Voice Synthesis vs. Voice Cloning:** Offline speech synthesis uses local Piper voices (or `assets/voices/default_voice.wav` if Piper models are missing). Uploaded user audio is used directly as the audio track in original-audio mode; uploaded voices are not cloned onto typed scripts.
-- **Single-worker process limit (`--workers 1`):** Background jobs run in an in-process `ThreadPoolExecutor`, and job lookups, caching, and rate limiters are stored in process memory alongside SQLite. You must start Uvicorn with `--workers 1`; running multiple worker processes breaks job tracking and rate limiting. Restarting the server interrupts running jobs, which are marked `FAILED` on next startup.
-- **Single-tenant design:** Access uses a shared `API_KEY` and per-visitor signed HMAC cookies (`SESSION_SECRET`). There is no multi-user account system or automatic cleanup daemon deleting old jobs from `storage/`.
-- **Trusted proxies (`TRUSTED_PROXIES`):** Only list explicit reverse proxy IP addresses (such as `127.0.0.1` or a specific load-balancer IP) in `TRUSTED_PROXIES`. Do **not** add entire private CIDR blocks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) unless every machine in that subnet is a trusted proxy, or clients on the network can spoof `X-Forwarded-For`.
-- **OneDrive and cloud-synced folders:** If the repository lives inside a synced folder such as `OneDrive`, media written to `storage/` may sync to the cloud and Windows/OneDrive file locks can cause `EPERM` errors on `node_modules/.vite`. Keep working copies in a non-synced folder when possible.
+<br>
 
----
+## ✨ Features
 
-## 5-Step Setup
+| | Feature | Description |
+|---|---|---|
+| 📝 | **Text-to-Video** | Scene-based videos from prompts and scripts, with visual layouts, narration, and subtitles. |
+| 🖼️ | **Picture-to-Video** | Personal photos turned into videos with uploaded audio, browser-recorded voice, or TTS. |
+| 🎙️ | **Voice & Narration** | Local text-to-speech via Piper, or your own voice through browser recording or file upload. |
+| 🎞️ | **Scene Composition** | Text and image layouts with animated Ken Burns pan-and-zoom effects. |
+| 🎵 | **Audio Mixing** | Narration, procedural background music, and automatic audio ducking during speech. |
+| 💬 | **Subtitles** | WebVTT subtitles generated for the video. |
+| 👄 | **Lip Sync (optional)** | Wav2Lip photo lip-synchronization when model weights are installed and a suitable face is detected. |
 
-### 1. Prerequisites
-Install:
-- Python 3.10+ (tested locally on Python 3.14, CI runs Python 3.11)
-- Node.js 18+ and npm (frontend tested with Node 20 LTS)
-- `ffmpeg` and `ffprobe` on your system `PATH`
+<br>
 
-### 2. Install backend dependencies
+## 🧭 How It Works
+
+1. **Choose a mode:** Text-to-Video or Picture-to-Video.
+2. **Provide content:** Enter a prompt or script, or upload a personal photo.
+3. **Add narration:** Generate speech, record your voice, or upload audio.
+4. **Prepare the video:** Compose scenes, process audio, and add subtitles.
+5. **Render:** Generate the final MP4 and access it in the app.
+
+<br>
+
+## 🏗️ Architecture
+
+Memory Studio pairs a React and TypeScript frontend with a FastAPI backend. The backend manages background video jobs and persists state in SQLite. A media pipeline composes scenes, processes audio, and renders the final video with FFmpeg.
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 25, "rankSpacing": 30, "padding": 6}, "themeVariables": {"fontSize": "12px"}}}%%
+flowchart TD
+    U["User"] --> F["React frontend"]
+    F -->|HTTP| B["FastAPI backend"]
+
+    B --> S["Scene composition"]
+    B --> A["Narration and audio"]
+    B --> C["Subtitles"]
+
+    S --> R["FFmpeg render"]
+    A --> R
+    C --> R
+
+    R --> O["Final MP4"]
+
+    classDef purple fill:#7F77DD,stroke:#534AB7,stroke-width:1px,color:#FFFFFF;
+    classDef dark fill:#26215C,stroke:#3C3489,stroke-width:1px,color:#FFFFFF;
+    classDef green fill:#3B6D11,stroke:#27500A,stroke-width:1px,color:#FFFFFF;
+
+    class U,F,S,A,C purple;
+    class B,R dark;
+    class O green;
+
+    linkStyle default stroke:#AFA9EC,stroke-width:2px;
+```
+
+<br>
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+| Tool | Version |
+|---|---|
+| Python | 3.10 or newer |
+| Node.js | 20 or newer |
+| npm | 10 or newer |
+| FFmpeg | Latest stable (includes FFprobe) |
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/beenish-majeed/video-generate.git
+cd video-generate
+```
+
+### 2. Set up the backend
+
+Create and activate a virtual environment.
+
+**Windows (PowerShell):**
+
 ```powershell
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\Activate.ps1
+```
+
+**macOS / Linux:**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install the dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
-*(Optional helper scripts `scripts/setup.ps1` and `scripts/setup.sh` also exist to set up the venv and download local model weights.)*
 
 ### 3. Configure environment variables
-Copy `.env.example` to `.env`:
-```powershell
-copy .env.example .env
-```
-For local offline use, leave `VIDEO_PROVIDER=slideshow` and leave cloud API keys empty. Keep the server bound to `127.0.0.1`.
 
-### 4. Start the backend (single worker)
+Create your `.env` file from the template.
+
+**Windows (PowerShell):**
+
 ```powershell
-uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1
+Copy-Item .env.example .env
 ```
+
+**macOS / Linux:**
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env`:
+
+- Add your API key.
+- Set a strong session secret.
+- Keep the default `slideshow` provider for local rendering.
+- Add cloud provider credentials only if you plan to use those services.
+
+If the frontend needs its own API key, set it in the frontend environment file as described in the frontend configuration.
+
+> ⚠️ **Security:** The example `.env` contains development settings. Never use its default secrets or insecure options in production.
+
+### 4. Start the backend
+
+From the repository root:
+
+```bash
+python -m uvicorn src.main:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+> **Why `--workers 1`?** Background jobs and application state live in process memory. Multiple workers would each hold separate state and cause inconsistent job handling.
 
 ### 5. Start the frontend
-In a separate terminal:
-```powershell
+
+In a second terminal:
+
+```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
-Open `http://127.0.0.1:3000`. Make sure `frontend/.env` sets `API_KEY` to match the backend `.env` (for local loopback requests only, the Vite dev proxy attaches `X-API-Key`).
 
----
+Open the local URL shown in the terminal. Memory Studio should now be running.
 
-## API Overview
+<br>
 
-- `GET /health` — basic server health check (`{"ok": true}`)
-- `GET /v1/capabilities` — hardware, local model, music preset, and provider status
-- `GET /v1/durations` — allowed duration presets and speech pacing (`words_per_minute`)
-- `POST /v1/scripts/generate` — generate narration script for a prompt and duration
-- `POST /v1/assets/upload` — upload `photo`, `voice`, `image`, `audio`, `music`, or `clip` files
-- `POST /v1/jobs` — create a `text_to_video` or `picture_to_video` job (requires consent fields)
-- `GET /v1/jobs/{job_id}` — inspect job status and `visual_mode_reason`
-- `GET /v1/jobs/{job_id}/download` — download finished `final_video.mp4`
-- `DELETE /v1/jobs/{job_id}` — delete a completed, failed, or cancelled job
+## 🔌 API Reference
 
----
+The FastAPI backend exposes endpoints for capabilities, script generation, asset uploads, and job management.
 
-## Licenses
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Check backend health |
+| `GET` | `/v1/capabilities` | List available application capabilities |
+| `GET` | `/v1/durations` | List supported video durations |
+| `POST` | `/v1/scripts/generate` | Generate a video script |
+| `POST` | `/v1/assets/upload` | Upload media assets |
+| `POST` | `/v1/jobs` | Create a video-generation job |
+| `GET` | `/v1/jobs/{job_id}` | Get job details and status |
+| `GET` | `/v1/jobs/{job_id}/download` | Download the generated video |
+| `DELETE` | `/v1/jobs/{job_id}` | Delete a job |
 
-This project uses packages with copyleft and non-commercial restrictions:
-- `piper-tts` is **GPL-3.0-or-later** (see root [LICENSE](LICENSE)).
-- **Wav2Lip** and **InsightFace** model weights are strictly for **non-commercial research use**.
+Interactive docs are available at `/docs` when the development configuration enables them.
 
-Review [LICENSES.md](LICENSES.md) before distributing or deploying the project.
+<br>
+
+## 🧩 Processing & Integrations
+
+Memory Studio processes media locally by default.
+
+### Default: Slideshow rendering
+
+The `slideshow` provider uses local tools to:
+
+- Compose scenes with Pillow, including gradient and text layouts.
+- Apply Ken Burns pan-and-zoom motion.
+- Render MP4 output with FFmpeg.
+- Generate WebVTT subtitles.
+- Mix narration with procedural background music and duck it during speech.
+
+This is a slideshow-based workflow, not neural video generation.
+
+### Optional: Piper text-to-speech
+
+Piper provides local narration. Model files are not bundled. Without a configured model, the app falls back to a bundled voice sample of about two seconds.
+
+### Optional: Wav2Lip lip sync
+
+Enable Wav2Lip by installing its model weights. It needs a clear frontal face image. If the model is unavailable or fails, the app falls back to still-image rendering.
+
+### Optional: Cloud video providers
+
+Integrations are available for:
+
+- Google Veo
+- Fal AI
+- File.ai
+
+These are disabled by default and require their own credentials. Availability and costs depend on each provider's account terms.
+
+### Optional: GPU clips via Colab
+
+`notebooks/ai_clips_colab.ipynb` provides a GPU-based workflow for generating diffusion clips and importing them into the app.
+
+<br>
+
+## 🔒 Security & Privacy
+
+- API-key authentication
+- Signed session cookies
+- Job and asset ownership checks
+- Upload validation and path protection
+- Restricted media processing
+- Configurable storage retention
+
+Media is stored locally by default.
+
+> **Privacy note:** If the project sits inside a cloud-synced folder (Dropbox, OneDrive, Google Drive), generated media may sync automatically. Use a regular local folder if that is not what you want.
+
+For production, configure strong secrets, HTTPS, and trusted proxy settings.
+
+<br>
+
+## 🧪 Testing
+
+Backend tests:
+
+```bash
+pytest
+```
+
+Frontend checks:
+
+```bash
+cd frontend
+npm test
+npm run build
+```
+
+See the GitHub Actions workflow for CI configuration and the latest results.
+
+<br>
+
+## 📄 License
+
+Memory Studio is released under the **GPL-3.0-or-later** license. See [LICENSE](LICENSE) and [LICENSES.md](LICENSES.md).
+
+**Third-party model notice:** Some optional model weights and components carry additional restrictions, including Wav2Lip, InsightFace, and others. Review their licenses before using or distributing them commercially.
+
+<br>
+
+<div align="center">
+
+*Turning ideas, photos, and audio into meaningful videos.*
+
+</div>

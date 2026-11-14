@@ -25,4 +25,4 @@ def test_github_actions_ci_workflow_valid():
 def test_readme_documents_onedrive_and_voice_cloning():
     readme = Path("README.md").read_text(encoding="utf-8")
     assert "OneDrive" in readme
-    assert "Voice Synthesis vs. Voice Cloning" in readme
+    assert "Piper" in readme
